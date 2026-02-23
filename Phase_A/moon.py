@@ -1,18 +1,24 @@
 """Moon/Satellite Gravity Field
 
-달/위성의 중력장을 생성합니다.
+고정된 외부 중력원(달/위성)을 생성하여 기본 퍼텐셜 필드에 합성합니다.
 
-물리적 의미:
-- 달은 자전을 안정화/조절하는 역할
-- 자전 자체를 만드는 필수 요소는 아님
-- 하지만 자전을 더 안정적으로 만듦
+현재 상태:
+- 달의 위치는 고정 (공전 미구현, Phase B 영역)
+- 공전이 되려면 달의 위치가 매 스텝 GlobalState로 업데이트되어야 함
 
 수식:
-- 중력장: G_moon(x) = -G * M_moon * (x - x_moon) / ||x - x_moon||^3
-- 합성 필드: g(x) = -∇E(x) + R(x) + G_moon(x)
+    G_moon(x) = -G * M_moon * (x - x_moon) / ||x - x_moon||^3
+
+합성:
+    g(x) = -∇V(x) + R(x) + G_moon(x)
+
+주의 — rotational_func 시그니처:
+    create_field_with_moon의 rotational_func는 위치 의존형 R(x)만 받음.
+    코리올리형 R(x,v)=ωJv 는 PotentialFieldEngine 내부(omega_coriolis)에서
+    Strang splitting으로 처리되므로 여기서 합성하지 않음.
 
 Author: GNJz (Qquarts)
-Version: 0.1.4
+Version: 0.2.0
 """
 
 import numpy as np
@@ -22,21 +28,24 @@ from dataclasses import dataclass
 
 @dataclass
 class Moon:
-    """달/위성 객체
-    
+    """고정된 외부 중력원 (달/위성)
+
+    현재는 위치가 고정됨 (공전은 Phase B에서 구현 예정).
+    공전 구현 시 position을 매 스텝 갱신하거나,
+    Moon을 GlobalState의 extension으로 관리해야 함.
+
     Attributes:
-        position: 달 위치
+        position: 달 위치 (고정)
         mass: 달의 질량
         G: 중력 상수
-        softening: 수치 안정성을 위한 작은 값
+        softening: 수치 안정성용 (r=0 근처 발산 방지)
     """
     position: np.ndarray
     mass: float = 1.0
     G: float = 1.0
     softening: float = 1e-6
-    
+
     def __post_init__(self):
-        """초기화 후 검증"""
         self.position = np.array(self.position)
         if self.mass <= 0:
             raise ValueError("Moon mass must be positive")
@@ -45,28 +54,26 @@ class Moon:
 
 
 def create_moon_gravity_field(moon: Moon) -> Callable[[np.ndarray], np.ndarray]:
-    """달의 중력장 생성 함수
-    
+    """달의 중력장 생성
+
     수식:
-        G_moon(x) = -G * M_moon * (x - x_moon) / ||x - x_moon||^3
-    
+        G_moon(x) = -G * M_moon * (x - x_moon) / (||x - x_moon|| + ε)^3
+
+    softening은 ||r|| + ε 방식 (Plummer softening과 다름).
+    r → 0 근처 발산을 막되, 먼 거리에서는 역제곱 법칙 유지.
+
     Args:
         moon: 달 객체
-    
+
     Returns:
-        달의 중력장 함수 G_moon(x) -> np.ndarray
+        G_moon(x) -> np.ndarray (위치 의존 중력 벡터)
     """
     def G_moon(x: np.ndarray) -> np.ndarray:
-        """달의 중력장 계산"""
         x = np.array(x)
         r = x - moon.position
-        
-        # 거리 계산 (수치 안정성)
         r_norm = np.linalg.norm(r) + moon.softening
-        
-        # 중력장 계산
-        return -moon.G * moon.mass * r / (r_norm**3)
-    
+        return -moon.G * moon.mass * r / (r_norm ** 3)
+
     return G_moon
 
 
@@ -75,37 +82,41 @@ def create_field_with_moon(
     rotational_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
     moon_gravity_func: Optional[Callable[[np.ndarray], np.ndarray]] = None
 ) -> Callable[[np.ndarray], np.ndarray]:
-    """Gradient + Rotational + Moon 합성 필드
-    
+    """위치 의존 필드 합성: gradient + rotation(pole형) + moon
+
     수식:
-        g(x) = -∇E(x) + R(x) + G_moon(x)
-    
+        g(x) = -∇V(x) + R(x) + G_moon(x)
+
+    주의:
+        rotational_func는 R(x) 시그니처만 호환.
+        코리올리형 R(x,v)=ωJv 는 여기가 아니라 PotentialFieldEngine 내부
+        (omega_coriolis + Strang splitting)에서 처리됨.
+
     Args:
-        gradient_func: Gradient field 함수 (-∇E)
-        rotational_func: Rotational field 함수 (R), 선택적
-        moon_gravity_func: 달의 중력장 함수 (G_moon), 선택적
-    
+        gradient_func: -∇V(x) -> np.ndarray
+        rotational_func: R(x) -> np.ndarray (pole형만, 선택적)
+        moon_gravity_func: G_moon(x) -> np.ndarray (선택적)
+
     Returns:
-        합성 필드 함수 g(x) -> np.ndarray
+        합성 필드 g(x) -> np.ndarray
     """
     def combined_field(x: np.ndarray) -> np.ndarray:
-        """합성 필드 계산"""
         field = gradient_func(x)
-        
+
         if rotational_func is not None:
             rotational = rotational_func(x)
             if len(field) != len(rotational):
                 raise ValueError("Field dimensions must match")
             field = field + rotational
-        
+
         if moon_gravity_func is not None:
             moon_gravity = moon_gravity_func(x)
             if len(field) != len(moon_gravity):
                 raise ValueError("Field dimensions must match")
             field = field + moon_gravity
-        
+
         return field
-    
+
     return combined_field
 
 
@@ -114,24 +125,22 @@ def analyze_moon_effect(
     field_with_moon: Callable[[np.ndarray], np.ndarray],
     test_points: list
 ) -> dict:
-    """달의 효과 분석
-    
-    달이 추가되었을 때 필드의 변화를 분석
-    
+    """달 추가 전후 필드 변화 분석
+
     Args:
-        field_without_moon: 달 없이 필드
+        field_without_moon: 달 없는 필드
         field_with_moon: 달 포함 필드
-        test_points: 테스트할 점들의 리스트
-    
+        test_points: 비교할 위치 리스트
+
     Returns:
-        분석 결과 딕셔너리
+        {"field_difference": [...], "max_difference": float, "avg_difference": float}
     """
     results = {
         "field_difference": [],
         "max_difference": 0.0,
         "avg_difference": 0.0,
     }
-    
+
     differences = []
     for point in test_points:
         field_wo = field_without_moon(point)
@@ -142,11 +151,9 @@ def analyze_moon_effect(
             "point": point.tolist(),
             "difference": float(diff)
         })
-    
+
     if differences:
         results["max_difference"] = float(max(differences))
         results["avg_difference"] = float(np.mean(differences))
-    
+
     return results
-
-
