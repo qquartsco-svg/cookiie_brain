@@ -1,286 +1,190 @@
-# 🧠 Cookiie Brain 통합 엔진
+# Cookiie Brain
 
-**모든 개별 엔진들을 연결하는 통합 시스템**
+**상태 동역학 기반 뇌 모델링 통합 엔진**
 
-Version: 0.1.2  
-License: PHAM-OPEN  
-Python: 3.8+
-
----
-
-## 🎯 핵심 기능
-
-✅ **엔진 간 자동 연결**
-- WellFormationEngine → PotentialFieldEngine 자동 연결
-- 데이터 흐름 자동 관리
-- 상태 자동 동기화
-
-✅ **전체 시스템으로 작동**
-- 하나의 입력으로 전체 시스템 작동
-- 엔진 간 상호작용 자동 발생
-
-✅ **모듈화**
-- 각 엔진은 독립적으로 작동 가능
-- 필요한 엔진만 활성화 가능
-
----
-
-## 📐 엔진 연결 순서
+에너지 지형 위에서 상태가 흐르고, 회전하고, 수렴하는 과정을 물리학으로 표현합니다.
+정답을 제시하기보다, 각자의 해답을 찾아갈 수 있는 구조를 만드는 것이 목적입니다.
 
 ```
-1. WellFormationEngine
-   ↓ (W, b 생성)
-2. PotentialFieldEngine
-   ↓ (퍼텐셜 필드 변환 및 상태 업데이트)
-3. HippoMemoryEngine (선택적, 구현 예정)
-   ↓ (장기 기억 시스템)
-4. CerebellumEngine (선택적, 통합 완료 ✅)
-   ↓ (운동 조율 및 학습)
+Version : 0.2.0
+License : PHAM-OPEN v2.0
+Python  : 3.8+
+Author  : GNJz (Qquarts)
 ```
 
 ---
 
-## 🚀 설치
+## 핵심 수식
 
-### 의존성
+```
+state_{t+1} = engine.update(state_t)
 
-```bash
-pip install numpy
+V(x) = E_hopfield(x) = -(1/2)x'Wx - b'x       # 퍼텐셜 (기억 우물)
+g(x) = -∇V(x) = Wx + b                          # 필드 (가속도)
+a    = g(x) + ωJv                                # 자전 포함 시 (코리올리형)
+E    = (1/2)||v||² + V(x)                        # 총 에너지 (보존량)
 ```
 
-### BrainCore 연동 (필수)
+수학적 기초 · 구현 상세: [PotentialFieldEngine CONCEPT](../Brain_Disorder_Simulation_Engine/Unsolved_Problems_Engines/PotentialFieldEngine/docs/CONCEPT.md)
 
-```bash
-# BrainCore 설치 또는 PYTHONPATH에 추가
+---
+
+## 엔진 파이프라인
+
 ```
-
-### 엔진 설치
-
-```bash
-# WellFormationEngine 설치
-cd Brain_Disorder_Simulation_Engine/Unsolved_Problems_Engines/WellFormationEngine
-pip install -e .
-
-# PotentialFieldEngine 설치
-cd ../PotentialFieldEngine
-pip install -e .
+WellFormationEngine        episodes → W, b (Hopfield 가중치)
+       ↓
+PotentialFieldEngine       V(x), g(x) → 상태 업데이트 (적분)
+       ↓                   ├ 기본: symplectic Euler
+       ↓                   └ 자전: Strang splitting + exact rotation
+Phase_A (선택)             ωJv 코리올리 회전 → 에너지 보존 자전
+       ↓
+CerebellumEngine (선택)    운동 보정
+       ↓
+HippoMemoryEngine (예정)   장기 기억
 ```
 
 ---
 
-## 📖 사용법
-
-### 기본 사용
+## 빠른 시작
 
 ```python
 from cookiie_brain_engine import CookiieBrainEngine
 from brain_core.global_state import GlobalState
 import numpy as np
 
-# CookiieBrainEngine 생성
 brain = CookiieBrainEngine(
     enable_well_formation=True,
     enable_potential_field=True,
-)
-
-# 상태 생성
-state = GlobalState(
-    state_vector=np.concatenate([
-        np.array([1.0, 0.0]),  # 위치
-        np.array([0.0, 0.0]),  # 속도
-    ]),
-    energy=0.0,
-    risk=0.0,
-)
-
-# episodes 추가 (WellFormationEngine용)
-state.set_extension("episodes", [
-    # episodes 데이터...
-])
-
-# 통합 엔진 실행
-result = brain.update(state)
-
-# 에너지 확인
-energy = brain.get_energy(result)
-print(f"에너지: {energy}")
-```
-
-### 고급 사용
-
-```python
-# 모든 엔진 활성화
-brain = CookiieBrainEngine(
-    enable_well_formation=True,
-    enable_potential_field=True,
-    enable_cerebellum=True,
-    enable_hippo_memory=False,  # 구현 예정
-    error_isolation=True,  # 에러 격리 모드
-    cerebellum_config={  # CerebellumEngine 설정
-        "memory_dim": 10,
-        "dt": 0.002,
-        "correction_scale": 0.02,
-    },
-)
-
-# 설정 커스터마이징
-brain = CookiieBrainEngine(
-    enable_well_formation=True,
-    enable_potential_field=True,
-    well_formation_config={
-        # WellFormationEngine 설정...
-    },
     potential_field_config={
-        # PotentialFieldEngine 설정...
-    },
-    cerebellum_config={
-        # CerebellumEngine 설정...
+        "enable_phase_a": True,       # 자전 활성화
+        "phase_a_mode": "minimal",    # 코리올리형 R(v)=ωJv
+        "phase_a_omega": 1.0,         # 회전 각속도
     },
 )
+
+state = GlobalState(
+    state_vector=np.array([1.0, 0.0, 0.0, 0.5]),  # [x, v]
+    energy=0.0,
+)
+state.set_extension("episodes", episodes)
+
+for _ in range(1000):
+    state = brain.update(state)
 ```
 
-### 통합 테스트 데모
+사용 예제: [examples/](examples/)
+
+---
+
+## Phase A — 자전
+
+퍼텐셜 우물 안에서 에너지를 보존하면서 회전하는 상태를 구현합니다.
+
+```
+R(x, v) = ωJv                   # 코리올리형: 힘이 속도에 수직
+v · R = v · (ωJv) = 0           # J 반대칭 → 항상 0 → 에너지 보존
+```
+
+**적분**: Drift-Kick/Rotate-Kick-Drift (Boris 방식)
+- exact rotation `exp(ωJdt)` 으로 `|v|` 정확 보존
+- secular drift 없음 (검증: rel_drift < 1e-6)
+
+검증 실행:
+```bash
+python examples/phase_a_minimal_verification.py
+```
+
+수학적 기초 · 단계 로드맵: [Phase_A/](Phase_A/)
+
+---
+
+## 설계 원칙
+
+- **state 불변**: `new_state = state.copy()` 후 반환. 원본 안 건드림
+- **하드코딩 금지**: 물리 상수, 경로 전부 파라미터화
+- **엔진은 상태를 perturb할 뿐, 지배하지 않음**
+- **GlobalState 하나로 모든 엔진 연결**: extensions 규약으로 데이터 교환
+
+상세: [docs/](docs/)
+
+---
+
+## Extensions 규약
 
 ```python
-# examples/integration_test_demo.py 실행
-python examples/integration_test_demo.py
-```
+# WellFormation
+state.get_extension("well_formation")  # {"W": ..., "b": ..., "well_result": ...}
 
-이 데모는:
-- WellFormationEngine이 episodes로부터 기억 우물 생성
-- PotentialFieldEngine이 우물을 퍼텐셜 필드로 변환
-- 상태가 우물(에너지 최소점)로 수렴하는지 검증
-- 시각화 결과 생성 (`examples/output/integration_test_convergence.png`)
+# PotentialField
+state.get_extension("potential_field")  # {"potential", "field", "kinetic_energy",
+                                        #  "potential_energy", "total_energy"}
+
+# Cerebellum
+state.get_extension("cerebellum")      # {"correction", "target_state"}
 ```
 
 ---
 
-## 🔗 엔진 연결 구조
+## 표준 API
 
-### WellFormationEngine → PotentialFieldEngine
-
-**연결 구조**:
-1. **WellFormationEngine**: W, b 생성 (Hopfield 에너지)
-   - Hopfield 에너지: `E(x) = -(1/2) * Σ_ij w_ij x_i x_j - Σ_i b_i x_i`
-2. **PotentialFieldEngine**: 에너지 지형 → 퍼텐셜 필드 변환
-   - 퍼텐셜: `V(x) = E(x)`
-   - 필드: `g(x) = -∇E(x) = Wx + b`
-
-**설계 목적**:
-- 구조적 통합 레이어 구축
-- 엔진 간 데이터 흐름 자동 관리
-- 확장 가능한 아키텍처
+```python
+engine.update(state) -> GlobalState    # 필수
+engine.get_energy(state) -> float      # 선택
+engine.get_state() -> dict             # 선택
+engine.reset()                         # 선택
+```
 
 ---
 
-## 📁 파일 구조
+## 파일 구조
 
 ```
 CookiieBrain/
-├── cookiie_brain_engine.py    # 통합 엔진
-├── README.md                  # 이 파일
-├── HANDOVER_DOCUMENT.md       # 인수인계 문서
-├── CODE_REVIEW_FIXES.md       # 코드 리뷰 피드백 반영 사항
-├── FOLDER_STRUCTURE_ANALYSIS.md  # 폴더 구조 분석
-└── examples/                  # 예제 코드
-    ├── basic_usage.py         # 기본 사용 예제
-    └── advanced_usage.py      # 고급 사용 예제
+├── cookiie_brain_engine.py     # 통합 엔진 (오케스트레이션)
+├── README.md
+├── QUICK_START.md
+├── Phase_A/                    # 자전 모듈
+│   ├── rotational_field.py     #   코리올리형 + pole형 회전 생성
+│   ├── moon.py                 #   위성 중력장
+│   └── docs/                   #   작업 기록 · 수학 문서
+├── examples/                   # 실행 가능한 예제
+│   ├── phase_a_minimal_verification.py  # 자전 검증 (ALL PASS)
+│   ├── phase_a_integration_test.py      # 우물 + 자전 통합
+│   └── integration_test_demo.py         # 기본 통합 테스트
+└── docs/                       # 참고 문서 (설계 분석 · 리뷰 · 로드맵)
 ```
 
 ---
 
-## ✅ 설계 원칙
+## PHAM 블록체인 서명
 
-1. **불변성 유지**
-   - state를 직접 수정하지 않고 copy-and-return (deep=True)
-   - 완전한 복제로 extension 내부 dict, numpy 배열도 복제
+이 프로젝트의 코드 기여는 PHAM v4 블록체인으로 무결성을 기록합니다.
 
-2. **엔진 간 자동 연결**
-   - 데이터 흐름 자동 관리
-   - WellFormationEngine → PotentialFieldEngine 자동 연결
+- **4-Signal 스코어링**: Byte(25%) + Text(35%) + AST(30%) + Exec(10%)
+- **체인 구조**: `SHA256(index | prev_hash | timestamp | data_hash)`
+- **라이선스**: 누구나 자유롭게 사용. 수익 발생 시 6% 후원 (신뢰 기반)
 
-3. **Well 변경 감지**
-   - Well 결과 변경 시 potential 함수 및 엔진 재생성
-   - stale field 방지
-
-4. **에러 격리**
-   - error_isolation=True 시 엔진 실패해도 계속 진행
-
-5. **상태 자동 동기화**
-   - GlobalState가 전체 시스템에서 공유
-   - 엔진 간 상태 자동 동기화
-
-6. **모듈화**
-   - 각 엔진은 독립적으로 작동 가능
-   - 필요한 엔진만 활성화 가능
+서명 도구: [pham_sign_v4.py](../Brain_Disorder_Simulation_Engine/Unsolved_Problems_Engines/PotentialFieldEngine/blockchain/pham_sign_v4.py)
+라이선스 전문: PHAM-OPEN v2.0
 
 ---
 
-## 🔍 Extensions 저장 규약
+## 현재 상태와 방향
 
-### WellFormationEngine 결과
+| 단계 | 상태 |
+|------|------|
+| 정적 퍼텐셜 (우물 생성 + 수렴) | 완료 |
+| 자전 (코리올리 회전, 에너지 보존) | 완료 |
+| 공전 (다중 중심 상호작용) | 미착수 |
+| 요동 (확률적 요동, 불확정성) | 미착수 |
 
-```python
-state.set_extension("well_formation", {
-    "W": well_result.W.copy(),  # numpy 배열 복제
-    "b": well_result.b.copy(),  # numpy 배열 복제
-    "well_result": well_result,
-})
-```
+> 고전 구조가 먼저, 확률은 마지막에 얹는다.
+> 구조가 있어야 요동의 의미가 생긴다.
 
-### PotentialFieldEngine 결과
-
-```python
-state.set_extension("potential_field", {
-    "potential": V,
-    "field": g,
-    "acceleration": a,
-})
-```
-
-### CerebellumEngine 결과
-
-```python
-state.set_extension("cerebellum", {
-    "correction": correction,
-    "target_state": target_state,
-})
-```
+단계 설명: [Phase_A/STAGES_SPIN_ORBIT_FLUCTUATION.md](Phase_A/STAGES_SPIN_ORBIT_FLUCTUATION.md)
 
 ---
 
-## 📝 표준 API
-
-### 필수 메서드
-
-- `update(state: GlobalState) -> GlobalState`: 상태 업데이트
-
-### 선택 메서드
-
-- `get_energy(state: GlobalState) -> float`: 에너지 반환
-- `get_state() -> Dict[str, Any]`: 엔진 내부 상태 반환
-- `reset()`: 상태 리셋
-
----
-
-## 🎯 다음 단계
-
-1. **통합 테스트 작성**
-   - 엔진 간 데이터 흐름 검증
-   - 상태 동기화 검증
-
-2. **HippoMemoryEngine 통합**
-   - HippoMemoryEngine 구조 확인
-   - GlobalState 인터페이스 래핑
-
-3. **다른 엔진들 통합**
-   - Ring Attractor Engine
-   - Grid Engine
-   - 기타 엔진들
-
----
-
-**작성자**: GNJz (Qquarts)  
-**버전**: 0.1.1  
-**상태**: 구조 개선 완료, 통합 테스트 데모 추가 ✅
-
+*GNJz (Qquarts) · Cookiie Brain v0.2.0*
+*"Code is Free. Success is Shared."*
