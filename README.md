@@ -16,11 +16,46 @@ Author  : GNJz (Qquarts)
 공이 산과 골짜기가 있는 지형 위에서 굴러가는 장면을 떠올려 보세요.
 
 - **골짜기(우물)** = 기억. 경험이 쌓이면 지형에 골짜기가 파인다.
+  깊은 골짜기일수록 강한 기억. 공은 가까운 골짜기로 자연스럽게 끌려간다.
 - **공의 움직임** = 상태. 공은 골짜기로 끌려가면서 기억을 떠올린다.
+  여러 골짜기 사이에서 공이 어디로 향하느냐가 곧 "지금 무엇을 떠올리는가"이다.
 - **자전** = 리듬. 공이 골짜기 바닥에 멈추지 않고 회전하면, 위상(타이밍)이 생긴다.
+  수면 중에도 뇌는 멈추지 않는다. 리듬이 있어야 다음 상태로 넘어갈 수 있다.
 
 이 엔진은 이 과정을 물리 수식으로 구현합니다.
 정답을 주는 시스템이 아니라, 각자의 해답을 찾아갈 수 있는 **구조**를 만드는 것이 목적입니다.
+
+**기술적으로는:**
+Hopfield 에너지 지형 위에서 상태 벡터의 동역학을 시뮬레이션합니다.
+경험(episodes)으로부터 에너지 우물(W, b)을 형성하고,
+상태가 퍼텐셜 필드 위에서 수렴·회전·전이하는 과정을
+수치 적분(symplectic Euler, Strang splitting)으로 추적합니다.
+Phase A에서는 코리올리형 회전항(ωJv)을 도입하여,
+에너지를 보존하면서 위상 구조(limit cycle)를 생성하는 것까지 구현되어 있습니다.
+
+---
+
+## What This Project Does
+
+Imagine a ball rolling across a landscape of hills and valleys.
+
+- **Valleys (wells)** = memories. As experiences accumulate, valleys form in the terrain.
+  Deeper valleys represent stronger memories. The ball naturally rolls toward the nearest one.
+- **The ball's motion** = state. As the ball is pulled into a valley, it "recalls" that memory.
+  Which valley the ball moves toward is essentially "what is being recalled right now."
+- **Spin** = rhythm. If the ball doesn't just stop at the bottom but keeps rotating, phase (timing) emerges.
+  The brain never truly stops — even in sleep. Rhythm is what enables transitions between states.
+
+This engine implements these dynamics with physics equations.
+It is not a system that gives answers, but a **structure** that lets each user find their own.
+
+**Technically:**
+It simulates state-vector dynamics on a Hopfield energy landscape.
+Experiences (episodes) shape energy wells (W, b),
+and the state's convergence, rotation, and transitions across the potential field
+are tracked via numerical integration (symplectic Euler, Strang splitting).
+In Phase A, a Coriolis-type rotational term (ωJv) is introduced
+to generate phase structure (limit cycles) while strictly conserving energy.
 
 ---
 
