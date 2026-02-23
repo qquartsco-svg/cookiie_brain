@@ -90,13 +90,12 @@ try:
     phase_a_path = Path(__file__).parent
     if str(phase_a_path) not in sys.path:
         sys.path.insert(0, str(phase_a_path))
-    from Phase_A import Pole, create_rotational_field, create_minimal_rotational_field
+    from Phase_A import Pole, create_rotational_field
     PHASE_A_AVAILABLE = True
 except ImportError:
     PHASE_A_AVAILABLE = False
     Pole = None
     create_rotational_field = None
-    create_minimal_rotational_field = None
 
 # HippoMemoryEngine import (선택적)
 try:
@@ -165,6 +164,12 @@ class CookiieBrainEngine(SelfOrganizingEngine):
         self.enable_cerebellum = enable_cerebellum
         self.error_isolation = error_isolation
         
+        if enable_potential_field and not POTENTIAL_FIELD_AVAILABLE:
+            raise ImportError(
+                "PotentialFieldEngine을 import할 수 없습니다. "
+                "PotentialFieldEngine을 설치하거나 PYTHONPATH에 추가하세요."
+            )
+
         # PotentialFieldEngine / Phase A 설정 저장
         self.potential_field_config = potential_field_config or {}
         self.enable_phase_a = self.potential_field_config.get("enable_phase_a", False)
@@ -307,7 +312,7 @@ class CookiieBrainEngine(SelfOrganizingEngine):
                         dim = len(self.current_well_result.b)
                         if self.phase_a_mode == "minimal":
                             omega_coriolis = float(self.phase_a_omega)
-                        elif Pole is not None and create_rotational_field is not None:
+                        elif self.phase_a_mode == "pole" and Pole is not None and create_rotational_field is not None:
                             pole_position = self.phase_a_pole_position
                             if pole_position is None:
                                 pole_position = np.zeros(dim)
@@ -340,12 +345,14 @@ class CookiieBrainEngine(SelfOrganizingEngine):
             
             # 4. CerebellumEngine 실행 (선택적)
             if self.enable_cerebellum and self.cerebellum_engine:
-                # CerebellumEngine은 compute_correction() 메서드를 사용
-                # GlobalState에서 필요한 정보 추출
                 state_vector = new_state.state_vector
+                if len(state_vector) % 2 != 0:
+                    raise ValueError(
+                        f"state_vector must have even length for Cerebellum "
+                        f"(got {len(state_vector)}). "
+                        f"Expected format: [x1,...,xN, v1,...,vN]"
+                    )
                 n_dim = len(state_vector) // 2
-                
-                # 위치와 속도 분리
                 position = state_vector[:n_dim]
                 velocity = state_vector[n_dim:]
                 
