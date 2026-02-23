@@ -1,0 +1,40 @@
+============================================
+Phase A 관련 — 내가 손댄 파일 전부 (확인용)
+============================================
+
+■ 수정한 코드 (실제 동작하는 코드)
+----------------------------------------------
+1. PotentialFieldEngine
+   경로: Desktop/00_BRAIN/Brain_Disorder_Simulation_Engine/Unsolved_Problems_Engines/PotentialFieldEngine/potential_field_engine.py
+   한 일: rotational_func 인자 추가. 필드 계산할 때 g + R(x) 더함.
+
+2. CookiieBrain 엔진
+   경로: Desktop/00_BRAIN/CookiieBrain/cookiie_brain_engine.py
+   한 일: Phase_A import, potential_field_config 저장, enable_phase_a 켜면 회전항 만들어서 엔진에 넘김.
+
+
+■ 새로 만든 코드 (실행 스크립트)
+----------------------------------------------
+3. Phase A 수치 검증
+   경로: Desktop/00_BRAIN/CookiieBrain/Phase_A/verify_math.py
+   한 일: 부호(field=-∇E), 직교성(r·R=0) 체크. 실행하면 PASS/FAIL 출력.
+
+4. Phase A 통합 테스트
+   경로: Desktop/00_BRAIN/CookiieBrain/examples/phase_a_integration_test.py
+   한 일: 우물 하나 + 자전 켜고 몇 step 돌려서 curl·궤도 출력.
+
+
+■ 새로 만든 문서 (설명·체크리스트)
+----------------------------------------------
+5. Desktop/00_BRAIN/CookiieBrain/Phase_A/NEXT_WORK.md          — 다음에 할 작업 정리
+6. Desktop/00_BRAIN/CookiieBrain/Phase_A/MATH_VERIFICATION_CHECKLIST.md — 수학 검증 체크리스트
+7. Desktop/00_BRAIN/CookiieBrain/Phase_A/STATUS_CHECK.md       — 작업 상황 점검 (사실만)
+8. Desktop/00_BRAIN/CookiieBrain/Phase_A/FEEDBACK_AND_STATUS.md — 피드백 반영·불일치 정리
+9. Desktop/00_BRAIN/CookiieBrain/Phase_A/CURRENT_WORK_OVERVIEW.md — 한 페이지 요약 (목표·한 일·당신이 할 것)
+10. Desktop/00_BRAIN/CookiieBrain/Phase_A/MODIFIED_FILES_LIST.txt — 이 파일 (손댄 파일 목록)
+
+
+============================================
+확인 방법: 위 경로로 가서 파일 열어보면 됨.
+코드는 1,2,3,4 / 문서는 5~10.
+============================================
