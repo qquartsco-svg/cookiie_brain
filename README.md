@@ -68,7 +68,7 @@ to generate phase structure (limit cycles) while strictly conserving energy.
 총 에너지:                 E = (1/2)||v||² + V(x)
 ```
 
-수학적 기초 · 구현 상세: [PotentialFieldEngine CONCEPT](../Brain_Disorder_Simulation_Engine/Unsolved_Problems_Engines/PotentialFieldEngine/docs/CONCEPT.md)
+수학적 기초 · 구현 상세: [PotentialFieldEngine CONCEPT](https://github.com/qquartsco-svg/BDS_Engine/blob/main/Unsolved_Problems_Engines/PotentialFieldEngine/docs/CONCEPT.md)
 
 ---
 
@@ -191,12 +191,16 @@ CookiieBrain/
 ├── cookiie_brain_engine.py     # 통합 엔진 (오케스트레이션)
 ├── README.md
 ├── QUICK_START.md
-├── Phase_A/                    # 자전 모듈
+├── Phase_A/                    # 자전 모듈 (완료)
 │   ├── rotational_field.py     #   코리올리형 + pole형 회전 생성
 │   ├── moon.py                 #   위성 중력장
 │   └── docs/                   #   작업 기록 · 수학 문서
+├── Phase_B/                    # 공전 모듈 (진행 중)
+│   ├── multi_well_potential.py #   가우시안 다중 우물 퍼텐셜
+│   └── README.md               #   개념 · 수식 · 사용법
 ├── examples/                   # 실행 가능한 예제
 │   ├── phase_a_minimal_verification.py  # 자전 검증 (ALL PASS)
+│   ├── phase_b_orbit_verification.py    # 공전 검증 (ALL PASS)
 │   ├── phase_a_integration_test.py      # 우물 + 자전 통합
 │   └── integration_test_demo.py         # 기본 통합 테스트
 └── docs/                       # 참고 문서 (설계 분석 · 리뷰 · 로드맵)
@@ -212,7 +216,7 @@ CookiieBrain/
 - **체인 구조**: `SHA256(index | prev_hash | timestamp | data_hash)`
 - **라이선스**: 누구나 자유롭게 사용. 수익 발생 시 6% 후원 (신뢰 기반)
 
-서명 도구: [pham_sign_v4.py](../Brain_Disorder_Simulation_Engine/Unsolved_Problems_Engines/PotentialFieldEngine/blockchain/pham_sign_v4.py)
+서명 도구: [pham_sign_v4.py](https://github.com/qquartsco-svg/BDS_Engine/blob/main/Unsolved_Problems_Engines/PotentialFieldEngine/blockchain/pham_sign_v4.py)
 라이선스 전문: PHAM-OPEN v2.0
 
 ---
@@ -223,7 +227,8 @@ CookiieBrain/
 |------|------|
 | 정적 퍼텐셜 (우물 생성 + 수렴) | 완료 |
 | 자전 (코리올리 회전, 에너지 보존) | 완료 |
-| 공전 (다중 중심 상호작용) | 미착수 |
+| 공전 B-1 (가우시안 다중 우물, 장벽 순환) | 완료 |
+| 공전 B-2 (WellFormation 연동) | 미착수 |
 | 요동 (확률적 요동, 불확정성) | 미착수 |
 
 > 고전 구조가 먼저, 확률은 마지막에 얹는다.
