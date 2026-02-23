@@ -16,7 +16,7 @@
 5. 기타 엔진들...
 
 Author: GNJz (Qquarts)
-Version: 0.1.1
+Version: 0.2.0
 """
 
 from __future__ import annotations
@@ -108,7 +108,7 @@ try:
 except ImportError:
     HIPPO_MEMORY_AVAILABLE = False
 
-__version__ = "0.1.2"
+__version__ = "0.2.0"
 
 
 class CookiieBrainEngine(SelfOrganizingEngine):
