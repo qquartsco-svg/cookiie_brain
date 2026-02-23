@@ -62,7 +62,7 @@ to generate phase structure (limit cycles) while strictly conserving energy.
 ## 핵심 수식
 
 ```
-골짜기의 깊이 (퍼텐셜):   V(x) = -(1/2)x'Wx - b'x
+골짜기의 깊이 (퍼텐셜):   V(x) = -(1/2)x'Wx - b'x   (지역 최솟값 최대 1개)
 공을 끌어당기는 힘:        g(x) = -∇V(x) = Wx + b
 자전 (코리올리형):         a = g(x) + ωJv       ← 힘이 속도에 수직 → 에너지 보존
 총 에너지:                 E = (1/2)||v||² + V(x)

@@ -29,8 +29,8 @@ Phase A에서 사용한 Hopfield 이차 퍼텐셜:
 
 $$V(x) = -\tfrac{1}{2} x^\top W x - b^\top x$$
 
-이것은 **연속 공간에서 단일 최솟값**만 가진다.
-공전(우물 사이 순환)을 구현하려면 **여러 개의 최솟값**이 필요하다.
+이것은 연속 공간에서 **지역 최솟값이 최대 1개**인 구조다 (W의 성질에 따라 최소/안장/무한 하강).
+공전(우물 사이 순환)을 구현하려면 **분리된 여러 최솟값**이 필요하다.
 
 ---
 
@@ -52,6 +52,8 @@ $$g(x) = -\nabla V(x) = -\sum_i \frac{A_i}{\sigma_i^2}(x - c_i)\exp\!\left(-\fra
 
 - $E > V_{\text{saddle}}$ → 장벽 통과 → 전이 가능
 - $E < V_{\text{saddle}}$ → 하나의 우물 안에 갇힘
+
+※ 장벽/안장점 계산은 두 우물 중심을 잇는 **직선 경로 상 최대값**(근사). 비대칭/고차원에서는 실제 안장점과 다를 수 있다.
 
 ---
 
@@ -83,6 +85,7 @@ Phase_B/
 
 ```python
 from Phase_B import create_symmetric_wells
+from potential_field_engine import PotentialFieldEngine
 import numpy as np
 
 # 삼각형 배치 (공전의 핵심)
