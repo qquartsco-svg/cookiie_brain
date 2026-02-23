@@ -274,12 +274,13 @@ class CookiieBrainEngine(SelfOrganizingEngine):
             if self.enable_well_formation:
                 well_result = self._run_well_formation(new_state)
                 if well_result:
-                    # Well 결과가 변경되었는지 확인 (ID 또는 해시 비교)
-                    well_changed = (
-                        self.current_well_result is None or
-                        id(well_result) != id(self.current_well_result) or
-                        not np.array_equal(well_result.W, self.current_well_result.W) if self.current_well_result else True
-                    )
+                    if self.current_well_result is None:
+                        well_changed = True
+                    else:
+                        well_changed = (
+                            not np.array_equal(well_result.W, self.current_well_result.W) or
+                            not np.array_equal(well_result.b, self.current_well_result.b)
+                        )
                     
                     if well_changed:
                         # Well 결과가 변경되었으면 potential 함수 재생성
