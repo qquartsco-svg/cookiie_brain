@@ -124,6 +124,32 @@ E_min = mwp.min_energy_for_orbit(0, 1)
 
 ---
 
+## 파일 구조 (업데이트)
+
+```
+Phase_B/
+├── __init__.py               # 모듈 export
+├── multi_well_potential.py    # GaussianWell, MultiWellPotential
+├── well_to_gaussian.py        # WellFormation → Gaussian 브릿지
+└── README.md                 # 이 문서
+```
+
+## WellFormation → Gaussian 브릿지
+
+경험(episodes) → WellFormation → W, b → **자동 변환** → GaussianWell → 공전
+
+### 변환 수식
+- **center**: `mean(post_activity)` (pattern 모드) 또는 `-(W+εI)⁻¹b` (solve 모드)
+- **amplitude**: `spectral_radius(W) × scale` (기억 강도)
+- **sigma**: `scale / √(mean|λ_neg|)` (유인 범위)
+
+### WellRegistry
+- 우물 누적 저장소, 거리 기반 중복 제거(병합)
+- `count ≥ min_wells_for_orbit` → Gaussian 모드 자동 전환
+- `cookiie_brain_engine.py`에 통합됨
+
+---
+
 ## 현재 상태
 
 | 단계 | 상태 |
@@ -131,5 +157,6 @@ E_min = mwp.min_energy_for_orbit(0, 1)
 | 다중 우물 퍼텐셜 | ✔ |
 | 장벽/안장점 분석 | ✔ |
 | 공전 검증 (3-우물 순환) | ✔ |
-| WellFormation 연동 | 미착수 |
+| WellFormation → Gaussian 브릿지 | ✔ |
+| cookiie_brain_engine 통합 | ✔ |
 | 에너지 주입/소산 | 미착수 |

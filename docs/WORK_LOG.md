@@ -95,6 +95,38 @@ n_steps: 60000
 
 ---
 
+## 2026-02-23 — WellFormation → Gaussian 브릿지 구현
+
+### 작업 내용
+- WellFormation 결과(W, b)를 GaussianWell 파라미터로 자동 변환하는 브릿지 모듈 구현
+  - center: mean(post_activity) 기반 (pattern 모드, b=0에서도 동작)
+  - amplitude: spectral_radius(W) × scale
+  - sigma: scale / √(mean|λ_neg|)
+- WellRegistry: 우물 누적 저장소, 거리 기반 중복 제거(병합)
+- cookiie_brain_engine.py 통합: registry 누적 + wells≥3이면 Gaussian 모드 자동 전환
+
+### 변경 파일
+| 파일 | 변경 | 상태 |
+|------|------|------|
+| `Phase_B/well_to_gaussian.py` | 신규 생성 (브릿지 코어) | 신규 |
+| `Phase_B/__init__.py` | well_to_gaussian export 추가 | 수정 |
+| `Phase_B/README.md` | 브릿지 문서 추가, 상태 테이블 업데이트 | 수정 |
+| `cookiie_brain_engine.py` | Phase_B import, WellRegistry 생성, update() Gaussian 분기 | 수정 |
+| `examples/bridge_verification.py` | 신규 생성 (검증 스크립트) | 신규 |
+
+### 검증
+- `bridge_verification.py`: ALL PASS
+  - 단일 변환 정확성: PASS (center error 0.024)
+  - Registry 누적 (3개): PASS
+  - 중복 제거 (dedup): PASS
+  - 장벽 양수: PASS (barrier ≈ 1.96)
+  - 공전 재현: PASS (5순환, 18전이, 3우물 방문)
+
+### PHAM 서명
+- ⏳ 미서명
+
+---
+
 ## PHAM 서명 상태
 
 | 파일 | 서명 상태 | 체인 파일 |

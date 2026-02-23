@@ -97,6 +97,15 @@ except ImportError:
     Pole = None
     create_rotational_field = None
 
+# Phase_B (Multi-well potential, Gaussian bridge) import
+try:
+    from Phase_B.well_to_gaussian import WellRegistry, WellToGaussianConfig
+    PHASE_B_AVAILABLE = True
+except ImportError:
+    PHASE_B_AVAILABLE = False
+    WellRegistry = None
+    WellToGaussianConfig = None
+
 # HippoMemoryEngine import (선택적)
 try:
     # 메인 폴더 기준: CookiieBrain/ -> Archive/Integrated/4.Hippo_Memory_Engine/
@@ -138,8 +147,9 @@ class CookiieBrainEngine(SelfOrganizingEngine):
         enable_cerebellum: bool = False,
         well_formation_config: Optional[Dict[str, Any]] = None,
         potential_field_config: Optional[Dict[str, Any]] = None,
-        cerebellum_config: Optional[Dict[str, Any]] = None,  # CerebellumEngine 설정
-        error_isolation: bool = False,  # True면 엔진 실패 시 격리, False면 전체 실패
+        cerebellum_config: Optional[Dict[str, Any]] = None,
+        well_to_gaussian_config: Optional[Dict[str, Any]] = None,
+        error_isolation: bool = False,
         enable_logging: bool = True,
     ):
         """CookiieBrainEngine 초기화
@@ -152,9 +162,10 @@ class CookiieBrainEngine(SelfOrganizingEngine):
             well_formation_config: WellFormationEngine 설정 (None이면 {}로 처리)
             potential_field_config: PotentialFieldEngine 설정 (enable_phase_a, phase_a_pole_position 등)
             cerebellum_config: CerebellumEngine 설정 (None이면 기본값 사용)
-                - memory_dim: int = 5 (기본값)
-                - dt: float = 0.001 (기본값)
-                - correction_scale: float = 0.01 (기본값)
+            well_to_gaussian_config: WellToGaussianConfig 설정 (Phase B 브릿지)
+                - center_mode: "pattern" | "solve"
+                - min_wells_for_orbit: int (기본 3)
+                - dedup_distance: float (기본 0.5)
             error_isolation: True면 엔진 실패 시 격리하고 계속 진행, False면 전체 실패
             enable_logging: 로깅 활성화 여부
         """
@@ -250,6 +261,13 @@ class CookiieBrainEngine(SelfOrganizingEngine):
                 if self.logger:
                     self.logger.info("HippoMemoryEngine 초기화 (구현 예정)")
         
+        # Phase B 브릿지: WellRegistry (우물 누적 저장소)
+        self.well_registry = None
+        self._registry_version: int = 0
+        if PHASE_B_AVAILABLE:
+            wtg_cfg = WellToGaussianConfig(**(well_to_gaussian_config or {}))
+            self.well_registry = WellRegistry(config=wtg_cfg)
+        
         # 내부 상태
         self.current_well_result: Optional[WellFormationResult] = None
         self.current_potential_func: Optional[Callable] = None
@@ -287,19 +305,45 @@ class CookiieBrainEngine(SelfOrganizingEngine):
                             not np.array_equal(well_result.b, self.current_well_result.b)
                         )
                     
-                    if well_changed:
-                        self.current_well_result = well_result
-                        if self.enable_potential_field and POTENTIAL_FIELD_AVAILABLE:
+                    self.current_well_result = well_result
+                    
+                    # Registry 누적 (Phase B 브릿지)
+                    if self.well_registry is not None:
+                        episodes_data = new_state.get_extension("episodes", [])
+                        self.well_registry.add(well_result, episodes_data)
+                    
+                    # Potential/field 재구성
+                    if self.enable_potential_field and POTENTIAL_FIELD_AVAILABLE:
+                        if (self.well_registry is not None
+                                and self.well_registry.ready_for_orbit
+                                and self._registry_version != self.well_registry.version):
+                            # Gaussian 모드: 다중 우물 퍼텐셜
+                            mwp = self.well_registry.export_potential()
+                            self.current_potential_func = mwp.potential
+                            self.current_field_func = mwp.field
+                            self.potential_field_engine = None
+                            self._registry_version = self.well_registry.version
+                            if self.logger:
+                                self.logger.info(
+                                    f"Gaussian mode activated: "
+                                    f"{self.well_registry.count} wells"
+                                )
+                        elif well_changed:
+                            # Hopfield 모드: 단일 우물
                             self.current_potential_func = create_potential_from_wells(well_result)
                             self.current_field_func = create_field_from_wells(well_result)
                             self.potential_field_engine = None
                     
                     # WellFormationEngine 결과를 extensions에 저장
                     new_state.set_extension("well_formation", {
-                        "W": well_result.W.copy(),  # numpy 배열 복제
-                        "b": well_result.b.copy(),  # numpy 배열 복제
+                        "W": well_result.W.copy(),
+                        "b": well_result.b.copy(),
                         "well_result": well_result,
                     })
+                    if self.well_registry is not None:
+                        new_state.set_extension(
+                            "well_registry", self.well_registry.info()
+                        )
             
             # 2. PotentialFieldEngine 실행
             if self.enable_potential_field and self.current_well_result:
@@ -491,7 +535,7 @@ class CookiieBrainEngine(SelfOrganizingEngine):
         Returns:
             엔진 내부 상태 딕셔너리
         """
-        return {
+        state_dict = {
             "enable_well_formation": self.enable_well_formation,
             "enable_potential_field": self.enable_potential_field,
             "enable_hippo_memory": self.enable_hippo_memory,
@@ -500,6 +544,9 @@ class CookiieBrainEngine(SelfOrganizingEngine):
             "current_potential_func": self.current_potential_func is not None,
             "current_field_func": self.current_field_func is not None,
         }
+        if self.well_registry is not None:
+            state_dict["well_registry"] = self.well_registry.info()
+        return state_dict
     
     def reset(self):
         """엔진 상태 리셋"""
@@ -507,6 +554,9 @@ class CookiieBrainEngine(SelfOrganizingEngine):
         self.current_potential_func = None
         self.current_field_func = None
         self.potential_field_engine = None
+        if self.well_registry is not None:
+            self.well_registry.clear()
+            self._registry_version = 0
         
         if self.logger:
             self.logger.info("CookiieBrainEngine 리셋 완료")
