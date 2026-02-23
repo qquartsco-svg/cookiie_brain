@@ -288,12 +288,11 @@ class CookiieBrainEngine(SelfOrganizingEngine):
                         )
                     
                     if well_changed:
-                        # Well 결과가 변경되었으면 potential 함수 재생성
                         self.current_well_result = well_result
-                        self.current_potential_func = create_potential_from_wells(well_result)
-                        self.current_field_func = create_field_from_wells(well_result)
-                        # PotentialFieldEngine도 재생성 (stale field 방지)
-                        self.potential_field_engine = None
+                        if self.enable_potential_field and POTENTIAL_FIELD_AVAILABLE:
+                            self.current_potential_func = create_potential_from_wells(well_result)
+                            self.current_field_func = create_field_from_wells(well_result)
+                            self.potential_field_engine = None
                     
                     # WellFormationEngine 결과를 extensions에 저장
                     new_state.set_extension("well_formation", {
