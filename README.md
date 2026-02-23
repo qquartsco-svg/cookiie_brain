@@ -68,7 +68,7 @@ to generate phase structure (limit cycles) while strictly conserving energy.
 총 에너지:                 E = (1/2)||v||² + V(x)
 ```
 
-수학적 기초 · 구현 상세: [PotentialFieldEngine CONCEPT](https://github.com/qquartsco-svg/BDS_Engine/blob/main/Unsolved_Problems_Engines/PotentialFieldEngine/docs/CONCEPT.md)
+수학적 기초 · 구현 상세: [PotentialFieldEngine CONCEPT](https://github.com/qquartsco-svg/PotentialField_Engine/blob/main/docs/CONCEPT.md)
 
 ---
 
@@ -216,7 +216,7 @@ CookiieBrain/
 - **체인 구조**: `SHA256(index | prev_hash | timestamp | data_hash)`
 - **라이선스**: 누구나 자유롭게 사용. 수익 발생 시 6% 후원 (신뢰 기반)
 
-서명 도구: [pham_sign_v4.py](https://github.com/qquartsco-svg/BDS_Engine/blob/main/Unsolved_Problems_Engines/PotentialFieldEngine/blockchain/pham_sign_v4.py)
+서명 도구: [pham_sign_v4.py](https://github.com/qquartsco-svg/PotentialField_Engine/blob/main/blockchain/pham_sign_v4.py)
 라이선스 전문: PHAM-OPEN v2.0
 
 ---
