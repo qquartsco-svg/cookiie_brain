@@ -159,4 +159,4 @@ Phase_B/
 | 공전 검증 (3-우물 순환) | ✔ |
 | WellFormation → Gaussian 브릿지 | ✔ |
 | cookiie_brain_engine 통합 | ✔ |
-| 에너지 주입/소산 | 미착수 |
+| 에너지 주입/소산 | ✔ (γv 감쇠 + I(x,v,t) 주입) |

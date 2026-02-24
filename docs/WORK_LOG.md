@@ -127,6 +127,38 @@ n_steps: 60000
 
 ---
 
+## 2026-02-23 — 에너지 주입/소산 구현
+
+### 작업 내용
+- PotentialFieldEngine에 감쇠(`-γv`)와 외부 주입(`I(x,v,t)`) 기능 추가
+- 수식: `ẍ = -∇V(x) + ωJv - γv + I(x,v,t)`
+- 에너지 밸런스: `dE/dt = -γ||v||² + v·I`
+- 적분: Modified Strang splitting (D-S-K-R-K-S-D)
+  - 감쇠: exp(-γdt/2) 정확해 (대칭 래핑, 무조건 안정)
+  - 주입: kick에 포함 (gradient와 동일 평가점, 2차 정확도)
+  - γ=0, I=None이면 기존 Strang splitting과 동일 (하위 호환)
+- cookiie_brain_engine.py에 gamma/injection_func config 전달 경로 추가
+
+### 변경 파일
+| 파일 | 변경 | 위치 |
+|------|------|------|
+| `potential_field_engine.py` | gamma, injection_func 파라미터, Modified Strang splitting | PotentialFieldEngine (별도 레포) |
+| `cookiie_brain_engine.py` | gamma/injection_func config 전달 | CookiieBrain |
+| `examples/dissipation_injection_verification.py` | 신규 생성 (검증 스크립트) | CookiieBrain |
+
+### 검증
+- `dissipation_injection_verification.py`: ALL PASS
+  - 하위 호환 (γ=0): PASS (E_rel_drift 9.25e-06, 14전이)
+  - 감쇠→갇힘 (γ=0.02): PASS (E: 0.699→-1.900, 후반 전이 0)
+  - 주입→전이 (pulse): PASS (E<V_saddle→3우물 방문)
+  - 에너지 밸런스: PASS (correlation 0.999995, ratio 1.0001)
+- Phase B 공전 검증: ALL PASS (하위 호환 확인)
+
+### PHAM 서명
+- ⏳ 미서명
+
+---
+
 ## PHAM 서명 상태
 
 | 파일 | 서명 상태 | 체인 파일 |
