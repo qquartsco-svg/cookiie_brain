@@ -223,6 +223,8 @@ CookiieBrain/
 ├── Phase_B/                    # 공전 모듈 (다중 우물 순환)
 │   ├── multi_well_potential.py #   가우시안 다중 우물 퍼텐셜
 │   └── README.md               #   개념 · 수식 · 사용법
+├── Phase_C/                    # 요동 (Langevin noise)
+│   └── README.md               #   개념 · 구현 위치 · 사용법
 ├── examples/                   # 실행 가능한 예제
 │   ├── phase_a_minimal_verification.py  # 자전 검증 (ALL PASS)
 │   ├── phase_b_orbit_verification.py    # 공전 검증 (ALL PASS)
