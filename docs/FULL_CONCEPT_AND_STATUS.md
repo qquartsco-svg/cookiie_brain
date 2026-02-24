@@ -483,10 +483,12 @@ k(i→j) = (λ₊ / ω_b) · (ω_a / 2π) · exp(−ΔV / T)
 #### ③ 엔트로피 생산률
 
 ```
-dS/dt = (γ/T) ⟨|v|²⟩ − (1/T) ⟨v·I⟩
+Ṡ = (γ/T)(⟨|v|²⟩ − dT/m) − (1/T)⟨v·I⟩
 ```
 
-평형(I=0) + 등분배 → dS/dt = γd/m.
+극한 일관성:
+- 평형 (I=0, FDT): ⟨|v|²⟩ = dT/m → **Ṡ = 0** (열역학 제2법칙 정합)
+- 비평형 (I≠0): Ṡ > 0
 
 ### 검증 결과
 
@@ -499,7 +501,7 @@ python examples/layer1_verification.py → ALL PASS (5/5)
 | 1 | Kramers rate 공식 정합성 | PASS |
 | 2 | Kramers rate vs 시뮬레이션 전이 | PASS |
 | 3 | 전이 행렬 성질 + 상세 균형 | PASS |
-| 4 | 엔트로피 생산률 ≈ γd/m (오차 3.7%) | PASS |
+| 4 | 엔트로피 생산률: 평형 Ṡ ≈ 0 (극한 일관성) | PASS |
 | 5 | Arrhenius 법칙 | PASS |
 
 ### 확장 방향

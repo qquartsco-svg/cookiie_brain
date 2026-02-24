@@ -8,9 +8,9 @@
   3. 상세 균형 (detailed balance)
      — 평형(ω=0, I=0) → violation ≈ 0
      — 비평형(ω≠0 또는 I≠0) → violation > 0
-  4. 엔트로피 생산률
-     — 평형: dS/dt ≈ γd/m  (등분배 정리로부터)
-     — 비평형: dS/dt > γd/m  (추가 순환 기여)
+  4. 엔트로피 생산률 (극한 일관성)
+     — 평형 (I=0, FDT): Ṡ ≈ 0  (열역학 제2법칙 정합)
+     — 비평형 (I≠0): Ṡ > 0
   5. 체류 시간 vs Kramers 예측
      — τ_measured ≈ 1/k_Kramers
 

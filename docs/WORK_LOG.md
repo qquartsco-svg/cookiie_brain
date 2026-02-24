@@ -340,7 +340,7 @@ Phase C (FDT) 위에 첫 번째 토양(Layer 1)을 쌓았다.
 | 체류 시간 | τᵢ = time_in_i / departures_from_i | ✔ |
 | 순환 흐름 | J[i,j] = N(i→j) − N(j→i) | ✔ |
 | 상세 균형 지표 | Σ\|J\|/(2Σ\|N\|) | ✔ |
-| 엔트로피 생산률 | dS/dt = (γ/T)⟨\|v\|²⟩ − (1/T)⟨v·I⟩ | ✔ |
+| 엔트로피 생산률 | Ṡ = (γ/T)(⟨\|v\|²⟩ − dT/m) − (1/T)⟨v·I⟩ | ✔ |
 | 시계열 엔트로피 | 이동 평균 dS/dt(t) | ✔ |
 
 ### 검증 결과
@@ -354,7 +354,7 @@ python examples/layer1_verification.py → ALL PASS (5/5)
 | 1 | Kramers rate 공식 정합성 | PASS | 대칭, T·γ 의존성 4개 하위 검증 |
 | 2 | Kramers vs 시뮬레이션 전이 | PASS | 비율 0.13 (order-of-magnitude) |
 | 3 | 전이 행렬 + 상세 균형 | PASS | 행합=1, 평형 violation=0 |
-| 4 | 엔트로피 생산률 | PASS | 이론 γd/m 대비 오차 3.7% |
+| 4 | 엔트로피 생산률 | PASS | 평형 Ṡ ≈ 0 (|Ṡ|/(γd/m) = 3.7%) |
 | 5 | Arrhenius 법칙 | PASS | T↑→rate↑ 확인 |
 
 ### 기존 검증 재실행 (회귀 확인)
