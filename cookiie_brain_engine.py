@@ -16,7 +16,7 @@
 5. 기타 엔진들...
 
 Author: GNJz (Qquarts)
-Version: 0.3.0
+Version: 0.5.0
 """
 
 from __future__ import annotations
@@ -116,7 +116,15 @@ try:
 except ImportError:
     HIPPO_MEMORY_AVAILABLE = False
 
-__version__ = "0.3.0"
+__version__ = "0.5.0"
+
+# BrainAnalyzer import
+try:
+    from brain_analyzer import BrainAnalyzer
+    BRAIN_ANALYZER_AVAILABLE = True
+except ImportError:
+    BRAIN_ANALYZER_AVAILABLE = False
+    BrainAnalyzer = None
 
 
 class CookiieBrainEngine(SelfOrganizingEngine):
@@ -147,9 +155,8 @@ class CookiieBrainEngine(SelfOrganizingEngine):
         enable_cerebellum: bool = False,
         well_formation_config: Optional[Dict[str, Any]] = None,
         potential_field_config: Optional[Dict[str, Any]] = None,
-        cerebellum_config: Optional[Dict[str, Any]] = None,
-        well_to_gaussian_config: Optional[Dict[str, Any]] = None,
-        error_isolation: bool = False,
+        cerebellum_config: Optional[Dict[str, Any]] = None,  # CerebellumEngine 설정
+        error_isolation: bool = False,  # True면 엔진 실패 시 격리, False면 전체 실패
         enable_logging: bool = True,
     ):
         """CookiieBrainEngine 초기화
@@ -162,10 +169,9 @@ class CookiieBrainEngine(SelfOrganizingEngine):
             well_formation_config: WellFormationEngine 설정 (None이면 {}로 처리)
             potential_field_config: PotentialFieldEngine 설정 (enable_phase_a, phase_a_pole_position 등)
             cerebellum_config: CerebellumEngine 설정 (None이면 기본값 사용)
-            well_to_gaussian_config: WellToGaussianConfig 설정 (Phase B 브릿지)
-                - center_mode: "pattern" | "solve"
-                - min_wells_for_orbit: int (기본 3)
-                - dedup_distance: float (기본 0.5)
+                - memory_dim: int = 5 (기본값)
+                - dt: float = 0.001 (기본값)
+                - correction_scale: float = 0.01 (기본값)
             error_isolation: True면 엔진 실패 시 격리하고 계속 진행, False면 전체 실패
             enable_logging: 로깅 활성화 여부
         """
@@ -175,28 +181,12 @@ class CookiieBrainEngine(SelfOrganizingEngine):
         self.enable_cerebellum = enable_cerebellum
         self.error_isolation = error_isolation
         
-        if enable_potential_field and not POTENTIAL_FIELD_AVAILABLE:
-            raise ImportError(
-                "PotentialFieldEngine을 import할 수 없습니다. "
-                "PotentialFieldEngine을 설치하거나 PYTHONPATH에 추가하세요."
-            )
-
         # PotentialFieldEngine / Phase A 설정 저장
         self.potential_field_config = potential_field_config or {}
         self.enable_phase_a = self.potential_field_config.get("enable_phase_a", False)
-        self.phase_a_mode = self.potential_field_config.get("phase_a_mode", "minimal")  # "minimal" | "pole"
-        self.phase_a_omega = self.potential_field_config.get("phase_a_omega", 1.0)
         self.phase_a_pole_position = self.potential_field_config.get("phase_a_pole_position")
         self.phase_a_strength = self.potential_field_config.get("phase_a_strength", 1.0)
         self.phase_a_rotation_direction = self.potential_field_config.get("phase_a_rotation_direction", 1)
-        
-        # 에너지 주입/소산/요동/FDT 설정
-        self.gamma = self.potential_field_config.get("gamma", 0.0)
-        self.injection_func = self.potential_field_config.get("injection_func", None)
-        self.noise_sigma = self.potential_field_config.get("noise_sigma", 0.0)
-        self.temperature = self.potential_field_config.get("temperature", None)
-        self.mass = self.potential_field_config.get("mass", 1.0)
-        self.noise_seed = self.potential_field_config.get("noise_seed", None)
         
         # CerebellumEngine 설정 저장
         self.cerebellum_config = cerebellum_config or {}
@@ -325,7 +315,6 @@ class CookiieBrainEngine(SelfOrganizingEngine):
                         if (self.well_registry is not None
                                 and self.well_registry.ready_for_orbit
                                 and self._registry_version != self.well_registry.version):
-                            # Gaussian 모드: 다중 우물 퍼텐셜
                             mwp = self.well_registry.export_potential()
                             self.current_potential_func = mwp.potential
                             self.current_field_func = mwp.field
@@ -337,7 +326,6 @@ class CookiieBrainEngine(SelfOrganizingEngine):
                                     f"{self.well_registry.count} wells"
                                 )
                         elif well_changed:
-                            # Hopfield 모드: 단일 우물
                             self.current_potential_func = create_potential_from_wells(well_result)
                             self.current_field_func = create_field_from_wells(well_result)
                             self.potential_field_engine = None
@@ -355,7 +343,6 @@ class CookiieBrainEngine(SelfOrganizingEngine):
             
             # 2. PotentialFieldEngine 실행
             if self.enable_potential_field and self.current_well_result:
-                # PotentialFieldEngine 생성/재생성 (Well 변경 시 재생성됨)
                 if not self.potential_field_engine:
                     omega_coriolis = None
                     rotational_func = None
@@ -402,14 +389,12 @@ class CookiieBrainEngine(SelfOrganizingEngine):
             
             # 4. CerebellumEngine 실행 (선택적)
             if self.enable_cerebellum and self.cerebellum_engine:
+                # CerebellumEngine은 compute_correction() 메서드를 사용
+                # GlobalState에서 필요한 정보 추출
                 state_vector = new_state.state_vector
-                if len(state_vector) % 2 != 0:
-                    raise ValueError(
-                        f"state_vector must have even length for Cerebellum "
-                        f"(got {len(state_vector)}). "
-                        f"Expected format: [x1,...,xN, v1,...,vN]"
-                    )
                 n_dim = len(state_vector) // 2
+                
+                # 위치와 속도 분리
                 position = state_vector[:n_dim]
                 velocity = state_vector[n_dim:]
                 
@@ -462,6 +447,84 @@ class CookiieBrainEngine(SelfOrganizingEngine):
         
         return new_state
     
+    # ──────────────────────────────────────────────────────────
+    #  통합 실행: 시뮬레이션 → 자동 분석
+    # ──────────────────────────────────────────────────────────
+
+    def run_and_analyze(
+        self,
+        state: GlobalState,
+        n_steps: int = 5000,
+        analyze: bool = True,
+    ) -> Dict[str, Any]:
+        """시뮬레이션을 돌리고 궤적을 Layer 1~6으로 자동 분석.
+
+        이것이 CookiieBrain의 핵심 통합 흐름이다:
+            WellFormation → PFE(Phase A+B+C) → 궤적 수집 → Layer 1~6 분석
+
+        Parameters
+        ----------
+        state : GlobalState
+            초기 상태
+        n_steps : int
+            시뮬레이션 스텝 수
+        analyze : bool
+            True면 궤적 수집 후 BrainAnalyzer 자동 실행
+
+        Returns
+        -------
+        dict with keys:
+            final_state : GlobalState
+            positions : np.ndarray (n_steps, dim)
+            velocities : np.ndarray (n_steps, dim)
+            energies : np.ndarray (n_steps,)
+            analysis : dict (BrainAnalyzer 결과, analyze=True일 때)
+        """
+        current = state
+        dim = len(current.state_vector) // 2
+
+        positions = np.zeros((n_steps, dim))
+        velocities = np.zeros((n_steps, dim))
+        energies = np.zeros(n_steps)
+        dt = self.potential_field_config.get("dt", 0.01)
+
+        for i in range(n_steps):
+            current = self.update(current)
+            sv = current.state_vector
+            positions[i] = sv[:dim]
+            velocities[i] = sv[dim:]
+            energies[i] = current.energy
+
+        result = {
+            "final_state": current,
+            "positions": positions,
+            "velocities": velocities,
+            "energies": energies,
+            "dt": dt,
+            "n_steps": n_steps,
+        }
+
+        if analyze and BRAIN_ANALYZER_AVAILABLE and self.well_registry is not None:
+            mwp = self.well_registry.export_potential()
+            analyzer = BrainAnalyzer(
+                mwp=mwp,
+                gamma=self.gamma,
+                temperature=self.temperature or 1.0,
+                mass=self.mass,
+            )
+            report = analyzer.run(positions, velocities, dt)
+            result["analysis"] = report
+
+            if self.logger:
+                s = report["summary"]
+                self.logger.info(
+                    f"분석 완료: wells={s['n_wells']}, "
+                    f"eq={s['is_equilibrium']}, "
+                    f"Ṡ={s['entropy_production_rate']:.4f}"
+                )
+
+        return result
+
     def _run_well_formation(self, state: GlobalState) -> Optional[WellFormationResult]:
         """WellFormationEngine 실행
         

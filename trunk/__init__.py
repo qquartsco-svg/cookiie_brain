@@ -8,5 +8,5 @@
 이 세 Phase가 합쳐져 trunk(줄기)을 이룬다:
   m ẍ = -∇V(x) + ωJv - γv + I(x,v,t) + σξ(t)
 
-trunk 위에 layers/(Layer 1~6) 분석 도구가 올라간다.
+trunk 위에 analysis/(Layer 1~6) 분석 도구가 올라간다.
 """
