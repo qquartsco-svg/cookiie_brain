@@ -183,6 +183,30 @@ python examples/fdt_verification.py            # FDT 등분배 (5항목)
 
 ---
 
+## Layer 1 — 통계역학 정식화
+
+Phase C(요동/FDT)로 줄기(trunk)가 완성되었습니다.
+그 위에 첫 번째 토양인 Layer 1을 쌓습니다.
+
+시뮬레이션 궤적을 확률·열역학 언어로 번역합니다:
+
+- **Kramers 탈출률**: 우물 사이 전이가 얼마나 자주 일어나는가
+- **전이 행렬**: 전이 패턴에 방향성이 있는가 (순환 흐름, 상세 균형)
+- **엔트로피 생산률**: 시스템이 에너지를 얼마나 비가역적으로 소산하는가
+
+```python
+from Layer_1 import kramers_rate, TransitionAnalyzer, entropy_production_rate
+```
+
+검증 실행:
+```bash
+python examples/layer1_verification.py   # 5항목 ALL PASS
+```
+
+상세: [Layer_1/README.md](Layer_1/README.md) · [Layer_1/README_EN.md](Layer_1/README_EN.md)
+
+---
+
 ## 설계 원칙
 
 - **state 불변**: `new_state = state.copy()` 후 반환. 원본 안 건드림
@@ -240,6 +264,10 @@ CookiieBrain/
 ├── Phase_C/                    # 요동 (Langevin noise)
 │   ├── README.md               #   개념 · 구현 위치 · 사용법 (한국어)
 │   └── README_EN.md            #   Phase C concept (English)
+├── Layer_1/                    # 통계역학 정식화
+│   ├── statistical_mechanics.py #  Kramers rate, TransitionAnalyzer, entropy
+│   ├── README.md               #   Layer 1 개념 (한국어)
+│   └── README_EN.md            #   Layer 1 concept (English)
 ├── examples/                   # 실행 가능한 예제
 │   ├── phase_a_minimal_verification.py  # 자전 검증 (ALL PASS)
 │   ├── phase_b_orbit_verification.py    # 공전 검증 (ALL PASS)
@@ -247,6 +275,7 @@ CookiieBrain/
 │   ├── dissipation_injection_verification.py  # 에너지 주입/소산 검증 (ALL PASS)
 │   ├── fluctuation_verification.py            # 요동 검증 (ALL PASS)
 │   ├── fdt_verification.py                   # FDT 등분배 검증 (ALL PASS)
+│   ├── layer1_verification.py                # Layer 1 통계역학 검증 (ALL PASS)
 │   ├── phase_a_integration_test.py      # 우물 + 자전 통합
 │   └── integration_test_demo.py         # 기본 통합 테스트
 └── docs/                       # 참고 문서
@@ -281,9 +310,11 @@ CookiieBrain/
 | 에너지 주입/소산 (-γv + I) | 완료 |
 | 요동 (Langevin noise, σξ(t)) | 완료 |
 | FDT (σ²=2γT/m, Boltzmann 등분배) | 완료 |
+| **Layer 1: 통계역학 정식화** | 완료 |
 
 > 고전 구조가 먼저, 확률은 마지막에 얹는다.
 > 구조가 있어야 요동의 의미가 생긴다.
+> 줄기가 닫힌 뒤, 토양(Layer 1)부터 쌓는다.
 
 단계 설명: [Phase_A/STAGES_SPIN_ORBIT_FLUCTUATION.md](Phase_A/STAGES_SPIN_ORBIT_FLUCTUATION.md)
 

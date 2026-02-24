@@ -311,6 +311,62 @@ c70db58fcfda...fc4293   examples/fdt_verification.py
 
 ---
 
+## 2026-02-24 — Layer 1: 통계역학 정식화 구현
+
+### 개요
+
+Phase C (FDT) 위에 첫 번째 토양(Layer 1)을 쌓았다.
+시뮬레이션 궤적을 확률·열역학 언어로 번역하는 분석 모듈.
+
+### 변경사항
+
+| 파일 | 변경 | 상태 |
+|------|------|------|
+| `Layer_1/__init__.py` | 모듈 export | 신규 |
+| `Layer_1/statistical_mechanics.py` | Kramers rate, TransitionAnalyzer, entropy | 신규 |
+| `Layer_1/README.md` | Layer 1 개념 문서 (한국어) | 신규 |
+| `Layer_1/README_EN.md` | Layer 1 concept (English) | 신규 |
+| `examples/layer1_verification.py` | 5개 검증 테스트 | 신규 |
+| `docs/FULL_CONCEPT_AND_STATUS.md` | Layer 1 섹션 추가, 파일 구조 업데이트 | 수정 |
+| `docs/WORK_LOG.md` | 이 항목 추가 | 수정 |
+
+### 구현된 기능
+
+| 기능 | 수식 | 상태 |
+|------|------|------|
+| Kramers 탈출률 | k = (λ₊/ω_b)(ω_a/2π)exp(−ΔV/T) | ✔ |
+| Rate 행렬 | K[i,j] = k(i→j), K[i,i] = −Σ K[i,j] | ✔ |
+| 전이 행렬 | P[i,j] = N(i→j)/Σ N(i→k) | ✔ |
+| 체류 시간 | τᵢ = time_in_i / departures_from_i | ✔ |
+| 순환 흐름 | J[i,j] = N(i→j) − N(j→i) | ✔ |
+| 상세 균형 지표 | Σ\|J\|/(2Σ\|N\|) | ✔ |
+| 엔트로피 생산률 | dS/dt = (γ/T)⟨\|v\|²⟩ − (1/T)⟨v·I⟩ | ✔ |
+| 시계열 엔트로피 | 이동 평균 dS/dt(t) | ✔ |
+
+### 검증 결과
+
+```
+python examples/layer1_verification.py → ALL PASS (5/5)
+```
+
+| # | 검증 | 결과 | 비고 |
+|---|------|------|------|
+| 1 | Kramers rate 공식 정합성 | PASS | 대칭, T·γ 의존성 4개 하위 검증 |
+| 2 | Kramers vs 시뮬레이션 전이 | PASS | 비율 0.13 (order-of-magnitude) |
+| 3 | 전이 행렬 + 상세 균형 | PASS | 행합=1, 평형 violation=0 |
+| 4 | 엔트로피 생산률 | PASS | 이론 γd/m 대비 오차 3.7% |
+| 5 | Arrhenius 법칙 | PASS | T↑→rate↑ 확인 |
+
+### 기존 검증 재실행 (회귀 확인)
+
+Layer 1은 분석 모듈이므로 기존 엔진 코드를 변경하지 않았다.
+기존 검증 스크립트 영향 없음.
+
+### PHAM 서명
+- ⏳ 미서명
+
+---
+
 ## PHAM 서명 상태
 
 | 파일 | 서명 상태 | 체인 파일 |
@@ -329,3 +385,5 @@ c70db58fcfda...fc4293   examples/fdt_verification.py
 | `dissipation_injection_verification.py` | ⏳ 미서명 | — |
 | `fluctuation_verification.py` | ⏳ 미서명 | — |
 | `fdt_verification.py` | ⏳ 미서명 | — |
+| `layer1_verification.py` | ⏳ 미서명 | — |
+| `statistical_mechanics.py` | ⏳ 미서명 | — |

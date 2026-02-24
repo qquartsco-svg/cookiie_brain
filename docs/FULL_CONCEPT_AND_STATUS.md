@@ -3,7 +3,7 @@
 > 이 문서는 프로젝트의 물리적 개념, 구현 상태, 검증 결과, 다음 방향을
 > 하나로 정리한 것이다. 새로 합류하는 사람이 이 문서 하나로 전체를 파악할 수 있어야 한다.
 
-**마지막 업데이트: 2026-02-24 (Phase C v2 FDT 반영)**
+**마지막 업데이트: 2026-02-24 (Layer 1 통계역학 정식화 반영)**
 
 ---
 
@@ -291,6 +291,7 @@ Extensions에 기록
 | WellFormation 브릿지 | ✔ | W,b → center/A/σ | ALL PASS (5항목) |
 | 에너지 주입/소산 | ✔ | -γv + I(x,v,t) | ALL PASS (상관 0.999995) |
 | 요동 (Phase C) | ✔ | +σξ(t), σ²=2γT/m (FDT) | ALL PASS (v1: 4항목, v2: 5항목) |
+| **Layer 1: 통계역학** | ✔ | Kramers rate, 전이행렬, dS/dt | ALL PASS (5항목) |
 
 ---
 
@@ -321,13 +322,19 @@ CookiieBrain/
 │   ├── __init__.py                  # 개념 설명 (코드는 PFE에 통합)
 │   ├── README.md                    # Phase C 개념 (한국어)
 │   └── README_EN.md                 # Phase C concept (English)
+├── Layer_1/
+│   ├── __init__.py                  # 모듈 export
+│   ├── statistical_mechanics.py     # Kramers rate, TransitionAnalyzer, entropy
+│   ├── README.md                    # Layer 1 개념 (한국어)
+│   └── README_EN.md                 # Layer 1 concept (English)
 ├── examples/
 │   ├── phase_a_minimal_verification.py       # 자전 검증
 │   ├── phase_b_orbit_verification.py         # 공전 검증 (3-우물)
 │   ├── bridge_verification.py                # 브릿지 검증
 │   ├── dissipation_injection_verification.py # 에너지 주입/소산 검증
 │   ├── fluctuation_verification.py           # 요동 검증
-│   └── fdt_verification.py                  # FDT 검증
+│   ├── fdt_verification.py                  # FDT 검증
+│   └── layer1_verification.py               # Layer 1 통계역학 검증
 └── docs/
     ├── FULL_CONCEPT_AND_STATUS.md    # ← 이 문서 (한국어)
     ├── FULL_CONCEPT_AND_STATUS_EN.md # Full concept (English)
@@ -432,18 +439,81 @@ python examples/fdt_verification.py → ALL PASS (5/5)
 | 4 | Boltzmann 등분배 | PASS — ⟨|v|²⟩ = 2.01 (이론 2.00), 오차 0.6% |
 | 5 | γ=0 안전장치 | PASS — temperature>0이어도 σ=0 |
 
-### 다음: 은하 구조 실험
+### 다음: Layer 1 (통계역학 정식화)
 
-요동이 완성되어, "바깥 우물 → 확률적 전이 → 안쪽 우물 → 중앙 수렴" 같은
-**나선형 탐사 구조**가 가능해졌다.
+Phase C가 완성되어 trunk(줄기)가 닫혔다.
+이 위에 첫 번째 토양(Layer 1)을 쌓는다.
 
-이것이 "은하 모양 지형 위를 공이 여행하는 시스템"의 물리적 기반이다.
-새 물리가 필요한 것이 아니라, 우물 배치 설정만 바꾸면 된다.
+---
 
-실험 방향:
-1. 은하 배치 — 우물을 동심원/나선 형태로 배치
-2. 감쇠(γ) + 약한 중앙 바이어스 → 바깥→안쪽 수렴
-3. 노이즈(σ) → 확률적 전이로 다양한 경로 탐사
+## 6-1. Layer 1 — 통계역학 정식화 [완료]
+
+### 왜 필요한가
+
+Phase C까지 완성하면 시뮬레이션에서 궤적이 나온다.
+그 궤적을 **확률·열역학 언어로 번역**하려면 Layer 1이 필요하다.
+
+- 우물 사이 전이는 얼마나 자주 일어나는가? → **Kramers 탈출률**
+- 전이 패턴에 방향성이 있는가? → **전이 행렬, 순환 흐름**
+- 시스템이 에너지를 얼마나 비가역적으로 소산하는가? → **엔트로피 생산률**
+
+이것 없이는 Layer 2(다체), Layer 3(게이지), Layer 4(비평형 열역학)가
+뿌리를 내릴 수 없다.
+
+### 구성
+
+#### ① Kramers 탈출률
+
+```
+k(i→j) = (λ₊ / ω_b) · (ω_a / 2π) · exp(−ΔV / T)
+
+λ₊ = −γ/(2m) + √((γ/(2m))² + ω_b²)    (Kramers-Grote-Hynes)
+```
+
+- ω_a: 우물 바닥 고유 진동수 √(A/mσ²)
+- ω_b: 안장점 불안정 진동수 (수치 Hessian)
+- `kramers_rate_matrix(mwp, T, γ, m)` → 연속시간 Markov chain 생성 행렬
+
+#### ② 전이 행렬 분석기 (TransitionAnalyzer)
+
+- `transition_matrix()`: P[i,j] (확률 행렬, 행 합 = 1)
+- `net_circulation()`: J[i,j] = N(i→j) − N(j→i)
+- `detailed_balance_violation()`: 비평형 지표 (0=평형)
+
+#### ③ 엔트로피 생산률
+
+```
+dS/dt = (γ/T) ⟨|v|²⟩ − (1/T) ⟨v·I⟩
+```
+
+평형(I=0) + 등분배 → dS/dt = γd/m.
+
+### 검증 결과
+
+```
+python examples/layer1_verification.py → ALL PASS (5/5)
+```
+
+| # | 검증 | 결과 |
+|---|------|------|
+| 1 | Kramers rate 공식 정합성 | PASS |
+| 2 | Kramers rate vs 시뮬레이션 전이 | PASS |
+| 3 | 전이 행렬 성질 + 상세 균형 | PASS |
+| 4 | 엔트로피 생산률 ≈ γd/m (오차 3.7%) | PASS |
+| 5 | Arrhenius 법칙 | PASS |
+
+### 확장 방향
+
+Layer 1은 나머지 모든 Layer의 토양이다:
+
+```
+Layer 1 (Kramers, P[i,j], dS/dt)
+  ├→ Layer 2: N-입자, 상호작용, 연속 장
+  ├→ Layer 3: 위치 의존 J(x), 비가환 게이지
+  ├→ Layer 4: Jarzynski, Crooks, Landauer
+  ├→ Layer 5: Nelson 확률역학, Parisi-Wu
+  └→ Layer 6: Berry 위상, Chern 수
+```
 
 ---
 
