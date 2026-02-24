@@ -50,12 +50,19 @@ This engine implements these dynamics with physics equations.
 It is not a system that gives answers, but a **structure** that lets each user find their own.
 
 **Technically:**
-It simulates state-vector dynamics on a Hopfield energy landscape.
-Experiences (episodes) shape energy wells (W, b),
-and the state's convergence, rotation, and transitions across the potential field
-are tracked via numerical integration (symplectic Euler, Strang splitting).
-In Phase A, a Coriolis-type rotational term (ωJv) is introduced
-to generate phase structure (limit cycles) while strictly conserving energy.
+State-vector dynamics on a multi-well energy landscape.
+The full equation of motion is a Langevin equation with Coriolis rotation:
+
+```
+m ẍ = -∇V(x) + ωJv - γv + I(x,v,t) + σξ(t)
+```
+
+- **Phase A (Spin):** Coriolis term ωJv — energy-conserving rotation
+- **Phase B (Orbit):** Gaussian multi-well potential — circulation between memories
+- **Phase C (Fluctuation):** Langevin noise σξ(t) — stochastic transitions
+- **FDT:** σ² = 2γT/m — temperature-based noise, Boltzmann steady state guaranteed
+
+Full concept (English): [docs/FULL_CONCEPT_AND_STATUS_EN.md](docs/FULL_CONCEPT_AND_STATUS_EN.md)
 
 ---
 
@@ -63,8 +70,8 @@ to generate phase structure (limit cycles) while strictly conserving energy.
 
 ```
 골짜기의 깊이 (퍼텐셜):   V(x) = -(1/2)x'Wx - b'x   (지역 최솟값 최대 1개)
-공을 끌어당기는 힘:        g(x) = -∇V(x) = Wx + b
-전체 운동 방정식:          ẍ = g(x) + ωJv - γv + I(x,v,t) + σξ(t)
+공을 끌어당기는 힘:        g(x) = -∇V(x)
+전체 운동 방정식:          m ẍ = -∇V(x) + ωJv - γv + I(x,v,t) + σξ(t)
 총 에너지:                 E = (1/2)||v||² + V(x)
 ```
 
@@ -184,7 +191,8 @@ python examples/fdt_verification.py            # FDT 등분배 (5항목)
 - **GlobalState 하나로 모든 엔진 연결**: extensions 규약으로 데이터 교환
 
 상세: [docs/](docs/)
-전체 개념 · 현재 상태: [docs/FULL_CONCEPT_AND_STATUS.md](docs/FULL_CONCEPT_AND_STATUS.md)
+전체 개념 · 현재 상태 (한국어): [docs/FULL_CONCEPT_AND_STATUS.md](docs/FULL_CONCEPT_AND_STATUS.md)
+Full concept (English): [docs/FULL_CONCEPT_AND_STATUS_EN.md](docs/FULL_CONCEPT_AND_STATUS_EN.md)
 
 ---
 
@@ -230,7 +238,8 @@ CookiieBrain/
 │   ├── multi_well_potential.py #   가우시안 다중 우물 퍼텐셜
 │   └── README.md               #   개념 · 수식 · 사용법
 ├── Phase_C/                    # 요동 (Langevin noise)
-│   └── README.md               #   개념 · 구현 위치 · 사용법
+│   ├── README.md               #   개념 · 구현 위치 · 사용법 (한국어)
+│   └── README_EN.md            #   Phase C concept (English)
 ├── examples/                   # 실행 가능한 예제
 │   ├── phase_a_minimal_verification.py  # 자전 검증 (ALL PASS)
 │   ├── phase_b_orbit_verification.py    # 공전 검증 (ALL PASS)
@@ -241,8 +250,9 @@ CookiieBrain/
 │   ├── phase_a_integration_test.py      # 우물 + 자전 통합
 │   └── integration_test_demo.py         # 기본 통합 테스트
 └── docs/                       # 참고 문서
-    ├── FULL_CONCEPT_AND_STATUS.md  # 전체 개념 · 현재 상태 (핵심 문서)
-    └── WORK_LOG.md                 # 시간순 작업 기록
+    ├── FULL_CONCEPT_AND_STATUS.md   # 전체 개념 · 현재 상태 (한국어)
+    ├── FULL_CONCEPT_AND_STATUS_EN.md # Full concept (English)
+    └── WORK_LOG.md                  # 시간순 작업 기록
 ```
 
 ---

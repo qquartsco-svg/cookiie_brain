@@ -239,6 +239,78 @@ n_steps: 60000
 
 ---
 
+## 2026-02-24 — 문서 보완 + 엔진 점검 + 영어 문서
+
+### 작업 내용
+- README.md 운동 방정식 `m` 누락 보완 (`ẍ → m ẍ`, FDT 도입 후 m이 의미를 가지므로)
+- 전체 검증 스크립트 6개 실행 → ALL PASS 확인 (엔진 상태 정상)
+- 영어 문서 2개 신규 생성:
+  - `docs/FULL_CONCEPT_AND_STATUS_EN.md` (전체 개념 영어판)
+  - `Phase_C/README_EN.md` (Phase C 영어판)
+- README.md 영어 섹션 업데이트 (Phase C + FDT 반영, 영어 문서 링크)
+- SHA256 해시 기록 (아래 참조)
+
+### 엔진 상태 점검 결과
+
+| 검증 스크립트 | 항목 | 결과 |
+|--------------|------|------|
+| `phase_a_minimal_verification.py` | 자전 (v·R=0, 에너지, 궤도) | ALL PASS |
+| `phase_b_orbit_verification.py` | 공전 (3-우물, 순환, 갇힘) | ALL PASS |
+| `bridge_verification.py` | 브릿지 (변환, dedup, 공전) | ALL PASS |
+| `dissipation_injection_verification.py` | 감쇠/주입 (밸런스, 전이) | ALL PASS |
+| `fluctuation_verification.py` | 요동 (Kramers, 비편향, 정상) | ALL PASS |
+| `fdt_verification.py` | FDT (등분배, override, γ=0) | ALL PASS |
+
+**결론: 6개 스크립트 전부 ALL PASS. 엔진 상태 정상.**
+
+### Phase C 완성도
+
+| 항목 | 상태 |
+|------|------|
+| Langevin noise (σξ) | ✔ 완료 |
+| O-U exact 적분 | ✔ 완료 |
+| FDT (σ²=2γT/m) | ✔ 완료 |
+| Boltzmann 등분배 검증 | ✔ 통과 (오차 0.6%) |
+| 하위 호환 (σ=0 결정론) | ✔ 통과 |
+| Manual override (noise_sigma 우선) | ✔ 통과 |
+| γ=0 안전장치 | ✔ 통과 |
+| 한국어 문서 | ✔ Phase_C/README.md |
+| 영어 문서 | ✔ Phase_C/README_EN.md |
+
+**Phase C 완성도: 100%**
+
+### SHA256 해시 기록 (2026-02-24)
+
+```
+=== CookiieBrain ===
+4b87c6d1e191...a8e2ae4  cookiie_brain_engine.py
+ea761fe7fba5...344e9e   Phase_B/multi_well_potential.py
+f62d3fc32a3a...7738c2   Phase_B/well_to_gaussian.py
+92edd4865125...dad4252  examples/phase_b_orbit_verification.py
+6ab5b4bc2956...2135e0   examples/bridge_verification.py
+ad9e7f6b1473...eab409   examples/dissipation_injection_verification.py
+d393fad0a139...f778d    examples/fluctuation_verification.py
+c70db58fcfda...fc4293   examples/fdt_verification.py
+72e328e5c289...efea6d   Phase_A/rotational_field.py
+2bbf892be5d6...18aa32   Phase_A/moon.py
+
+=== PotentialFieldEngine (별도 레포) ===
+074c6f496a24...e25ebf2b potential_field_engine.py
+```
+
+### 변경 파일
+| 파일 | 변경 | 상태 |
+|------|------|------|
+| `README.md` | m 보완, 영어 섹션 업데이트 | 수정 |
+| `docs/FULL_CONCEPT_AND_STATUS_EN.md` | 전체 개념 영어판 | 신규 |
+| `Phase_C/README_EN.md` | Phase C 영어판 | 신규 |
+| `docs/WORK_LOG.md` | 해시 기록, 엔진 점검, Phase C 완성도 | 수정 |
+
+### PHAM 서명
+- ⏳ 미서명
+
+---
+
 ## PHAM 서명 상태
 
 | 파일 | 서명 상태 | 체인 파일 |

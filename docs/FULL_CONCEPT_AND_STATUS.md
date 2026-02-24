@@ -319,7 +319,8 @@ CookiieBrain/
 │   └── README.md                    # Phase B 개념 + 공전 조건 + 브릿지
 ├── Phase_C/
 │   ├── __init__.py                  # 개념 설명 (코드는 PFE에 통합)
-│   └── README.md                    # Phase C 개념 + 구현 위치 + 사용법
+│   ├── README.md                    # Phase C 개념 (한국어)
+│   └── README_EN.md                 # Phase C concept (English)
 ├── examples/
 │   ├── phase_a_minimal_verification.py       # 자전 검증
 │   ├── phase_b_orbit_verification.py         # 공전 검증 (3-우물)
@@ -328,8 +329,9 @@ CookiieBrain/
 │   ├── fluctuation_verification.py           # 요동 검증
 │   └── fdt_verification.py                  # FDT 검증
 └── docs/
-    ├── FULL_CONCEPT_AND_STATUS.md   # ← 이 문서
-    └── WORK_LOG.md                  # 시간순 작업 기록
+    ├── FULL_CONCEPT_AND_STATUS.md    # ← 이 문서 (한국어)
+    ├── FULL_CONCEPT_AND_STATUS_EN.md # Full concept (English)
+    └── WORK_LOG.md                   # 시간순 작업 기록
 
 (별도 레포)
 PotentialFieldEngine/
