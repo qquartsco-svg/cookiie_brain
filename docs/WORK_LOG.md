@@ -499,6 +499,51 @@ layer2_verification.py: ALL PASS (5/5)
 
 ---
 
+## 2026-02-24 (4차): Layer 3 — 게이지/기하학 구현
+
+### 동기
+Layer 2(다체)까지의 구조에서는 회전이 전역 상수(ω)였다.
+Layer 3에서 "위치마다 다른 회전" — 위치 의존 자기장 B(x)를 도입한다.
+
+### 구현 내용
+
+1. **`Layer_3/gauge.py`** — 핵심 모듈
+   - `MagneticForce`: F = B(x)·J·v (단일 입자, 2D/3D)
+   - `NBodyMagneticForce`: N 입자 각각에 B(x) 적용
+   - `GeometryAnalyzer`: Berry 위상, 자기 선속, 국소 곡률, E×B drift, 사이클로트론 계산
+   - 편의 함수: `uniform_field`, `gaussian_field`, `dipole_field`, `multi_well_field`
+
+2. **물리적 핵심**
+   - F·v = 0 구조적 보장 → 에너지 보존
+   - B(x) = const → CoriolisGauge와 동일 (극한 일관성)
+   - trunk 수정 불필요: ForceLayer 프로토콜 준수
+
+3. **E×B drift 부호 규약**
+   - MagneticForce의 F = B·J·v 규약에서:
+   - v_drift = (∂V/∂y, −∂V/∂x) / B
+   - 적분기 주의: v-의존 힘이므로 Strang splitting 필수 (NullGauge → Euler에서는 drift 심각)
+
+4. **적분기 제약**
+   - MagneticForce는 속도 의존 힘 → Strang splitting에서 에너지 error bounded O(dt²)
+   - `CoriolisGauge(0.0)` 으로 Strang 활성화 권장
+
+### 검증 (`examples/layer3_verification.py`)
+
+| # | 검증 | 결과 |
+|---|------|------|
+| 1 | 에너지 보존 (가우시안 B, Strang) | PASS — drift < 5% |
+| 2 | 사이클로트론 (균일 B) | PASS — r_c 오차 < 2% |
+| 3 | B=0 극한 | PASS — 궤적 차이 = 0 (exact) |
+| 4 | E×B drift (collisionless) | PASS — v_drift 오차 < 0.1% |
+| 5 | Berry 위상 (가우시안 B) | PASS — 면적분 오차 < 2% |
+
+전체 기존 검증 12개 + Layer 3 5개 = 17/17 ALL PASS
+
+### PHAM 서명
+- ⏳ 미서명
+
+---
+
 ## PHAM 서명 상태
 
 > 서명일: 2026-02-24. 전체 서명 완료.

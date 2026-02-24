@@ -584,6 +584,78 @@ python examples/layer2_verification.py → ALL PASS (5/5)
 
 ---
 
+## 6-3. Layer 3 — 게이지/기하학 [완료]
+
+### 목적
+
+trunk의 전역 Coriolis 회전(ω = const)을 **위치 의존 자기장 B(x)** 로 확장한다.
+"공간의 각 위치마다 회전이 다르다" — 이것이 게이지 기하학의 핵심이다.
+
+### 수식
+
+2D 자기장형 힘:
+```
+F = B(x) · J · v = B(x) · (-v_y, v_x)
+
+에너지 보존: F · v = B(x)·(-v_y·v_x + v_x·v_y) = 0  (구조적)
+```
+
+E×B drift (일정 기울기 + 균일 B):
+```
+v_drift = (∂V/∂y, −∂V/∂x) / B
+```
+
+Berry 위상 (Stokes 정리):
+```
+Φ = ∮ A · dl = ∫∫ B dA
+```
+
+### 구성 요소
+
+| 클래스 | 역할 |
+|--------|------|
+| `MagneticForce` | 단일 입자 위치 의존 자기장형 힘 |
+| `NBodyMagneticForce` | N 입자 각각에 B(x) 적용 |
+| `GeometryAnalyzer` | Berry 위상, 선속, 곡률, drift 계산 |
+
+편의 함수:
+| 함수 | B(x) | 용도 |
+|------|------|------|
+| `uniform_field(B₀)` | B₀ | 균일 자기장 |
+| `gaussian_field(B₀, c, σ)` | B₀·exp(−\|x−c\|²/2σ²) | 국소 집중 |
+| `dipole_field(μ, c, ε)` | μ/(\|x−c\|²+ε²) | 쌍극자형 |
+| `multi_well_field(…)` | Σ Bᵢ·gauss | 다중 우물별 |
+
+### 극한 일관성
+
+| 극한 | 기대 | 보장 타입 |
+|------|------|----------|
+| B(x) = ω (const) | CoriolisGauge와 동일 | 구조적 |
+| B(x) = 0 | 자유 입자 (힘 없음) | 구조적 |
+| F·v = 0 | 에너지 보존 | 구조적 (J^T = −J) |
+| N=1 | 단일 입자와 동일 | 구조적 |
+| 사이클로트론 | ω_c = B/m, 원 궤도 | 적분기 의존 |
+| E×B drift | v = (∂V/∂y, −∂V/∂x)/B | 적분기 의존 |
+| Berry 위상 | ∮A·dl = ∫∫B dA | 수치 적분 정밀도 |
+
+> **적분기 주의**: MagneticForce는 속도 의존 힘이므로, Strang splitting에서 에너지 error가 bounded O(dt²). Euler fallback에서는 drift 심각. `CoriolisGauge(0.0)` 또는 실제 gauge를 사용하여 Strang 활성화 권장.
+
+### 검증
+
+```
+python examples/layer3_verification.py → ALL PASS (5/5)
+```
+
+| # | 검증 | 결과 |
+|---|------|------|
+| 1 | 에너지 보존 (가우시안 B, Strang) | PASS — drift < 5% |
+| 2 | 사이클로트론 (균일 B) | PASS — r_c 오차 < 2% |
+| 3 | B=0 극한 | PASS — 궤적 차이 = 0 |
+| 4 | E×B drift (collisionless) | PASS — v_drift 오차 < 0.1% |
+| 5 | Berry 위상 (가우시안 B) | PASS — 면적분 오차 < 2% |
+
+---
+
 ## 7. 설계 원칙
 
 | 원칙 | 설명 |

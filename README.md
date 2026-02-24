@@ -226,6 +226,27 @@ python examples/layer2_verification.py   # 5항목 ALL PASS
 
 상세: [Layer_2/README.md](Layer_2/README.md)
 
+## Layer 3 — 게이지/기하학
+
+Layer 2 위에 위치 의존 게이지(자기장형 힘)와 기하학적 분석을 쌓습니다.
+trunk의 전역 Coriolis 회전 ω가, 공간의 각 위치마다 다른 회전 B(x)로 확장됩니다.
+
+- **MagneticForce**: F = B(x)·J·v — 속도에 수직 (F·v = 0, 에너지 보존 구조적 보장)
+- **NBodyMagneticForce**: N 입자 각각에 위치 의존 B(x) 적용
+- **GeometryAnalyzer**: Berry 위상, 자기 선속, E×B drift, 국소 곡률
+- **극한 일관성**: B(x) = const → CoriolisGauge, B(x) = 0 → 자유 입자
+
+```python
+from Layer_3 import MagneticForce, GeometryAnalyzer
+```
+
+검증 실행:
+```bash
+python examples/layer3_verification.py   # 5항목 ALL PASS
+```
+
+상세: [Layer_3/README.md](Layer_3/README.md)
+
 ---
 
 ## 설계 원칙
@@ -292,6 +313,9 @@ CookiieBrain/
 ├── Layer_2/                    # 다체/장론
 │   ├── nbody.py               #   NBodyState, InteractionForce, ExternalForce
 │   └── README.md              #   Layer 2 개념 (한국어)
+├── Layer_3/                    # 게이지/기하학
+│   ├── gauge.py               #   MagneticForce, GeometryAnalyzer
+│   └── README.md              #   Layer 3 개념 (한국어)
 ├── examples/                   # 실행 가능한 예제
 │   ├── phase_a_minimal_verification.py  # 자전 검증 (ALL PASS)
 │   ├── phase_b_orbit_verification.py    # 공전 검증 (ALL PASS)
@@ -301,6 +325,7 @@ CookiieBrain/
 │   ├── fdt_verification.py                   # FDT 등분배 검증 (ALL PASS)
 │   ├── layer1_verification.py                # Layer 1 통계역학 검증 (ALL PASS)
 │   ├── layer2_verification.py                # Layer 2 다체/장론 검증 (ALL PASS)
+│   ├── layer3_verification.py                # Layer 3 게이지/기하학 검증 (ALL PASS)
 │   ├── phase_a_integration_test.py      # 우물 + 자전 통합
 │   └── integration_test_demo.py         # 기본 통합 테스트
 └── docs/                       # 참고 문서
@@ -337,11 +362,13 @@ CookiieBrain/
 | FDT (σ²=2γT/m, Boltzmann 등분배) | 완료 |
 | **Layer 1: 통계역학 정식화** | 완료 |
 | **Layer 2: 다체/장론** | 완료 |
+| **Layer 3: 게이지/기하학** | 완료 |
 
 > 고전 구조가 먼저, 확률은 마지막에 얹는다.
 > 구조가 있어야 요동의 의미가 생긴다.
 > 줄기가 닫힌 뒤, 토양(Layer 1)부터 쌓는다.
 > Layer 2에서 장(field)이 태어난다.
+> Layer 3에서 공간이 구부러진다.
 
 단계 설명: [Phase_A/STAGES_SPIN_ORBIT_FLUCTUATION.md](Phase_A/STAGES_SPIN_ORBIT_FLUCTUATION.md)
 
