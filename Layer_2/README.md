@@ -25,23 +25,41 @@ Layer 2는 N-body 전용 **레이어**(힘/게이지)를 제공할 뿐이다.
 | `ExternalForce` | 입자별 외부 퍼텐셜 Σᵢ V(xᵢ) | ForceLayer |
 | `NBodyGauge` | 입자별 코리올리 회전 | GaugeLayer |
 
+### 힘 부호 규약
+
+`InteractionForce`의 `pair_force`는 **φ'(r) = dφ/dr** 을 받는다.
+실제 힘은 다음과 같이 계산된다:
+
+```
+F_ij = -φ'(r_ij) · r̂_ij    (r̂_ij = (xᵢ - xⱼ)/r_ij)
+```
+
+따라서:
+- φ'(r) > 0 → F_ij가 i를 j 쪽으로 끌어당김 (인력)
+- φ'(r) < 0 → F_ij가 i를 j로부터 밀어냄 (척력)
+
+softening은 `InteractionForce` 내부에서 거리 계산 시 적용된다:
+`r = √(|xᵢ - xⱼ|² + ε²)` (ε = softening 파라미터)
+
 ### 편의 함수 (기본 상호작용)
 
-| 함수 | 퍼텐셜 | 특성 |
-|------|--------|------|
-| `gravitational_interaction()` | φ(r) = -G/r | 인력, 1/r² |
-| `spring_interaction()` | φ(r) = ½k(r-r₀)² | 복원력 |
-| `coulomb_interaction()` | φ(r) = q²/r | 척력 (동종 전하) |
+| 함수 | φ(r) | φ'(r) | 힘 방향 |
+|------|------|-------|---------|
+| `gravitational_interaction()` | -G/r | +G/r² | 인력 |
+| `spring_interaction()` | ½k(r-r₀)² | k(r-r₀) | 복원력 |
+| `coulomb_interaction()` | q²/r | -q²/r² | 척력 (동종 전하) |
 
 ## 극한 일관성
 
-| 극한 | 기대 동작 | 검증 |
-|------|----------|------|
-| N=1 | 단일 입자 trunk과 수치적으로 동일 | Test 3: 차이 0.0 |
-| γ=0, σ=0 | 에너지 보존 | Test 2: drift < 0.23% |
-| F_ij = -F_ji | 운동량 보존 | Test 1: 변화 3.2e-14 |
-| FDT + N 입자 | 등분배 수렴 | Test 4: 오차 2.0% |
-| 중심력 | 각운동량 보존 | Test 5: 변화 5.3e-15 |
+| 극한 | 기대 동작 | 보장 타입 | 검증 |
+|------|----------|----------|------|
+| N=1 | 단일 입자 trunk과 동일 | **구조적** — 쌍체 힘 비활성화 시 자동 환원 | Test 3: 차이 0.0 |
+| F_ij = -F_ji | 운동량 보존 | **구조적** — `F[i]+=fij, F[j]-=fij` 코드로 강제 | Test 1: 변화 3.2e-14 |
+| 중심력 | 각운동량 보존 | **구조적** — 힘이 항상 r̂ 방향(central) | Test 5: 변화 5.3e-15 |
+| γ=0, σ=0 | 에너지 보존 | **적분기 의존** — 보존계 환원은 모델 차원에서 보장되나, 수치 drift는 적분기/dt에 의존 | Test 2: drift < 0.23% |
+| FDT + N 입자 | 등분배 수렴 | **적분기 의존** — FDT는 trunk에서 보장, 수렴 속도는 dt와 γ에 의존 | Test 4: 오차 2.0% |
+
+> **N→∞ 극한**: 단순히 N을 키운다고 장론(field theory)이 되지 않는다. 연속체/평균장 극한에는 밀도 고정(박스 스케일링), 상호작용 스케일링(1/N), coarse-graining 정의 등 추가적인 극한 정의가 필요하다. 이는 Layer 2의 현재 범위 밖이며, 향후 확장 방향에 해당한다.
 
 ## 수식
 
@@ -109,7 +127,7 @@ for _ in range(10000):
 
 ## 향후 확장 방향
 
-- **N→∞ / mean-field**: 평균장 근사로 연속체 극한
-- **장거리 상호작용**: Ewald summation, Barnes-Hut 등
-- **다종 입자**: 질량/전하가 다른 혼합계
+- **N→∞ / mean-field**: 밀도 고정 + 상호작용 1/N 스케일링 + coarse-graining → 연속체 극한
+- **장거리 상호작용**: Ewald summation, Barnes-Hut tree 등 O(N log N) 알고리즘
+- **다종 입자**: 질량/전하가 다른 혼합계 (mass vector 확장)
 - **Layer 3 연결**: 게이지 대칭 + 곡률 → 위치 의존 상호작용
