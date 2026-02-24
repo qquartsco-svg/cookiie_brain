@@ -1,35 +1,56 @@
-"""Layer 3 — 게이지/기하학: 위치 의존 자기장형 힘
+"""Layer 3 — 게이지/기하학: 위치 의존 반대칭 연산자
 
-trunk의 CoriolisGauge는 전역 상수 ω로 회전한다.
-Layer 3는 B(x) — 위치 의존 자기장을 도입한다.
+┌──────────────────────────────────────────────────────┐
+│  Layer 3: 게이지/기하학                                │
+│  ─────────────────                                    │
+│                                                        │
+│  수학적 본질:                                           │
+│    G(x, v) = Ω(x) · v    (반대칭 선형 연산)             │
+│    Ω(x)ᵀ = −Ω(x)         (skew-symmetric)             │
+│    v · Ω(x)v = 0          → 에너지 보존 (구조적)        │
+│                                                        │
+│  게이지 ≠ 보존력:                                       │
+│    ✗ 퍼텐셜에서 유도되지 않는다 (G ≠ −∇V)               │
+│    ✔ Hamiltonian의 symplectic 구조 내 회전 항           │
+│    ✔ geometric phase term / connection 연산자          │
+│                                                        │
+│  구성 요소:                                             │
+│    GaugeForce         : Ω(x)v (단일 입자, 2D/3D)       │
+│    NBodyGaugeForce    : N 입자 각각에 Ω(xᵢ)vᵢ 적용     │
+│    GeometryAnalyzer   : Berry 위상, 선속, 곡률 계산      │
+│                                                        │
+│  극한 일관성:                                           │
+│    Ω = const → trunk의 CoriolisGauge와 동일             │
+│    B(x) = 0  → Ω = 0, 자유 입자                        │
+│    ∮ A·dl = ∫∫ B dA (Stokes 정리)                      │
+│                                                        │
+│  구현 참고:                                             │
+│    trunk의 GaugeLayer는 rotate(v, dt)만 받으므로         │
+│    위치 의존 Ω(x)는 ForceLayer 프로토콜로 전달한다.       │
+│    이것은 구현 편의이며, 물리적 본질은 gauge 연산이다.     │
+└──────────────────────────────────────────────────────┘
 
-┌────────────────────────────────────────────────┐
-│  Layer 3: 게이지/기하학                          │
-│  ─────────────────                              │
-│  MagneticForce      : F = B(x)·J·v (단일 입자)  │
-│  NBodyMagneticForce : N 입자 각각에 B(x) 적용    │
-│  GeometryAnalyzer   : Berry 위상, 자기 선속 계산  │
-│                                                  │
-│  핵심 물리:                                       │
-│    F·v = 0 (일을 안 함) → 에너지 보존             │
-│    B(x) = const → CoriolisGauge와 동일           │
-│    ∮ A·dl = ∫∫ B dA (Stokes 정리)               │
-│                                                  │
-│  trunk 수정 불필요:                               │
-│    ForceLayer 프로토콜 준수 (duck-typing)         │
-└────────────────────────────────────────────────┘
+연산자 분해 구조:
 
-2D에서의 수식:
-  B(x) : 스칼라 (z 방향 자기장의 크기)
-  J = [[0, -1], [1, 0]]  (2D symplectic 행렬)
-  F = B(x) · J · v = B(x) · (-v_y, v_x)
+  mẍ = −∇V(x)  +  Ω(x)v   −  γv  +  σξ(t)
+        ─────     ──────      ────    ─────
+        Force     Gauge       Thermo  Fluctuation
+        (보존력)  (반대칭)    (비가역)  (확률)
 
-  F·v = B(x)·(-v_y·v_x + v_x·v_y) = 0  (구조적 보장)
+  Layer:  1,2       3          trunk    trunk
 
-3D에서의 수식:
-  B(x) : 3-벡터 (자기장)
-  F = v × B(x)  (로렌츠 힘)
-  F·v = (v × B)·v = 0  (구조적 보장)
+  Force:  퍼텐셜 기울기. 위치 의존. 에너지 교환 가능.
+  Gauge:  반대칭 연산자. 속도에 작용. 에너지 보존 (구조적).
+  Thermo: 감쇠 + 노이즈. 비가역.
+
+2D 표현:
+  Ω(x) = B(x) · J = B(x) · [[0, -1], [1, 0]]
+  J는 반대칭 (Jᵀ = −J) → B(x)·J도 반대칭 (스칼라 × 반대칭 = 반대칭)
+  v · Ω(x)v = B(x) · v·Jv = B(x) · (−v_y·v_x + v_x·v_y) = 0
+
+3D 표현:
+  G(v) = v × B(x)  (로렌츠 항)
+  v · (v × B) = 0  (벡터 삼중곱 성질)
 """
 
 from __future__ import annotations
@@ -38,25 +59,32 @@ from typing import Callable, Optional
 
 
 # ================================================================== #
-#  MagneticForce — 위치 의존 자기장형 힘 (단일 입자)
+#  GaugeForce — 위치 의존 반대칭 게이지 연산자 (단일 입자)
 # ================================================================== #
 
-class MagneticForce:
-    """F = B(x) · J · v  (2D) 또는  F = v × B(x)  (3D)
+class GaugeForce:
+    """G(x, v) = Ω(x) · v  — 위치 의존 반대칭 게이지 연산자.
 
-    위치 의존 자기장이 만드는 로렌츠형 힘.
-    v에 수직이므로 에너지를 보존한다 (F·v = 0, 구조적).
+    이것은 보존력(−∇V)이 아니다.
+    Hamiltonian의 symplectic 구조 내 회전 항(geometric phase term)이며,
+    반대칭성 Ωᵀ = −Ω에 의해 v·Ωv = 0이 구조적으로 보장된다.
+
+    2D: Ω(x) = B(x)·J,  J = [[0,-1],[1,0]]  (Jᵀ = −J)
+    3D: G(v) = v × B(x)
+
+    trunk의 ForceLayer 프로토콜로 전달하되(구현 편의),
+    물리적 본질은 gauge 연산이다.
 
     극한 일관성:
-      B(x) = const = ω  →  trunk의 CoriolisGauge와 동일
-      B(x) = 0          →  힘 없음 (자유 입자)
+      Ω(x) = ω·J (const)  →  trunk의 CoriolisGauge와 동일
+      Ω(x) = 0            →  자유 입자
 
     사용법 (2D):
         def B_field(x):
             return 0.5 * np.exp(-np.dot(x, x) / 4.0)
 
-        magnetic = MagneticForce(B_func=B_field, dim=2)
-        engine = PotentialFieldEngine(force_layers=[gradient, magnetic], ...)
+        gauge = GaugeForce(B_func=B_field, dim=2)
+        engine = PotentialFieldEngine(force_layers=[gradient, gauge], ...)
     """
 
     def __init__(self, B_func: Callable[[np.ndarray], float], dim: int = 2):
@@ -64,7 +92,7 @@ class MagneticForce:
         self.dim = dim
 
     def force(self, x: np.ndarray, v: np.ndarray, t: float) -> np.ndarray:
-        """위치 의존 자기장형 힘"""
+        """Ω(x)·v — 반대칭 게이지 연산자 적용"""
         if self.dim == 2:
             B = self._B(x)
             return np.array([-B * v[1], B * v[0]])
@@ -74,23 +102,39 @@ class MagneticForce:
                 B = np.array([0.0, 0.0, B])
             return np.cross(v, B)
         else:
-            raise ValueError(f"MagneticForce: dim={self.dim} not supported (2 or 3)")
+            raise ValueError(f"GaugeForce: dim={self.dim} not supported (2 or 3)")
 
     def potential(self, x: np.ndarray) -> float:
         return 0.0
 
+    def omega_matrix(self, x: np.ndarray) -> np.ndarray:
+        """위치 x에서 반대칭 행렬 Ω(x) 반환 (2D 전용)."""
+        B = self._B(x)
+        if self.dim == 2:
+            return np.array([[0.0, -B], [B, 0.0]])
+        raise NotImplementedError("omega_matrix: 3D는 Levi-Civita 텐서 사용")
+
+    def check_skew(self, x: np.ndarray) -> bool:
+        """Ω(x) + Ω(x)ᵀ = 0 검증 (반대칭성)."""
+        O = self.omega_matrix(x)
+        return bool(np.allclose(O + O.T, 0.0))
+
+
+MagneticForce = GaugeForce
+
 
 # ================================================================== #
-#  NBodyMagneticForce — N 입자 각각에 B(x) 적용
+#  NBodyGaugeForce — N 입자 각각에 Ω(xᵢ)vᵢ 적용
 # ================================================================== #
 
-class NBodyMagneticForce:
-    """N 입자 각각에 위치 의존 자기장 적용.
+class NBodyGaugeForce:
+    """N 입자 각각에 위치 의존 반대칭 게이지 연산자 적용.
 
-    각 입자의 위치에서 B(xᵢ)를 평가하고,
-    해당 입자의 속도에 로렌츠형 힘을 가한다.
+    각 입자의 위치에서 Ω(xᵢ)를 평가하고,
+    해당 입자의 속도에 반대칭 회전을 가한다.
+    보존력이 아니라 geometric phase term이다.
 
-    N=1이면 MagneticForce와 동일.
+    N=1이면 GaugeForce와 동일.
     """
 
     def __init__(
@@ -123,6 +167,18 @@ class NBodyMagneticForce:
 
     def potential(self, x: np.ndarray) -> float:
         return 0.0
+
+    def check_skew(self, x: np.ndarray, particle_idx: int = 0) -> bool:
+        """입자 particle_idx 위치에서 Ω + Ωᵀ = 0 검증."""
+        xi = x.reshape(self.n_particles, self.dim)[particle_idx]
+        B = self._B(xi)
+        if self.dim == 2:
+            O = np.array([[0.0, -B], [B, 0.0]])
+            return bool(np.allclose(O + O.T, 0.0))
+        return True
+
+
+NBodyMagneticForce = NBodyGaugeForce
 
 
 # ================================================================== #
