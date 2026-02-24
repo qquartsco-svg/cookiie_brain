@@ -310,7 +310,10 @@ def entropy_production_rate(
     if temperature <= 0:
         return 0.0
 
-    dim = velocities.shape[-1] if velocities.ndim > 1 else 1
+    if velocities.ndim == 1:
+        velocities = velocities[:, np.newaxis]
+
+    dim = velocities.shape[-1]
     v2_mean = np.mean(np.sum(velocities ** 2, axis=-1))
 
     equilibrium_baseline = dim * temperature / mass
@@ -341,7 +344,10 @@ def entropy_production_trajectory(
     if temperature <= 0:
         return np.zeros(max(1, len(velocities) - window + 1))
 
-    dim = velocities.shape[-1] if velocities.ndim > 1 else 1
+    if velocities.ndim == 1:
+        velocities = velocities[:, np.newaxis]
+
+    dim = velocities.shape[-1]
     equilibrium_baseline = dim * temperature / mass
 
     v2 = np.sum(velocities ** 2, axis=-1)

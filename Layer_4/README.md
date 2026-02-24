@@ -167,7 +167,8 @@ LangevinThermo(gamma=γ, temperature=T, mass=m)
 ```
 
 이 조건이 깨지면 Jarzynski/Crooks 등식이 **성립하지 않는다**.
-`TrunkChecker.check_fdt(thermo_layer)`로 항상 확인.
+trunk의 `TrunkChecker.check_fdt(thermo_layer)`로 확인 가능
+(구현 위치: PotentialFieldEngine의 `layers.py`).
 
 ### 2. 평형 초기 조건
 
