@@ -1,6 +1,6 @@
 # 빠른 시작 가이드
 
-**버전**: 0.2.0
+**버전**: 0.3.0
 
 ---
 
@@ -10,12 +10,40 @@
 pip install numpy
 ```
 
-BrainCore, WellFormationEngine, PotentialFieldEngine이 같은 프로젝트 내에 있어야 합니다.
-(상대 경로로 자동 탐색합니다.)
+---
+
+## 독립 모듈 사용 (Layer 1~6)
+
+Layer 1~6은 외부 의존 없이 독립 실행 가능합니다:
+
+```python
+import numpy as np
+from Layer_1 import kramers_rate, entropy_production_rate
+from Layer_5 import FokkerPlanckSolver1D, NelsonDecomposition
+from Layer_6 import FisherMetricCalculator, ParameterSpace
+```
 
 ---
 
-## 기본 사용 — 우물 생성 + 상태 업데이트
+## 검증 실행
+
+```bash
+# 전체 검증 (Phase A + Layer 1~6)
+python examples/phase_a_minimal_verification.py
+python examples/phase_b_orbit_verification.py
+python examples/fluctuation_verification.py
+python examples/fdt_verification.py
+python examples/layer1_verification.py
+python examples/layer2_verification.py
+python examples/layer3_verification.py
+python examples/layer4_verification.py
+python examples/layer5_verification.py
+python examples/layer6_verification.py
+```
+
+---
+
+## 통합 엔진 사용 (BrainCore 필요)
 
 ```python
 from cookiie_brain_engine import CookiieBrainEngine
@@ -25,51 +53,22 @@ import numpy as np
 brain = CookiieBrainEngine(
     enable_well_formation=True,
     enable_potential_field=True,
-)
-
-state = GlobalState(
-    state_vector=np.array([1.0, 0.0, 0.0, 0.0]),  # [위치x, 위치y, 속도x, 속도y]
-    energy=0.0,
-)
-
-state.set_extension("episodes", [...])  # 기억 에피소드 데이터
-
-result = brain.update(state)
-print(f"에너지: {brain.get_energy(result)}")
-```
-
----
-
-## 자전 활성화 (Phase A)
-
-```python
-brain = CookiieBrainEngine(
-    enable_well_formation=True,
-    enable_potential_field=True,
     potential_field_config={
         "enable_phase_a": True,
-        "phase_a_mode": "minimal",   # 코리올리형 — 에너지 보존
+        "phase_a_mode": "minimal",
         "phase_a_omega": 1.0,
     },
 )
+
+state = GlobalState(
+    state_vector=np.array([1.0, 0.0, 0.0, 0.0]),
+    energy=0.0,
+)
+state.set_extension("episodes", [...])
+result = brain.update(state)
 ```
 
-이것만 바꾸면 상태가 우물 안에서 회전합니다.
-
----
-
-## 예제 실행
-
-```bash
-# 자전 검증 (4항목 체크)
-python examples/phase_a_minimal_verification.py
-
-# 우물 + 자전 통합 테스트
-python examples/phase_a_integration_test.py
-
-# 기본 통합 테스트
-python examples/integration_test_demo.py
-```
+BrainCore, WellFormationEngine, PotentialFieldEngine이 같은 프로젝트 내에 있어야 합니다.
 
 ---
 
@@ -78,18 +77,26 @@ python examples/integration_test_demo.py
 | 문서 | 내용 |
 |------|------|
 | [README.md](README.md) | 전체 구조, 수식, 파이프라인 |
-| [Phase_A/README.md](Phase_A/README.md) | 자전 모듈 상세 (두 가지 회전 방식, 검증) |
-| [Phase_A/STAGES_SPIN_ORBIT_FLUCTUATION.md](Phase_A/STAGES_SPIN_ORBIT_FLUCTUATION.md) | 자전 → 공전 → 요동 단계 설명 |
-| [docs/](docs/) | 설계 분석, 코드 리뷰, 로드맵 등 참고 문서 |
+| [docs/FULL_CONCEPT_AND_STATUS.md](docs/FULL_CONCEPT_AND_STATUS.md) | 전체 개념 · 현재 상태 (한국어) |
+| [docs/FULL_CONCEPT_AND_STATUS_EN.md](docs/FULL_CONCEPT_AND_STATUS_EN.md) | Full concept (English) |
+| [Layer_1/](Layer_1/) ~ [Layer_6/](Layer_6/) | 각 레이어 README (한국어 + 영어) |
 
 ---
 
 ## 현재 상태
 
-- 정적 퍼텐셜 (우물 생성 + 수렴): 완료
-- 자전 (코리올리 회전, 에너지 보존): 완료
-- 공전 / 요동: 미착수
+| 모듈 | 상태 |
+|------|------|
+| Phase A (자전) | 완료 |
+| Phase B (공전) | 완료 |
+| Phase C (요동/FDT) | 완료 |
+| Layer 1 (통계역학) | 완료 |
+| Layer 2 (다체/장론) | 완료 |
+| Layer 3 (게이지/기하학) | 완료 |
+| Layer 4 (비평형 일 정리) | 완료 |
+| Layer 5 (확률역학) | 완료 |
+| Layer 6 (정보 기하학) | 완료 |
 
 ---
 
-*GNJz (Qquarts) · v0.2.0*
+*GNJz (Qquarts) · v0.3.0*

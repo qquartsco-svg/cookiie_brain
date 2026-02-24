@@ -15,4 +15,17 @@ from .nbody import (
     InteractionForce,
     ExternalForce,
     NBodyGauge,
+    gravitational_interaction,
+    spring_interaction,
+    coulomb_interaction,
 )
+
+__all__ = [
+    "NBodyState",
+    "InteractionForce",
+    "ExternalForce",
+    "NBodyGauge",
+    "gravitational_interaction",
+    "spring_interaction",
+    "coulomb_interaction",
+]

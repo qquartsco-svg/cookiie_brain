@@ -4,7 +4,7 @@
 > and future direction. A new contributor should be able to understand the entire system from this
 > document alone.
 
-**Last updated: 2026-02-24 (Phase C v2 FDT included)**
+**Last updated: 2026-02-25 (Layer 1–6 complete)**
 
 ---
 
@@ -184,18 +184,108 @@ Equipartition: ⟨½mv²⟩ = T/2  (per DoF)
 
 ## 4. Implementation status summary
 
-| Phase | Status | Core equation | Verification |
+| Module | Status | Core equation | Verification |
 |---|---|---|---|
 | Static potential | ✔ | V = -½x'Wx - b'x | — |
-| Spin (Phase A) | ✔ | ẍ = g(x) + ωJv | ALL PASS (energy <0.01%) |
-| Orbit (Phase B) | ✔ | V = -ΣA exp(...) + ωJv | ALL PASS (8 cycles, 88%) |
-| WellFormation bridge | ✔ | W,b → center/A/σ | ALL PASS (5 items) |
-| Energy injection/dissipation | ✔ | -γv + I(x,v,t) | ALL PASS (corr 0.999995) |
-| Fluctuation (Phase C) | ✔ | +σξ(t), σ²=2γT/m (FDT) | ALL PASS (v1: 4, v2: 5) |
+| Spin (Phase A) | ✔ | ẍ = g(x) + ωJv | ALL PASS |
+| Orbit (Phase B) | ✔ | V = -ΣA exp(...) + ωJv | ALL PASS |
+| WellFormation bridge | ✔ | W,b → center/A/σ | ALL PASS |
+| Injection/dissipation | ✔ | -γv + I(x,v,t) | ALL PASS |
+| Fluctuation (Phase C) | ✔ | +σξ(t), σ²=2γT/m (FDT) | ALL PASS |
+| **Layer 1: StatMech** | ✔ | Kramers rate, Ṡ = (γ/T)(⟨v²⟩−dT/m) | 5/5 ALL PASS |
+| **Layer 2: N-body** | ✔ | F_ij = −F_ji, Newton 3rd law | 5/5 ALL PASS |
+| **Layer 3: Gauge** | ✔ | F = B(x)·J·v, F·v = 0 | 5/5 ALL PASS |
+| **Layer 4: Jarzynski** | ✔ | ⟨e^{−W/T}⟩ = e^{−ΔF/T} | 5/5 ALL PASS |
+| **Layer 5: Fokker-Planck** | ✔ | ∂ρ/∂t = ∇·(bρ) + D∇²ρ | 5/5 ALL PASS |
+| **Layer 6: Fisher** | ✔ | g_μν = (1/T²) Cov(∂_μV, ∂_νV) | 5/5 ALL PASS |
 
 ---
 
-## 5. File structure
+## 5. Layers (Branches on top of Trunk)
+
+Each layer is an independent analysis module built on top of the trunk (Langevin + FDT).
+
+### 5-1. Layer 1 — Statistical Mechanics [complete]
+
+Translates simulation trajectories into probability / thermodynamics language.
+
+| Component | Role |
+|-----------|------|
+| `kramers_rate()` | Kramers-Grote-Hynes escape rate k(i→j) |
+| `TransitionAnalyzer` | Transition matrix P[i,j], residence times, circulation |
+| `entropy_production_rate()` | Ṡ = (γ/T)(⟨\|v\|²⟩ − dT/m) |
+
+Verification: 5/5 ALL PASS
+
+### 5-2. Layer 2 — Many-body / Field Theory [complete]
+
+Extends single particle → N particles with pairwise interactions.
+
+| Component | Role |
+|-----------|------|
+| `NBodyState` | Multi-particle state management |
+| `InteractionForce` | Pairwise potential φ(r), Newton's 3rd law F_ij = −F_ji |
+| `ExternalForce` | Per-particle external potential |
+| `NBodyGauge` | Per-particle Coriolis rotation |
+
+Verification: 5/5 ALL PASS
+
+### 5-3. Layer 3 — Gauge / Geometry [complete]
+
+Extends global Coriolis ω → position-dependent B(x).
+
+| Component | Role |
+|-----------|------|
+| `MagneticForce` | F = B(x)·J·v (energy-conserving, F·v = 0) |
+| `GeometryAnalyzer` | Magnetic flux, Abelian phase, E×B drift, curvature |
+
+Verification: 5/5 ALL PASS
+
+### 5-4. Layer 4 — Non-equilibrium Work Theorems [complete]
+
+Exact equalities for protocol-driven processes starting from equilibrium.
+
+| Component | Role |
+|-----------|------|
+| `Protocol` / `ProtocolForce` | Time-dependent potential V(x, λ(t)) |
+| `WorkAccumulator` | Inclusive work W = Σ[V(x_n, λ_{n+1}) − V(x_n, λ_n)] |
+| `JarzynskiEstimator` | ⟨e^{−W/T}⟩ = e^{−ΔF/T} (exact equality) |
+| `CrooksAnalyzer` | Bidirectional Jarzynski level |
+| `EntropyBridge` | ΔS_tot = (⟨W⟩ − ΔF) / T (Layer 1 connection) |
+
+Verification: 5/5 ALL PASS
+
+### 5-5. Layer 5 — Stochastic Mechanics / Fokker-Planck [complete]
+
+Shifts from trajectory view to probability density ρ(x,t) evolution.
+
+| Component | Role |
+|-----------|------|
+| `FokkerPlanckSolver1D` | ∂ρ/∂t = ∇·(∇V·ρ/(mγ)) + D∇²ρ |
+| `NelsonDecomposition` | v = v_current + v_osmotic |
+| `ProbabilityCurrent` | J = bρ − D∇ρ, equilibrium J = 0 |
+
+Scope: overdamped FP only (underdamped Kramers FP is future work).
+
+Verification: 5/5 ALL PASS
+
+### 5-6. Layer 6 — Information Geometry [complete]
+
+Fisher information metric on parameter space.
+
+| Component | Role |
+|-----------|------|
+| `FisherMetricCalculator` | g_μν = (1/T²) Cov(∂_μV, ∂_νV), Gaussian curvature K |
+| `ParameterSpace` | 2D parameter grid (λ₁, λ₂) |
+
+Why naive Berry phase = 0 in 1D classical: A = ∇⟨x⟩ → curl(∇f) = 0 always.
+Fisher metric provides nontrivial geometry independent of this.
+
+Verification: 5/5 ALL PASS
+
+---
+
+## 7. File structure
 
 ```
 CookiieBrain/
@@ -203,37 +293,38 @@ CookiieBrain/
 ├── README.md                        # Project overview (KR + EN)
 ├── Phase_A/                         # Spin module
 │   ├── rotational_field.py          #   Coriolis ωJv + pole-type
-│   ├── moon.py                      #   Satellite gravity field
-│   └── STAGES_SPIN_ORBIT_FLUCTUATION.md
+│   └── moon.py                      #   Satellite gravity field
 ├── Phase_B/                         # Orbit module
 │   ├── multi_well_potential.py      #   Gaussian multi-well potential
-│   ├── well_to_gaussian.py          #   WellFormation → Gaussian bridge
-│   └── README.md
+│   └── well_to_gaussian.py          #   WellFormation → Gaussian bridge
 ├── Phase_C/                         # Fluctuation (Langevin noise)
-│   └── README.md
-├── examples/
+│   └── README.md / README_EN.md
+├── Layer_1/                         # Statistical mechanics
+│   └── statistical_mechanics.py     #   Kramers, transition, entropy
+├── Layer_2/                         # Many-body / field theory
+│   └── nbody.py                     #   NBodyState, InteractionForce
+├── Layer_3/                         # Gauge / geometry
+│   └── gauge.py                     #   MagneticForce, GeometryAnalyzer
+├── Layer_4/                         # Non-equilibrium work theorems
+│   └── fluctuation_theorems.py      #   Jarzynski, Crooks, Protocol
+├── Layer_5/                         # Stochastic mechanics
+│   └── stochastic_mechanics.py      #   Fokker-Planck, Nelson
+├── Layer_6/                         # Information geometry
+│   └── geometric_phase.py           #   Fisher metric, curvature
+├── examples/                        # Verification scripts (all ALL PASS)
 │   ├── phase_a_minimal_verification.py
 │   ├── phase_b_orbit_verification.py
-│   ├── bridge_verification.py
-│   ├── dissipation_injection_verification.py
-│   ├── fluctuation_verification.py
-│   └── fdt_verification.py
+│   ├── layer1_verification.py ~ layer6_verification.py
+│   └── ...
 └── docs/
     ├── FULL_CONCEPT_AND_STATUS.md   # Full concept (Korean)
     ├── FULL_CONCEPT_AND_STATUS_EN.md # Full concept (English, this file)
     └── WORK_LOG.md                  # Chronological work log
-
-(Separate repo)
-PotentialFieldEngine/
-└── potential_field_engine.py        # Physics integration engine
-                                       Strang splitting, symplectic Euler
-                                       omega_coriolis, gamma, injection_func,
-                                       noise_sigma, temperature, mass (FDT)
 ```
 
 ---
 
-## 6. Design principles
+## 8. Design principles
 
 | Principle | Description |
 |---|---|
@@ -246,7 +337,7 @@ PotentialFieldEngine/
 
 ---
 
-## 7. Key terminology
+## 9. Key terminology
 
 | Term | Definition |
 |---|---|

@@ -14,4 +14,15 @@ from .statistical_mechanics import (
     kramers_rate_matrix,
     TransitionAnalyzer,
     entropy_production_rate,
+    entropy_production_trajectory,
 )
+
+__all__ = [
+    "well_frequency",
+    "saddle_frequency",
+    "kramers_rate",
+    "kramers_rate_matrix",
+    "TransitionAnalyzer",
+    "entropy_production_rate",
+    "entropy_production_trajectory",
+]
