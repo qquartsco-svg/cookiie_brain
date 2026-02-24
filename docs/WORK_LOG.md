@@ -165,11 +165,10 @@ n_steps: 60000
 - PotentialFieldEngine에 Langevin noise (σξ(t)) 구현
   - `noise_sigma` 파라미터: 노이즈 세기 (σ=0이면 기존 결정론적 동작)
   - `noise_seed` 파라미터: 재현 가능한 결과를 위한 난수 시드
-- Strang splitting의 D (dissipation) 스텝을 O-U (Ornstein-Uhlenbeck) 반스텝으로 확장
-  - O(dt/2): v *= exp(-γdt/2) → v += σ·√(dt/2)·N(0,1)
-  - 대칭 래핑 (시작/끝) → 총 분산 σ²dt (Wiener increment)
-  - σ=0이면 기존 D 스텝과 100% 동일 (하위 호환)
-- symplectic Euler에도 동일한 노이즈 추가
+- Strang splitting의 D 스텝을 O-U exact 반스텝으로 확장
+  - O(h): v → e^{-γh}v + σ√((1-e^{-2γh})/(2γ))·ξ  (감쇠+노이즈 정확 결합)
+  - γ→0 limit: σ√h (표준 Wiener), σ=0이면 기존 D 스텝과 동일 (하위 호환)
+- symplectic Euler에도 동일한 O-U exact 노이즈 추가
 - cookiie_brain_engine.py에 noise_sigma/noise_seed config 전달 경로 추가
 
 ### 변경 파일
