@@ -190,10 +190,12 @@ class CookiieBrainEngine(SelfOrganizingEngine):
         self.phase_a_strength = self.potential_field_config.get("phase_a_strength", 1.0)
         self.phase_a_rotation_direction = self.potential_field_config.get("phase_a_rotation_direction", 1)
         
-        # 에너지 주입/소산/요동 설정
+        # 에너지 주입/소산/요동/FDT 설정
         self.gamma = self.potential_field_config.get("gamma", 0.0)
         self.injection_func = self.potential_field_config.get("injection_func", None)
         self.noise_sigma = self.potential_field_config.get("noise_sigma", 0.0)
+        self.temperature = self.potential_field_config.get("temperature", None)
+        self.mass = self.potential_field_config.get("mass", 1.0)
         self.noise_seed = self.potential_field_config.get("noise_seed", None)
         
         # CerebellumEngine 설정 저장
@@ -383,6 +385,8 @@ class CookiieBrainEngine(SelfOrganizingEngine):
                         gamma=self.gamma,
                         injection_func=self.injection_func,
                         noise_sigma=self.noise_sigma,
+                        temperature=self.temperature,
+                        mass=self.mass,
                         noise_seed=self.noise_seed,
                     )
                 

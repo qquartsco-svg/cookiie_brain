@@ -153,19 +153,25 @@ python examples/phase_a_minimal_verification.py
 감쇠로 갇힌 기억에서 우연히 다른 기억으로 전이하는 것 — 이것이 창의적 연상의 물리적 모델입니다.
 
 ```
-ẍ = -∇V(x) + ωJv - γv + I(x,v,t) + σξ(t)
+m ẍ = -∇V(x) + ωJv - γv + I(x,v,t) + σξ(t)
 
-σ : 노이즈 세기 (온도와 비슷한 역할)
+σ : 노이즈 세기
 ξ : 백색 노이즈 (매 순간 랜덤 방향)
 ```
 
-**적분**: Strang splitting의 감쇠 반스텝에 Wiener increment 추가
-- `v += σ·√(dt/2)·N(0,1)` (Euler-Maruyama)
+**요동-소산 정리 (FDT):** σ를 직접 설정하는 대신, 온도 T를 설정하면 물리 법칙이 σ를 결정한다:
+```
+σ² = 2γT/m    (kB = 1)
+정상 분포: P(x,v) ∝ exp(-E/T)
+```
+
+**적분**: Strang splitting + O-U exact 반스텝 (감쇠+노이즈 정확 결합)
 - σ=0이면 기존 결정론적 동작과 100% 동일
 
 검증 실행:
 ```bash
-python examples/fluctuation_verification.py
+python examples/fluctuation_verification.py   # 요동 기본 (4항목)
+python examples/fdt_verification.py            # FDT 등분배 (5항목)
 ```
 
 ---
@@ -231,6 +237,7 @@ CookiieBrain/
 │   ├── bridge_verification.py           # 브릿지 검증 (ALL PASS)
 │   ├── dissipation_injection_verification.py  # 에너지 주입/소산 검증 (ALL PASS)
 │   ├── fluctuation_verification.py            # 요동 검증 (ALL PASS)
+│   ├── fdt_verification.py                   # FDT 등분배 검증 (ALL PASS)
 │   ├── phase_a_integration_test.py      # 우물 + 자전 통합
 │   └── integration_test_demo.py         # 기본 통합 테스트
 └── docs/                       # 참고 문서
@@ -263,6 +270,7 @@ CookiieBrain/
 | WellFormation → Gaussian 브릿지 | 완료 |
 | 에너지 주입/소산 (-γv + I) | 완료 |
 | 요동 (Langevin noise, σξ(t)) | 완료 |
+| FDT (σ²=2γT/m, Boltzmann 등분배) | 완료 |
 
 > 고전 구조가 먼저, 확률은 마지막에 얹는다.
 > 구조가 있어야 요동의 의미가 생긴다.

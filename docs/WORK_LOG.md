@@ -205,6 +205,40 @@ n_steps: 60000
 
 ---
 
+## 2026-02-24 — Phase C v2: FDT (요동-소산 정리) 구현
+
+### 작업 내용
+- PotentialFieldEngine에 `temperature`, `mass` 파라미터 추가
+- `noise_sigma`를 property로 전환, FDT 자동 계산: σ² = 2γT/m (kB=1)
+- `noise_mode` property 추가: "fdt" / "manual" / "off"
+- cookiie_brain_engine.py에 temperature/mass config 전달 경로 추가
+- 모드 우선순위: noise_sigma > 0 → manual | temperature+γ → fdt | else → off
+- FDT 도입으로 σ, γ, T가 열역학적으로 결합 → Boltzmann 정상 분포 보장
+
+### 변경 파일
+| 파일 | 변경 | 위치 |
+|------|------|------|
+| `potential_field_engine.py` | temperature, mass 파라미터, noise_sigma property (FDT), noise_mode | PotentialFieldEngine (별도 레포) |
+| `cookiie_brain_engine.py` | temperature/mass config 전달 | CookiieBrain |
+| `examples/fdt_verification.py` | 신규 생성 (FDT 검증 5항목) | CookiieBrain |
+| `Phase_C/README.md` | FDT 섹션 추가, 사용법 업데이트 | CookiieBrain |
+| `docs/FULL_CONCEPT_AND_STATUS.md` | FDT 수식/검증 추가 | CookiieBrain |
+| `Phase_A/STAGES_SPIN_ORBIT_FLUCTUATION.md` | 요동 상태 업데이트 | CookiieBrain |
+
+### 검증
+- `fdt_verification.py`: ALL PASS (5/5)
+  - 하위 호환 (temperature=None): PASS
+  - FDT σ 계산 (σ²=2γT/m): PASS (오차 0)
+  - Manual override (noise_sigma 우선): PASS
+  - Boltzmann 등분배 (⟨½v²⟩=T/2): PASS (오차 0.6%)
+  - γ=0 안전장치: PASS (σ=0)
+- `fluctuation_verification.py`: ALL PASS (하위 호환 확인)
+
+### PHAM 서명
+- ⏳ 미서명
+
+---
+
 ## PHAM 서명 상태
 
 | 파일 | 서명 상태 | 체인 파일 |
@@ -222,3 +256,4 @@ n_steps: 60000
 | `bridge_verification.py` | ⏳ 미서명 | — |
 | `dissipation_injection_verification.py` | ⏳ 미서명 | — |
 | `fluctuation_verification.py` | ⏳ 미서명 | — |
+| `fdt_verification.py` | ⏳ 미서명 | — |

@@ -24,12 +24,40 @@
 
 | 기호 | 의미 |
 |------|------|
-| σ | 노이즈 세기 (온도와 비슷한 역할) |
+| σ | 노이즈 세기 |
 | ξ(t) | 백색 노이즈 (매 순간 랜덤 방향) |
 | σ=0 | 결정론적 (기존과 100% 동일) |
 | σ>0 | 확률적 전이 가능 |
 
 이것은 **Langevin 방정식** (확률 미분 방정식)이다.
+
+### 요동-소산 정리 (FDT)
+
+σ를 직접 설정하는 대신, **온도 T**를 설정하면 물리 법칙이 σ를 결정한다:
+
+```
+σ² = 2γT/m    (kB = 1 자연단위)
+```
+
+| 기호 | 의미 | 기본값 |
+|------|------|--------|
+| T | 시스템 온도 (인지: 활성 수준) | None (비활성) |
+| m | 입자 질량 (인지: 사고의 관성) | 1.0 |
+| γ | 감쇠 계수 (Phase B에서 도입) | 0.0 |
+
+**왜 중요한가:**
+- FDT 이전: σ, γ 독립 → 물리적 제약 없음 → 비물리적 조합 가능
+- FDT 이후: σ가 γ, T, m에 종속 → **Boltzmann 정상 분포 보장**
+  - `P(x,v) ∝ exp(-E/T)` (열평형)
+  - `⟨½mv²⟩ = T/2` (등분배, DoF 당)
+
+**모드 우선순위:**
+
+| 조건 | 모드 | σ |
+|------|------|---|
+| `noise_sigma > 0` | manual | 직접 지정값 |
+| `temperature > 0` + `γ > 0` | fdt | `√(2γT/m)` |
+| 그 외 | off | 0 |
 
 ---
 
@@ -46,14 +74,22 @@ Phase C는 독립 모듈이 아니라 **PotentialFieldEngine의 파라미터 확
 ### PotentialFieldEngine 파라미터
 
 ```python
+# FDT 모드 (권장): temperature 설정 → σ 자동 결정
 engine = PotentialFieldEngine(
     potential_func=mwp.potential,
     field_func=mwp.field,
     omega_coriolis=0.3,     # Phase A: 자전
-    gamma=0.05,             # 에너지 소산: 감쇠
-    noise_sigma=0.15,       # Phase C: 요동 세기
-    noise_seed=42,          # 재현 가능한 결과 (None이면 매번 다름)
+    gamma=0.05,             # 감쇠
+    temperature=1.0,        # FDT: σ = √(2γT/m) 자동 계산
+    mass=1.0,               # 입자 질량
+    noise_seed=42,
     dt=0.005,
+)
+
+# Manual 모드: σ를 직접 지정 (FDT 무시)
+engine = PotentialFieldEngine(
+    ...,
+    noise_sigma=0.15,       # 직접 지정 → temperature 무시
 )
 ```
 
@@ -65,7 +101,8 @@ brain = CookiieBrainEngine(
         "enable_phase_a": True,
         "phase_a_omega": 0.3,
         "gamma": 0.05,
-        "noise_sigma": 0.15,     # ← 이것만 추가하면 요동 활성화
+        "temperature": 1.0,      # ← FDT 모드 (σ 자동)
+        "mass": 1.0,
         "noise_seed": 42,
     },
 )
@@ -112,6 +149,8 @@ O(h):  dv = -γv dt + σ dW  의 정확해
 
 ## 검증 결과
 
+### Phase C v1: 요동 기본
+
 ```
 python examples/fluctuation_verification.py
 ```
@@ -122,6 +161,20 @@ python examples/fluctuation_verification.py
 | 2 | Kramers 탈출 (σ=0.25) | PASS — 갇힌 입자 10/10 탈출 |
 | 3 | 통계적 비편향 | PASS — bias ratio 0.066 |
 | 4 | 감쇠+노이즈 정상 상태 | PASS — E bounded, std=0.25 |
+
+### Phase C v2: FDT (요동-소산 정리)
+
+```
+python examples/fdt_verification.py
+```
+
+| # | 검증 | 결과 |
+|---|------|------|
+| 1 | 하위 호환 (temperature=None) | PASS — 기존 결정론적 동작 동일 |
+| 2 | FDT σ 계산 (σ²=2γT/m) | PASS — 상대 오차 0.00e+00 |
+| 3 | Manual override (noise_sigma 우선) | PASS — temperature 무시 |
+| 4 | Boltzmann 등분배 (⟨½v²⟩=T/2) | PASS — 상대 오차 0.6% |
+| 5 | γ=0 안전장치 | PASS — σ=0 (FDT 요구) |
 
 ---
 
@@ -140,13 +193,15 @@ python examples/fluctuation_verification.py
 
 | 확장 | 설명 | 독립 모듈 필요? |
 |------|------|----------------|
-| 상수 σ (현재) | 공간 균일 노이즈 | 아니오 |
+| ~~상수 σ~~ | ~~직접 지정~~ | ~~아니오~~ (v1 완료) |
+| ~~FDT (σ²=2γT/m)~~ | ~~온도 기반 자동 σ~~ | ~~아니오~~ (v2 완료) |
 | σ(x) 위치 의존 | 우물 근처 약하고 장벽에서 강함 | **예** |
 | Colored noise | 시간 상관 있는 노이즈 (OU process) | **예** |
-| Temperature schedule | σ가 시간에 따라 변함 | **예** |
+| Temperature schedule | T(t) 시간에 따라 변함 (simulated annealing) | 아니오 (callback) |
 
 이런 확장이 필요해지면 이 폴더에 모듈을 추가한다.
 
 ---
 
-*Phase C 완료: 2026-02-24*
+*Phase C v1 완료: 2026-02-24*
+*Phase C v2 (FDT) 완료: 2026-02-24*

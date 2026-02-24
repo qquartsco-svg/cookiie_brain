@@ -3,7 +3,7 @@
 > 이 문서는 프로젝트의 물리적 개념, 구현 상태, 검증 결과, 다음 방향을
 > 하나로 정리한 것이다. 새로 합류하는 사람이 이 문서 하나로 전체를 파악할 수 있어야 한다.
 
-**마지막 업데이트: 2026-02-24**
+**마지막 업데이트: 2026-02-24 (Phase C v2 FDT 반영)**
 
 ---
 
@@ -34,7 +34,7 @@
 ### 전체 운동 방정식 (현재)
 
 ```
-ẍ = -∇V(x) + ωJv - γv + I(x,v,t) + σξ(t)
+m ẍ = -∇V(x) + ωJv - γv + I(x,v,t) + σξ(t)
 ```
 
 | 항 | 이름 | 역할 | 에너지 영향 |
@@ -44,6 +44,13 @@
 | `-γv` | 감쇠 | 속도에 비례해 에너지를 빼앗음 | **소산** |
 | `I(x,v,t)` | 외부 주입 | 외부에서 에너지를 넣어줌 | **주입** |
 | `σξ(t)` | 확률적 요동 | 매 순간 랜덤 방향으로 밀어줌 | **확률적** |
+
+**요동-소산 정리 (FDT):**
+```
+σ² = 2γT/m    (kB = 1 자연단위)
+```
+temperature(T) 설정 시 σ가 γ, T, m으로부터 자동 결정.
+정상 분포 보장: P(x,v) ∝ exp(-E/T), 등분배 ⟨½mv²⟩ = T/2 (per DoF).
 
 **에너지 밸런스:**
 
@@ -267,7 +274,7 @@ PotentialFieldEngine
 상태 벡터 (x, v) 업데이트
     ↓
 Extensions에 기록
-    ├── potential_field: V, E, g, time, gamma, noise_sigma, dissipation_power, injection_power
+    ├── potential_field: V, E, g, time, gamma, noise_sigma, noise_mode, temperature, mass, ...
     ├── well_formation: W, b
     └── well_registry: n_wells, ready_for_orbit, wells info
 ```
@@ -283,7 +290,7 @@ Extensions에 기록
 | 공전 (Phase B) | ✔ | V = -ΣA exp(...) + ωJv | ALL PASS (8순환, 88%) |
 | WellFormation 브릿지 | ✔ | W,b → center/A/σ | ALL PASS (5항목) |
 | 에너지 주입/소산 | ✔ | -γv + I(x,v,t) | ALL PASS (상관 0.999995) |
-| 요동 (Phase C) | ✔ | +σξ(t) | ALL PASS (4항목) |
+| 요동 (Phase C) | ✔ | +σξ(t), σ²=2γT/m (FDT) | ALL PASS (v1: 4항목, v2: 5항목) |
 
 ---
 
@@ -318,7 +325,8 @@ CookiieBrain/
 │   ├── phase_b_orbit_verification.py         # 공전 검증 (3-우물)
 │   ├── bridge_verification.py                # 브릿지 검증
 │   ├── dissipation_injection_verification.py # 에너지 주입/소산 검증
-│   └── fluctuation_verification.py           # 요동 검증
+│   ├── fluctuation_verification.py           # 요동 검증
+│   └── fdt_verification.py                  # FDT 검증
 └── docs/
     ├── FULL_CONCEPT_AND_STATUS.md   # ← 이 문서
     └── WORK_LOG.md                  # 시간순 작업 기록
@@ -328,7 +336,7 @@ PotentialFieldEngine/
 └── potential_field_engine.py        # 물리 적분 엔진
                                        Strang splitting, symplectic Euler
                                        omega_coriolis, gamma, injection_func,
-                                       noise_sigma (Langevin)
+                                       noise_sigma, temperature, mass (FDT)
 ```
 
 ---
@@ -349,7 +357,8 @@ PotentialFieldEngine/
 ```
 
 - ξ(t): 백색 노이즈 (매 순간 랜덤 방향으로 밀어줌)
-- σ: 노이즈 세기 (온도와 비슷한 역할)
+- σ: 노이즈 세기
+- FDT (v2): σ² = 2γT/m — 온도 T를 설정하면 σ가 자동 결정
 - 이것은 **Langevin 방정식** (확률 미분 방정식)
 
 ### 요동이 들어가면 뭐가 달라지나
@@ -386,6 +395,40 @@ O(h):  dv = -γv dt + σ dW 의 정확해
 | 2 | Kramers 탈출 (σ=0.25, γ=0.01) | PASS (탈출 10/10, 100%) |
 | 3 | 통계적 비편향 (free particle) | PASS (bias ratio 0.066) |
 | 4 | 감쇠+노이즈 정상 상태 | PASS (E bounded, std=0.25) |
+
+### Phase C v2: FDT (요동-소산 정리)
+
+**왜 필요한가:**
+Phase C v1에서는 σ와 γ가 독립 파라미터였다. 임의 조합이 가능해 비물리적 상태를 만들 수 있었다.
+FDT를 도입하면 σ가 γ, T, m에 종속되어, 열역학적으로 올바른 정상 분포가 보장된다.
+
+**수식:**
+```
+σ² = 2γT/m    (kB = 1)
+정상 분포: P(x,v) ∝ exp(-E/T)
+등분배:    ⟨½mv²⟩ = T/2  (per DoF)
+```
+
+**모드 우선순위:**
+- `noise_sigma > 0` → manual (직접 지정, FDT 무시)
+- `temperature > 0` + `γ > 0` → fdt (σ 자동 계산)
+- 그 외 → off (결정론적)
+
+**변경 파일:**
+- `potential_field_engine.py`: temperature, mass 파라미터, noise_sigma property (FDT 자동 계산), noise_mode property
+- `cookiie_brain_engine.py`: temperature, mass config 전달 경로 추가
+
+**검증 결과:**
+```
+python examples/fdt_verification.py → ALL PASS (5/5)
+```
+| # | 검증 | 결과 |
+|---|------|------|
+| 1 | 하위 호환 (temperature=None) | PASS — 기존 결정론적 동작 동일 |
+| 2 | FDT σ 계산 | PASS — σ = √(2γT/m), 오차 0 |
+| 3 | Manual override | PASS — noise_sigma 우선, temperature 무시 |
+| 4 | Boltzmann 등분배 | PASS — ⟨|v|²⟩ = 2.01 (이론 2.00), 오차 0.6% |
+| 5 | γ=0 안전장치 | PASS — temperature>0이어도 σ=0 |
 
 ### 다음: 은하 구조 실험
 
