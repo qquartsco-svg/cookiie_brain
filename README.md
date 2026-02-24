@@ -3,7 +3,7 @@
 **상태 동역학 기반 뇌 모델링 통합 엔진**
 
 ```
-Version : 0.2.0
+Version : 0.3.0
 License : PHAM-OPEN v2.0
 Python  : 3.8+
 Author  : GNJz (Qquarts)
@@ -64,7 +64,7 @@ to generate phase structure (limit cycles) while strictly conserving energy.
 ```
 골짜기의 깊이 (퍼텐셜):   V(x) = -(1/2)x'Wx - b'x   (지역 최솟값 최대 1개)
 공을 끌어당기는 힘:        g(x) = -∇V(x) = Wx + b
-자전 (코리올리형):         a = g(x) + ωJv       ← 힘이 속도에 수직 → 에너지 보존
+전체 운동 방정식:          ẍ = g(x) + ωJv - γv + I(x,v,t) + σξ(t)
 총 에너지:                 E = (1/2)||v||² + V(x)
 ```
 
@@ -146,6 +146,30 @@ python examples/phase_a_minimal_verification.py
 
 ---
 
+## Phase C — 요동
+
+결정론적 시스템에서는 같은 초기 조건이면 항상 같은 결과입니다.
+요동을 넣으면 공이 **확률적으로** 장벽을 넘을 수 있습니다.
+감쇠로 갇힌 기억에서 우연히 다른 기억으로 전이하는 것 — 이것이 창의적 연상의 물리적 모델입니다.
+
+```
+ẍ = -∇V(x) + ωJv - γv + I(x,v,t) + σξ(t)
+
+σ : 노이즈 세기 (온도와 비슷한 역할)
+ξ : 백색 노이즈 (매 순간 랜덤 방향)
+```
+
+**적분**: Strang splitting의 감쇠 반스텝에 Wiener increment 추가
+- `v += σ·√(dt/2)·N(0,1)` (Euler-Maruyama)
+- σ=0이면 기존 결정론적 동작과 100% 동일
+
+검증 실행:
+```bash
+python examples/fluctuation_verification.py
+```
+
+---
+
 ## 설계 원칙
 
 - **state 불변**: `new_state = state.copy()` 후 반환. 원본 안 건드림
@@ -154,6 +178,7 @@ python examples/phase_a_minimal_verification.py
 - **GlobalState 하나로 모든 엔진 연결**: extensions 규약으로 데이터 교환
 
 상세: [docs/](docs/)
+전체 개념 · 현재 상태: [docs/FULL_CONCEPT_AND_STATUS.md](docs/FULL_CONCEPT_AND_STATUS.md)
 
 ---
 
@@ -201,9 +226,14 @@ CookiieBrain/
 ├── examples/                   # 실행 가능한 예제
 │   ├── phase_a_minimal_verification.py  # 자전 검증 (ALL PASS)
 │   ├── phase_b_orbit_verification.py    # 공전 검증 (ALL PASS)
+│   ├── bridge_verification.py           # 브릿지 검증 (ALL PASS)
+│   ├── dissipation_injection_verification.py  # 에너지 주입/소산 검증 (ALL PASS)
+│   ├── fluctuation_verification.py            # 요동 검증 (ALL PASS)
 │   ├── phase_a_integration_test.py      # 우물 + 자전 통합
 │   └── integration_test_demo.py         # 기본 통합 테스트
-└── docs/                       # 참고 문서 (설계 분석 · 리뷰 · 로드맵)
+└── docs/                       # 참고 문서
+    ├── FULL_CONCEPT_AND_STATUS.md  # 전체 개념 · 현재 상태 (핵심 문서)
+    └── WORK_LOG.md                 # 시간순 작업 기록
 ```
 
 ---
@@ -228,7 +258,9 @@ CookiieBrain/
 | 정적 퍼텐셜 (우물 생성 + 수렴) | 완료 |
 | 자전 (코리올리 회전, 에너지 보존) | 완료 |
 | 공전 (다중 우물 순환 궤도, 3-우물 검증) | 완료 |
-| 요동 (확률적 요동, 불확정성) | 미착수 |
+| WellFormation → Gaussian 브릿지 | 완료 |
+| 에너지 주입/소산 (-γv + I) | 완료 |
+| 요동 (Langevin noise, σξ(t)) | 완료 |
 
 > 고전 구조가 먼저, 확률은 마지막에 얹는다.
 > 구조가 있어야 요동의 의미가 생긴다.
@@ -237,5 +269,5 @@ CookiieBrain/
 
 ---
 
-*GNJz (Qquarts) · Cookiie Brain v0.2.0*
+*GNJz (Qquarts) · Cookiie Brain v0.3.0*
 *"Code is Free. Success is Shared."*

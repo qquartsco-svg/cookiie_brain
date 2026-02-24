@@ -16,7 +16,7 @@
 5. 기타 엔진들...
 
 Author: GNJz (Qquarts)
-Version: 0.2.0
+Version: 0.3.0
 """
 
 from __future__ import annotations
@@ -116,7 +116,7 @@ try:
 except ImportError:
     HIPPO_MEMORY_AVAILABLE = False
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 
 class CookiieBrainEngine(SelfOrganizingEngine):
@@ -190,9 +190,11 @@ class CookiieBrainEngine(SelfOrganizingEngine):
         self.phase_a_strength = self.potential_field_config.get("phase_a_strength", 1.0)
         self.phase_a_rotation_direction = self.potential_field_config.get("phase_a_rotation_direction", 1)
         
-        # 에너지 주입/소산 설정
+        # 에너지 주입/소산/요동 설정
         self.gamma = self.potential_field_config.get("gamma", 0.0)
         self.injection_func = self.potential_field_config.get("injection_func", None)
+        self.noise_sigma = self.potential_field_config.get("noise_sigma", 0.0)
+        self.noise_seed = self.potential_field_config.get("noise_seed", None)
         
         # CerebellumEngine 설정 저장
         self.cerebellum_config = cerebellum_config or {}
@@ -380,6 +382,8 @@ class CookiieBrainEngine(SelfOrganizingEngine):
                         omega_coriolis=omega_coriolis,
                         gamma=self.gamma,
                         injection_func=self.injection_func,
+                        noise_sigma=self.noise_sigma,
+                        noise_seed=self.noise_seed,
                     )
                 
                 # PotentialFieldEngine 업데이트

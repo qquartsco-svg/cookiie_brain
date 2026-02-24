@@ -160,3 +160,4 @@ Phase_B/
 | WellFormation → Gaussian 브릿지 | ✔ |
 | cookiie_brain_engine 통합 | ✔ |
 | 에너지 주입/소산 | ✔ (γv 감쇠 + I(x,v,t) 주입) |
+| 요동 (Phase C) | ✔ (σξ(t) Langevin noise) |

@@ -159,6 +159,53 @@ n_steps: 60000
 
 ---
 
+## 2026-02-24 — Phase C 요동 (Fluctuation) 구현
+
+### 작업 내용
+- PotentialFieldEngine에 Langevin noise (σξ(t)) 구현
+  - `noise_sigma` 파라미터: 노이즈 세기 (σ=0이면 기존 결정론적 동작)
+  - `noise_seed` 파라미터: 재현 가능한 결과를 위한 난수 시드
+- Strang splitting의 D (dissipation) 스텝을 O-U (Ornstein-Uhlenbeck) 반스텝으로 확장
+  - O(dt/2): v *= exp(-γdt/2) → v += σ·√(dt/2)·N(0,1)
+  - 대칭 래핑 (시작/끝) → 총 분산 σ²dt (Wiener increment)
+  - σ=0이면 기존 D 스텝과 100% 동일 (하위 호환)
+- symplectic Euler에도 동일한 노이즈 추가
+- cookiie_brain_engine.py에 noise_sigma/noise_seed config 전달 경로 추가
+
+### 변경 파일
+| 파일 | 변경 | 위치 |
+|------|------|------|
+| `potential_field_engine.py` | noise_sigma, noise_seed, _rng, O-U 반스텝 | PotentialFieldEngine (별도 레포) |
+| `cookiie_brain_engine.py` | noise_sigma/noise_seed config 전달, 버전 0.3.0 | CookiieBrain |
+| `examples/fluctuation_verification.py` | 신규 생성 (검증 스크립트) | CookiieBrain |
+
+### 검증
+- `fluctuation_verification.py`: ALL PASS
+  - 하위 호환 (σ=0 결정론): PASS (시드 무관 동일 궤적, E drift 2.58e-06)
+  - Kramers 탈출 (σ=0.25, γ=0.01): PASS (탈출 10/10, 100%)
+  - 통계적 비편향 (free particle): PASS (bias ratio 0.066)
+  - 감쇠+노이즈 정상 상태: PASS (E bounded, std=0.25)
+
+### PHAM 서명
+- ⏳ 미서명
+
+---
+
+## 2026-02-24 — 전체 개념/상태 문서 정리 (Phase C 포함)
+
+### 작업 내용
+- 프로젝트 전체 개념, 물리 수식, 구현 상태, 다음 방향을 하나의 문서로 정리
+- 새로 합류하는 사람이 이 문서 하나로 전체를 파악할 수 있도록 작성
+- 비유 테이블, 전체 운동 방정식, 각 Phase 개념/수식/검증, 파이프라인, 설계 원칙, 용어 정리 포함
+
+### 변경 파일
+| 파일 | 변경 | 상태 |
+|------|------|------|
+| `docs/FULL_CONCEPT_AND_STATUS.md` | 신규 생성 (전체 개념 + 현재 상태) | 신규 |
+| `docs/WORK_LOG.md` | 이 항목 추가 | 수정 |
+
+---
+
 ## PHAM 서명 상태
 
 | 파일 | 서명 상태 | 체인 파일 |
@@ -172,3 +219,7 @@ n_steps: 60000
 | `phase_b_orbit_verification.py` | ⏳ 미서명 | — |
 | `rotational_field.py` | ⏳ 미서명 | — |
 | `moon.py` | ⏳ 미서명 | — |
+| `well_to_gaussian.py` | ⏳ 미서명 | — |
+| `bridge_verification.py` | ⏳ 미서명 | — |
+| `dissipation_injection_verification.py` | ⏳ 미서명 | — |
+| `fluctuation_verification.py` | ⏳ 미서명 | — |
