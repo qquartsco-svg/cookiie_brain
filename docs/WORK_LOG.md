@@ -70,7 +70,7 @@ n_steps: 60000
 ```
 
 ### PHAM 서명
-- ⏳ 미서명 (아래 명령어로 실행 필요)
+- ✔ 서명됨 (2026-02-24) — 하단 PHAM 서명 상태 참조
 
 ---
 
@@ -91,7 +91,7 @@ n_steps: 60000
 | `cookiie_brain_engine.py` | 이중 가드 (init + update) | `76d0f56` |
 
 ### PHAM 서명
-- ⏳ 미서명
+- ✔ 서명됨 (2026-02-24)
 
 ---
 
@@ -123,7 +123,7 @@ n_steps: 60000
   - 공전 재현: PASS (5순환, 18전이, 3우물 방문)
 
 ### PHAM 서명
-- ⏳ 미서명
+- ✔ 서명됨 (2026-02-24)
 
 ---
 
@@ -155,7 +155,7 @@ n_steps: 60000
 - Phase B 공전 검증: ALL PASS (하위 호환 확인)
 
 ### PHAM 서명
-- ⏳ 미서명
+- ✔ 서명됨 (2026-02-24)
 
 ---
 
@@ -186,7 +186,7 @@ n_steps: 60000
   - 감쇠+노이즈 정상 상태: PASS (E bounded, std=0.25)
 
 ### PHAM 서명
-- ⏳ 미서명
+- ✔ 서명됨 (2026-02-24)
 
 ---
 
@@ -235,7 +235,7 @@ n_steps: 60000
 - `fluctuation_verification.py`: ALL PASS (하위 호환 확인)
 
 ### PHAM 서명
-- ⏳ 미서명
+- ✔ 서명됨 (2026-02-24)
 
 ---
 
@@ -307,7 +307,7 @@ c70db58fcfda...fc4293   examples/fdt_verification.py
 | `docs/WORK_LOG.md` | 해시 기록, 엔진 점검, Phase C 완성도 | 수정 |
 
 ### PHAM 서명
-- ⏳ 미서명
+- ✔ 서명됨 (2026-02-24)
 
 ---
 
@@ -363,7 +363,7 @@ Layer 1은 분석 모듈이므로 기존 엔진 코드를 변경하지 않았다
 기존 검증 스크립트 영향 없음.
 
 ### PHAM 서명
-- ⏳ 미서명
+- ✔ 서명됨 (2026-02-24)
 
 ---
 
@@ -419,7 +419,7 @@ trunk.update(state)
 **하위 호환 완전 유지. 리팩터링으로 인한 동작 변경 없음.**
 
 ### PHAM 서명
-- ⏳ 미서명
+- ✔ 서명됨 (2026-02-24)
 
 ---
 
@@ -495,27 +495,39 @@ layer2_verification.py: ALL PASS (5/5)
 전체 기존 검증 7개 + Layer 2 5개 = 12/12 ALL PASS
 
 ### PHAM 서명
-- ⏳ 미서명
+- ✔ 서명됨 (2026-02-24)
 
 ---
 
 ## PHAM 서명 상태
 
-| 파일 | 서명 상태 | 체인 파일 |
-|------|----------|----------|
-| `potential_field_engine.py` | ✔ 서명됨 (2026-02-21) | `pham_chain_potential_field_engine.json` |
-| `CONCEPT.md` | ✔ 서명됨 | `pham_chain_CONCEPT.json` |
-| `grid_analyzer.py` | ✔ 서명됨 | `pham_chain_grid_analyzer.json` |
-| `README.md (PFE)` | ✔ 서명됨 | `pham_chain_README.json` |
-| `multi_well_potential.py` | ⏳ 미서명 | — |
-| `cookiie_brain_engine.py` | ⏳ 미서명 | — |
-| `phase_b_orbit_verification.py` | ⏳ 미서명 | — |
-| `rotational_field.py` | ⏳ 미서명 | — |
-| `moon.py` | ⏳ 미서명 | — |
-| `well_to_gaussian.py` | ⏳ 미서명 | — |
-| `bridge_verification.py` | ⏳ 미서명 | — |
-| `dissipation_injection_verification.py` | ⏳ 미서명 | — |
-| `fluctuation_verification.py` | ⏳ 미서명 | — |
-| `fdt_verification.py` | ⏳ 미서명 | — |
-| `layer1_verification.py` | ⏳ 미서명 | — |
-| `statistical_mechanics.py` | ⏳ 미서명 | — |
+> 서명일: 2026-02-24. 전체 서명 완료.
+
+### PFE 리포 (PotentialField_Engine)
+
+| 파일 | 블록 | 해시 (앞 16자) | 스코어 | 체인 파일 |
+|------|------|---------------|--------|----------|
+| `potential_field_engine.py` | 2 | `841c8726bee99000` | 0.8024 | `pham_chain_potential_field_engine.json` |
+| `layers.py` | 1 | `84332c0b406bb4c0` | 0.9998 | `pham_chain_layers.json` |
+| `CONCEPT.md` | 1 | `fe03e9f7b7f02cf4` | — | `pham_chain_CONCEPT.json` |
+| `grid_analyzer.py` | 1 | `8511871507576373` | — | `pham_chain_grid_analyzer.json` |
+| `README.md (PFE)` | 1 | `f68c08d278216056` | — | `pham_chain_README.json` |
+
+### CookiieBrain 리포
+
+| 파일 | 해시 (앞 16자) | 스코어 | 체인 파일 |
+|------|---------------|--------|----------|
+| `statistical_mechanics.py` | `ffc2377780cc363e` | 0.9998 | `pham_chain_statistical_mechanics.json` |
+| `nbody.py` | `345fe7b07a85eb50` | 0.9998 | `pham_chain_nbody.json` |
+| `cookiie_brain_engine.py` | `4b87c6d1e1918742` | 0.9999 | `pham_chain_cookiie_brain_engine.json` |
+| `multi_well_potential.py` | `ea761fe7fba5ce07` | 0.9997 | `pham_chain_multi_well_potential.json` |
+| `rotational_field.py` | `72e328e5c289b00a` | 0.9996 | `pham_chain_rotational_field.json` |
+| `moon.py` | `2bbf892be5d63597` | 0.9994 | `pham_chain_moon.json` |
+| `well_to_gaussian.py` | `f62d3fc32a3a4f4a` | 0.9998 | `pham_chain_well_to_gaussian.json` |
+| `layer1_verification.py` | `f752519bf36b9f6e` | 0.9999 | `pham_chain_layer1_verification.json` |
+| `layer2_verification.py` | `72851b3f2cd57695` | 0.9999 | `pham_chain_layer2_verification.json` |
+| `fdt_verification.py` | `c70db58fcfdaf5e9` | 0.9997 | `pham_chain_fdt_verification.json` |
+| `fluctuation_verification.py` | `d393fad0a1399bb6` | 0.9998 | `pham_chain_fluctuation_verification.json` |
+| `dissipation_injection_verification.py` | `ad9e7f6b1473d3d1` | 0.9998 | `pham_chain_dissipation_injection_verification.json` |
+| `bridge_verification.py` | `6ab5b4bc2956cf18` | 0.9998 | `pham_chain_bridge_verification.json` |
+| `phase_b_orbit_verification.py` | `92edd4865125412f` | 0.9998 | `pham_chain_phase_b_orbit_verification.json` |
