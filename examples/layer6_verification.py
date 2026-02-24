@@ -21,7 +21,7 @@ for p in [str(ROOT)]:
         sys.path.insert(0, p)
 
 import numpy as np
-from Layer_6.geometric_phase import (
+from analysis.Layer_6.geometric_phase import (
     ParameterSpace,
     FisherMetricCalculator,
     tilted_double_well,

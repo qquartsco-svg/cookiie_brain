@@ -41,7 +41,7 @@ except ImportError:
 
 # Phase_A (curl 검증용)
 try:
-    from Phase_A import Pole, create_rotational_field, create_combined_field, compute_curl_2d
+    from trunk.Phase_A import Pole, create_rotational_field, create_combined_field, compute_curl_2d
 except ImportError:
     Pole = None
     create_rotational_field = None
@@ -122,7 +122,7 @@ def main():
     if create_rotational_field is not None and compute_curl_2d is not None:
         pfe_path = parent / "Brain_Disorder_Simulation_Engine" / "Unsolved_Problems_Engines" / "PotentialFieldEngine"
         if str(pfe_path) not in sys.path:
-            sys.path.insert(0, str(pfe_path))
+            sys.path.append(str(pfe_path))
         from well_formation_integration import create_field_from_wells
         well_result_obj = well_result["well_result"]
         field_func = create_field_from_wells(well_result_obj)

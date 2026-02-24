@@ -88,7 +88,7 @@ v_drift = (∂V/∂y, −∂V/∂x) / B
 단일 입자에 대한 위치 의존 반대칭 게이지 연산자.
 
 ```python
-from Layer_3 import GaugeForce
+from analysis.Layer_3 import GaugeForce
 
 def B_field(x):
     """원점 근처에 집중된 가우시안 자기장"""
@@ -108,7 +108,7 @@ gauge = GaugeForce(B_func=B_field, dim=2)
 N 입자 각각에 위치 의존 반대칭 게이지 연산자를 적용.
 
 ```python
-from Layer_3 import NBodyGaugeForce
+from analysis.Layer_3 import NBodyGaugeForce
 
 nb_gauge = NBodyGaugeForce(
     n_particles=10, dim=2,

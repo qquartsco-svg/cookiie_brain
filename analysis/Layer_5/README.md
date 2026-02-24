@@ -81,7 +81,7 @@ v_osmotic = D·∇ln ρ    (삼투 속도)
 1D 격자 위에서 ρ(x,t)를 시간 진화시킨다.
 
 ```python
-from Layer_5 import FokkerPlanckSolver1D
+from analysis.Layer_5 import FokkerPlanckSolver1D
 
 fp = FokkerPlanckSolver1D(
     x_min=-4, x_max=4, nx=201,

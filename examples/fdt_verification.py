@@ -23,7 +23,7 @@ pfe_path = (
     / "Unsolved_Problems_Engines"
     / "PotentialFieldEngine"
 )
-sys.path.insert(0, str(pfe_path))
+sys.path.append(str(pfe_path))
 
 import numpy as np
 from potential_field_engine import PotentialFieldEngine

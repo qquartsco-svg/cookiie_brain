@@ -3,11 +3,46 @@
 **상태 동역학 기반 뇌 모델링 통합 엔진**
 
 ```
-Version : 0.3.0
+Version : 0.4.0
 License : PHAM-OPEN v2.0
 Python  : 3.8+
 Author  : GNJz (Qquarts)
 ```
+
+---
+
+## 폴더 구조 안내 (v0.4.0 변경)
+
+v0.4.0부터 Phase(줄기)와 Layer(분석 도구)의 역할 차이를 폴더로 명확히 분리했습니다.
+
+| v0.3.0 (이전) | v0.4.0 (현재) | 설명 |
+|---------------|---------------|------|
+| `Phase_A/` | `trunk/Phase_A/` | 자전 모듈 |
+| `Phase_B/` | `trunk/Phase_B/` | 공전 모듈 |
+| `Phase_C/` | `trunk/Phase_C/` | 요동 모듈 |
+| `Layer_1/` | `analysis/Layer_1/` | 통계역학 |
+| `Layer_2/` | `analysis/Layer_2/` | 다체/장론 |
+| `Layer_3/` | `analysis/Layer_3/` | 게이지/기하학 |
+| `Layer_4/` | `analysis/Layer_4/` | 비평형 일 정리 |
+| `Layer_5/` | `analysis/Layer_5/` | 확률역학 |
+| `Layer_6/` | `analysis/Layer_6/` | 정보 기하학 |
+
+**import 경로 변경 요약:**
+```python
+# 이전 (v0.3.0)
+from Phase_B.multi_well_potential import MultiWellPotential
+from Layer_1 import kramers_rate
+
+# 현재 (v0.4.0)
+from trunk.Phase_B.multi_well_potential import MultiWellPotential
+from analysis.Layer_1 import kramers_rate
+```
+
+**왜 분리했는가?**
+- `trunk/` — 운동방정식의 구성요소 (Phase A/B/C). `PotentialFieldEngine`에 직접 투입되는 코드.
+- `analysis/` — trunk 위에 쌓이는 분석 도구 (Layer 1~6). trunk의 결과를 받아 물리량을 측정/해석.
+
+두 개는 역할이 다르므로, 같은 계층에 두면 혼란을 줄 수 있다.
 
 ---
 
@@ -149,7 +184,7 @@ v · R = v · (ωJv) = 0           # → 에너지 보존 (수학적 보장)
 python examples/phase_a_minimal_verification.py
 ```
 
-수학적 기초 · 단계 로드맵: [Phase_A/](Phase_A/)
+수학적 기초 · 단계 로드맵: [trunk/Phase_A/](trunk/Phase_A/)
 
 ---
 
@@ -195,7 +230,7 @@ Phase C(요동/FDT)로 줄기(trunk)가 완성되었습니다.
 - **엔트로피 생산률**: 시스템이 에너지를 얼마나 비가역적으로 소산하는가
 
 ```python
-from Layer_1 import kramers_rate, TransitionAnalyzer, entropy_production_rate
+from analysis.Layer_1 import kramers_rate, TransitionAnalyzer, entropy_production_rate
 ```
 
 검증 실행:
@@ -203,7 +238,7 @@ from Layer_1 import kramers_rate, TransitionAnalyzer, entropy_production_rate
 python examples/layer1_verification.py   # 5항목 ALL PASS
 ```
 
-상세: [Layer_1/README.md](Layer_1/README.md) · [Layer_1/README_EN.md](Layer_1/README_EN.md)
+상세: [analysis/Layer_1/README.md](analysis/Layer_1/README.md) · [analysis/Layer_1/README_EN.md](analysis/Layer_1/README_EN.md)
 
 ## Layer 2 — 다체/장론
 
@@ -216,7 +251,7 @@ Layer 1 위에 N-body 다체 동역학을 쌓습니다.
 - **Newton 제3법칙**: F_ij = -F_ji 구조적 보장 → 운동량 보존
 
 ```python
-from Layer_2 import InteractionForce, NBodyState, spring_interaction
+from analysis.Layer_2 import InteractionForce, NBodyState, spring_interaction
 ```
 
 검증 실행:
@@ -224,7 +259,7 @@ from Layer_2 import InteractionForce, NBodyState, spring_interaction
 python examples/layer2_verification.py   # 5항목 ALL PASS
 ```
 
-상세: [Layer_2/README.md](Layer_2/README.md)
+상세: [analysis/Layer_2/README.md](analysis/Layer_2/README.md)
 
 ## Layer 3 — 게이지/기하학
 
@@ -237,7 +272,7 @@ trunk의 전역 Coriolis 회전 ω가, 공간의 각 위치마다 다른 회전 
 - **극한 일관성**: B(x) = const → CoriolisGauge, B(x) = 0 → 자유 입자
 
 ```python
-from Layer_3 import MagneticForce, GeometryAnalyzer
+from analysis.Layer_3 import MagneticForce, GeometryAnalyzer
 ```
 
 검증 실행:
@@ -245,7 +280,7 @@ from Layer_3 import MagneticForce, GeometryAnalyzer
 python examples/layer3_verification.py   # 5항목 ALL PASS
 ```
 
-상세: [Layer_3/README.md](Layer_3/README.md)
+상세: [analysis/Layer_3/README.md](analysis/Layer_3/README.md)
 
 ## Layer 4 — 비평형 일 정리
 
@@ -257,7 +292,7 @@ Layer 1(평형 열역학) 위에 임의의 비평형 과정을 위한 정확한 
 - **Crooks 정리**: 정방향/역방향 일 분포의 대칭 관계
 
 ```python
-from Layer_4 import JarzynskiEstimator, moving_trap, stiffness_change
+from analysis.Layer_4 import JarzynskiEstimator, moving_trap, stiffness_change
 ```
 
 검증 실행:
@@ -265,7 +300,7 @@ from Layer_4 import JarzynskiEstimator, moving_trap, stiffness_change
 python examples/layer4_verification.py   # 5항목 ALL PASS
 ```
 
-상세: [Layer_4/README.md](Layer_4/README.md)
+상세: [analysis/Layer_4/README.md](analysis/Layer_4/README.md)
 
 ## Layer 5 — 확률역학
 
@@ -277,7 +312,7 @@ Nelson 확률역학의 forward/backward 속도 분해를 포함합니다.
 - **확률류**: `J = bρ − D∇ρ`, 평형에서 `J = 0` (detailed balance)
 
 ```python
-from Layer_5 import FokkerPlanckSolver1D, NelsonDecomposition
+from analysis.Layer_5 import FokkerPlanckSolver1D, NelsonDecomposition
 ```
 
 검증 실행:
@@ -285,7 +320,7 @@ from Layer_5 import FokkerPlanckSolver1D, NelsonDecomposition
 python examples/layer5_verification.py   # 5항목 ALL PASS
 ```
 
-상세: [Layer_5/README.md](Layer_5/README.md)
+상세: [analysis/Layer_5/README.md](analysis/Layer_5/README.md)
 
 ## Layer 6 — 정보 기하학
 
@@ -300,7 +335,7 @@ Layer 3(물리 공간 게이지)의 매개변수 공간 확장입니다.
 Fisher 계량의 곡률은 비자명하다 — 이것이 양자 Fubini-Study 계량의 고전 극한이다.
 
 ```python
-from Layer_6 import FisherMetricCalculator, ParameterSpace
+from analysis.Layer_6 import FisherMetricCalculator, ParameterSpace
 ```
 
 검증 실행:
@@ -308,7 +343,7 @@ from Layer_6 import FisherMetricCalculator, ParameterSpace
 python examples/layer6_verification.py   # 5항목 ALL PASS
 ```
 
-상세: [Layer_6/README.md](Layer_6/README.md)
+상세: [analysis/Layer_6/README.md](analysis/Layer_6/README.md)
 
 ---
 
@@ -359,35 +394,23 @@ CookiieBrain/
 ├── cookiie_brain_engine.py     # 통합 엔진 (오케스트레이션)
 ├── README.md
 ├── QUICK_START.md
-├── Phase_A/                    # 자전 모듈 (완료)
-│   ├── rotational_field.py     #   코리올리형 + pole형 회전 생성
-│   ├── moon.py                 #   위성 중력장
-│   └── docs/                   #   작업 기록 · 수학 문서
-├── Phase_B/                    # 공전 모듈 (다중 우물 순환)
-│   ├── multi_well_potential.py #   가우시안 다중 우물 퍼텐셜
-│   └── README.md               #   개념 · 수식 · 사용법
-├── Phase_C/                    # 요동 (Langevin noise)
-│   ├── README.md               #   개념 · 구현 위치 · 사용법 (한국어)
-│   └── README_EN.md            #   Phase C concept (English)
-├── Layer_1/                    # 통계역학 정식화
-│   ├── statistical_mechanics.py #  Kramers rate, TransitionAnalyzer, entropy
-│   ├── README.md               #   Layer 1 개념 (한국어)
-│   └── README_EN.md            #   Layer 1 concept (English)
-├── Layer_2/                    # 다체/장론
-│   ├── nbody.py               #   NBodyState, InteractionForce, ExternalForce
-│   └── README.md              #   Layer 2 개념 (한국어)
-├── Layer_3/                    # 게이지/기하학
-│   ├── gauge.py               #   GaugeForce, GeometryAnalyzer
-│   └── README.md              #   Layer 3 개념 (한국어)
-├── Layer_4/                    # 비평형 일 정리
-│   ├── fluctuation_theorems.py #  Jarzynski, Crooks, Protocol
-│   └── README.md              #   Layer 4 개념 (한국어)
-├── Layer_5/                    # 확률역학
-│   ├── stochastic_mechanics.py #  Fokker-Planck, Nelson, ProbabilityCurrent
-│   └── README.md              #   Layer 5 개념 (한국어)
-├── Layer_6/                    # 정보 기하학
-│   ├── geometric_phase.py     #  FisherMetricCalculator, ParameterSpace
-│   └── README.md              #   Layer 6 개념 (한국어)
+├── trunk/                      # ── 줄기 (운동방정식 구성요소) ──
+│   ├── Phase_A/                #   자전 (ωJv 코리올리 회전)
+│   │   ├── rotational_field.py
+│   │   └── moon.py
+│   ├── Phase_B/                #   공전 (가우시안 다중 우물)
+│   │   ├── multi_well_potential.py
+│   │   └── well_to_gaussian.py
+│   └── Phase_C/                #   요동 (Langevin noise, FDT)
+│       ├── README.md / README_EN.md
+│       └── (구현은 PotentialFieldEngine에 내장)
+├── analysis/                     # ── 분석 도구 (trunk 위에 쌓임) ──
+│   ├── Layer_1/                #   통계역학 (Kramers, 전이, 엔트로피)
+│   ├── Layer_2/                #   다체/장론 (N-body 상호작용)
+│   ├── Layer_3/                #   게이지/기하학 (위치 의존 B(x))
+│   ├── Layer_4/                #   비평형 일 정리 (Jarzynski, Crooks)
+│   ├── Layer_5/                #   확률역학 (Fokker-Planck, Nelson)
+│   └── Layer_6/                #   정보 기하학 (Fisher 계량, 곡률)
 ├── examples/                   # 실행 가능한 예제
 │   ├── phase_a_minimal_verification.py  # 자전 검증 (ALL PASS)
 │   ├── phase_b_orbit_verification.py    # 공전 검증 (ALL PASS)
@@ -451,7 +474,7 @@ CookiieBrain/
 > Layer 5에서 궤적이 밀도가 된다.
 > Layer 6에서 매개변수 공간에 기하학이 생긴다.
 
-단계 설명: [Phase_A/STAGES_SPIN_ORBIT_FLUCTUATION.md](Phase_A/STAGES_SPIN_ORBIT_FLUCTUATION.md)
+단계 설명: [trunk/Phase_A/STAGES_SPIN_ORBIT_FLUCTUATION.md](trunk/Phase_A/STAGES_SPIN_ORBIT_FLUCTUATION.md)
 
 ---
 

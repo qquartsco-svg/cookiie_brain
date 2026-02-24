@@ -90,7 +90,7 @@ try:
     phase_a_path = Path(__file__).parent
     if str(phase_a_path) not in sys.path:
         sys.path.insert(0, str(phase_a_path))
-    from Phase_A import Pole, create_rotational_field
+    from trunk.Phase_A import Pole, create_rotational_field
     PHASE_A_AVAILABLE = True
 except ImportError:
     PHASE_A_AVAILABLE = False
@@ -99,7 +99,7 @@ except ImportError:
 
 # Phase_B (Multi-well potential, Gaussian bridge) import
 try:
-    from Phase_B.well_to_gaussian import WellRegistry, WellToGaussianConfig
+    from trunk.Phase_B.well_to_gaussian import WellRegistry, WellToGaussianConfig
     PHASE_B_AVAILABLE = True
 except ImportError:
     PHASE_B_AVAILABLE = False

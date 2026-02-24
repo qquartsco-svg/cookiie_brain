@@ -28,7 +28,7 @@ from typing import TYPE_CHECKING, List, Optional, Tuple
 from dataclasses import dataclass, field
 
 if TYPE_CHECKING:
-    from Phase_B.multi_well_potential import MultiWellPotential
+    from trunk.Phase_B.multi_well_potential import MultiWellPotential
 
 
 # ================================================================== #

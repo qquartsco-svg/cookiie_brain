@@ -83,7 +83,7 @@ W = Σ_n [V(x_n, λ_{n+1}) − V(x_n, λ_n)]
 시간 의존 퍼텐셜 V(x, λ(t)) 정의.
 
 ```python
-from Layer_4 import Protocol
+from analysis.Layer_4 import Protocol
 
 protocol = Protocol(
     V_func=lambda x, lam: 0.5 * lam * np.dot(x, x),
@@ -97,7 +97,7 @@ protocol = Protocol(
 ForceLayer 프로토콜 준수 — trunk에 직접 연결.
 
 ```python
-from Layer_4 import ProtocolForce
+from analysis.Layer_4 import ProtocolForce
 
 pf = ProtocolForce(protocol)
 engine = PotentialFieldEngine(force_layers=[pf], ...)
@@ -108,7 +108,7 @@ engine = PotentialFieldEngine(force_layers=[pf], ...)
 궤적을 따라 일 W를 축적.
 
 ```python
-from Layer_4 import WorkAccumulator
+from analysis.Layer_4 import WorkAccumulator
 
 wa = WorkAccumulator(protocol, dt)
 for n in range(n_steps):

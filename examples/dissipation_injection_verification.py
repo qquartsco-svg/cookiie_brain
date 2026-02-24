@@ -26,12 +26,12 @@ from pathlib import Path
 root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(root / "CookiieBrain"))
 sys.path.insert(0, str(root / "BrainCore" / "src"))
-sys.path.insert(0, str(root / "Brain_Disorder_Simulation_Engine"
-                        / "Unsolved_Problems_Engines" / "PotentialFieldEngine"))
+sys.path.append(str(root / "Brain_Disorder_Simulation_Engine"
+                     / "Unsolved_Problems_Engines" / "PotentialFieldEngine"))
 
 from brain_core.global_state import GlobalState
 from potential_field_engine import PotentialFieldEngine
-from Phase_B import create_symmetric_wells
+from trunk.Phase_B import create_symmetric_wells
 
 
 def _make_triangle_system(omega=0.3, amplitude=2.0, sigma=1.2, r=2.5):

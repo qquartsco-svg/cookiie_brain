@@ -291,26 +291,22 @@ Verification: 5/5 ALL PASS
 CookiieBrain/
 ├── cookiie_brain_engine.py          # Orchestration engine
 ├── README.md                        # Project overview (KR + EN)
-├── Phase_A/                         # Spin module
-│   ├── rotational_field.py          #   Coriolis ωJv + pole-type
-│   └── moon.py                      #   Satellite gravity field
-├── Phase_B/                         # Orbit module
-│   ├── multi_well_potential.py      #   Gaussian multi-well potential
-│   └── well_to_gaussian.py          #   WellFormation → Gaussian bridge
-├── Phase_C/                         # Fluctuation (Langevin noise)
-│   └── README.md / README_EN.md
-├── Layer_1/                         # Statistical mechanics
-│   └── statistical_mechanics.py     #   Kramers, transition, entropy
-├── Layer_2/                         # Many-body / field theory
-│   └── nbody.py                     #   NBodyState, InteractionForce
-├── Layer_3/                         # Gauge / geometry
-│   └── gauge.py                     #   MagneticForce, GeometryAnalyzer
-├── Layer_4/                         # Non-equilibrium work theorems
-│   └── fluctuation_theorems.py      #   Jarzynski, Crooks, Protocol
-├── Layer_5/                         # Stochastic mechanics
-│   └── stochastic_mechanics.py      #   Fokker-Planck, Nelson
-├── Layer_6/                         # Information geometry
-│   └── geometric_phase.py           #   Fisher metric, curvature
+├── trunk/                           # ── Trunk (equation of motion components) ──
+│   ├── Phase_A/                     #   Spin (Coriolis ωJv)
+│   │   ├── rotational_field.py
+│   │   └── moon.py
+│   ├── Phase_B/                     #   Orbit (Gaussian multi-well)
+│   │   ├── multi_well_potential.py
+│   │   └── well_to_gaussian.py
+│   └── Phase_C/                     #   Fluctuation (Langevin noise, FDT)
+│       └── README.md / README_EN.md
+├── analysis/                        # ── Analysis tools (built on trunk) ──
+│   ├── Layer_1/                     #   Statistical mechanics
+│   ├── Layer_2/                     #   Many-body / field theory
+│   ├── Layer_3/                     #   Gauge / geometry
+│   ├── Layer_4/                     #   Non-equilibrium work theorems
+│   ├── Layer_5/                     #   Stochastic mechanics
+│   └── Layer_6/                     #   Information geometry
 ├── examples/                        # Verification scripts (all ALL PASS)
 │   ├── phase_a_minimal_verification.py
 │   ├── phase_b_orbit_verification.py

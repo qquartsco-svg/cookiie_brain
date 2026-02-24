@@ -102,7 +102,7 @@ Layer 2 — 다체/장론 검증
 ## 사용 예시
 
 ```python
-from Layer_2.nbody import NBodyState, InteractionForce, ExternalForce, spring_interaction
+from analysis.Layer_2.nbody import NBodyState, InteractionForce, ExternalForce, spring_interaction
 from potential_field_engine import PotentialFieldEngine
 from layers import LangevinThermo, NullGauge
 

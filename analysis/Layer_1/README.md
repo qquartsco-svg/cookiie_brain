@@ -94,8 +94,8 @@ K는 연속시간 Markov chain 생성 행렬: dp/dt = K^T p.
 ## 사용법
 
 ```python
-from Phase_B.multi_well_potential import create_symmetric_wells
-from Layer_1 import (
+from trunk.Phase_B.multi_well_potential import create_symmetric_wells
+from analysis.Layer_1 import (
     kramers_rate,
     kramers_rate_matrix,
     TransitionAnalyzer,

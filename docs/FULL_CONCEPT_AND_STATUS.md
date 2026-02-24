@@ -303,30 +303,24 @@ CookiieBrain/
 │                                      WellFormation → Registry → PFE 자동 연결
 │                                      gamma, injection_func config 전달
 ├── README.md                        # 프로젝트 소개
-├── Phase_A/
-│   ├── __init__.py                  # 모듈 export
-│   ├── rotational_field.py          # 코리올리형 ωJv + pole형 ωJ(x-x_pole)
-│   ├── moon.py                      # 위성 중력장
-│   ├── verify_math.py               # 수학 검증
-│   ├── README.md                    # Phase A 개념 문서
-│   ├── STAGES_SPIN_ORBIT_FLUCTUATION.md  # 단계 정리 (자전→공전→요동)
-│   └── docs/                        # 상세 작업 기록
-├── Phase_B/
-│   ├── __init__.py                  # 모듈 export
-│   ├── multi_well_potential.py      # Gaussian 다중 우물 퍼텐셜
-│   │                                  V, field, saddle, barrier, landscape_info
-│   ├── well_to_gaussian.py          # WellFormation → Gaussian 브릿지
-│   │                                  WellToGaussianConfig, WellRegistry
-│   └── README.md                    # Phase B 개념 + 공전 조건 + 브릿지
-├── Phase_C/
-│   ├── __init__.py                  # 개념 설명 (코드는 PFE에 통합)
-│   ├── README.md                    # Phase C 개념 (한국어)
-│   └── README_EN.md                 # Phase C concept (English)
-├── Layer_1/
-│   ├── __init__.py                  # 모듈 export
-│   ├── statistical_mechanics.py     # Kramers rate, TransitionAnalyzer, entropy
-│   ├── README.md                    # Layer 1 개념 (한국어)
-│   └── README_EN.md                 # Layer 1 concept (English)
+├── trunk/                           # ── 줄기 (운동방정식 구성요소) ──
+│   ├── Phase_A/                     #   자전 (ωJv 코리올리 회전)
+│   │   ├── rotational_field.py
+│   │   ├── moon.py
+│   │   └── docs/
+│   ├── Phase_B/                     #   공전 (가우시안 다중 우물)
+│   │   ├── multi_well_potential.py
+│   │   └── well_to_gaussian.py
+│   └── Phase_C/                     #   요동 (Langevin noise, FDT)
+│       ├── README.md / README_EN.md
+│       └── (구현은 PFE에 내장)
+├── analysis/                        # ── 분석 도구 (trunk 위에 쌓임) ──
+│   ├── Layer_1/                     #   통계역학 (Kramers, 전이, 엔트로피)
+│   ├── Layer_2/                     #   다체/장론 (N-body 상호작용)
+│   ├── Layer_3/                     #   게이지/기하학 (위치 의존 B(x))
+│   ├── Layer_4/                     #   비평형 일 정리 (Jarzynski, Crooks)
+│   ├── Layer_5/                     #   확률역학 (Fokker-Planck, Nelson)
+│   └── Layer_6/                     #   정보 기하학 (Fisher 계량, 곡률)
 ├── examples/
 │   ├── phase_a_minimal_verification.py       # 자전 검증
 │   ├── phase_b_orbit_verification.py         # 공전 검증 (3-우물)

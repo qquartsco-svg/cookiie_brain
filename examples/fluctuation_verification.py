@@ -17,10 +17,10 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 pfe_path = project_root.parent / "Brain_Disorder_Simulation_Engine" / "Unsolved_Problems_Engines" / "PotentialFieldEngine"
-sys.path.insert(0, str(pfe_path))
+sys.path.append(str(pfe_path))
 
 import numpy as np
-from Phase_B.multi_well_potential import MultiWellPotential, GaussianWell, create_symmetric_wells
+from trunk.Phase_B.multi_well_potential import MultiWellPotential, GaussianWell, create_symmetric_wells
 from potential_field_engine import PotentialFieldEngine
 
 

@@ -30,12 +30,12 @@ pfe_path = (
     / "Unsolved_Problems_Engines"
     / "PotentialFieldEngine"
 )
-sys.path.insert(0, str(pfe_path))
+sys.path.append(str(pfe_path))
 
 import numpy as np
 from potential_field_engine import PotentialFieldEngine
-from Phase_B.multi_well_potential import MultiWellPotential, GaussianWell, create_symmetric_wells
-from Layer_1.statistical_mechanics import (
+from trunk.Phase_B.multi_well_potential import MultiWellPotential, GaussianWell, create_symmetric_wells
+from analysis.Layer_1.statistical_mechanics import (
     well_frequency,
     saddle_frequency,
     kramers_rate,

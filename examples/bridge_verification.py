@@ -25,10 +25,10 @@ from typing import List, Dict, Any
 root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(root / "CookiieBrain"))
 sys.path.insert(0, str(root / "BrainCore" / "src"))
-sys.path.insert(0, str(root / "Brain_Disorder_Simulation_Engine"
-                        / "Unsolved_Problems_Engines" / "PotentialFieldEngine"))
+sys.path.append(str(root / "Brain_Disorder_Simulation_Engine"
+                     / "Unsolved_Problems_Engines" / "PotentialFieldEngine"))
 
-from Phase_B import (
+from trunk.Phase_B import (
     MultiWellPotential, GaussianWell, create_symmetric_wells,
     WellToGaussianConfig, WellRegistry, well_result_to_gaussian,
     compute_center, compute_amplitude, compute_sigma,
