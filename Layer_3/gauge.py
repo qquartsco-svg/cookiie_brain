@@ -189,9 +189,14 @@ class GeometryAnalyzer:
     """게이지 기하학 분석 도구.
 
     자기장 B(x)로부터 기하학적 물리량을 계산한다:
-    - 자기 선속 (magnetic flux)
-    - Berry 위상 (holonomy)
-    - 국소 곡률
+    - 자기 선속 (magnetic flux): ∫∫ B dA
+    - 자기 선속 기반 위상 축적 (Abelian): Φ = ∫∫_S B dA
+    - 국소 곡률: F₁₂ = B(x)
+
+    참고: 현재 구현은 벡터 퍼텐셜 A(x)를 정의하지 않고
+    B(x)의 면적분으로 위상을 계산한다 (Stokes 정리 역방향).
+    엄밀한 Berry phase (∮A·dl)는 A(x) connection과 gauge choice가 필요하며,
+    이는 향후 확장 대상이다.
     """
 
     @staticmethod
@@ -220,15 +225,18 @@ class GeometryAnalyzer:
         return total
 
     @staticmethod
-    def berry_phase_loop(
+    def flux_through_loop(
         B_func: Callable[[np.ndarray], float],
         path: np.ndarray,
     ) -> float:
-        """닫힌 경로의 Berry 위상 = ∫∫_S B dA (Stokes 정리)
+        """닫힌 경로가 둘러싼 영역의 자기 선속 Φ = ∫∫_S B dA
+
+        Abelian case에서 Stokes 정리에 의해 Φ = ∮A·dl과 동일하지만,
+        현재 구현은 A(x)를 정의하지 않고 B(x)의 면적분으로 계산한다.
+        엄밀한 Berry phase는 A(x) connection 정의가 필요하다.
 
         path: shape (M, 2) — 닫힌 경로의 꼭짓점들
-        Green 정리로 면적분을 선적분으로 변환하여 계산:
-          Φ = Σ_triangles B(centroid) · signed_area
+        삼각 분할 후 B(centroid) · signed_area로 면적분 근사.
         """
         M = len(path)
         if M < 3:
@@ -246,6 +254,8 @@ class GeometryAnalyzer:
             total += B_func(tri_center) * signed_area
 
         return total
+
+    berry_phase_loop = flux_through_loop
 
     @staticmethod
     def local_curvature(

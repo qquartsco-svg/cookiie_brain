@@ -605,9 +605,9 @@ E×B drift (일정 기울기 + 균일 B):
 v_drift = (∂V/∂y, −∂V/∂x) / B
 ```
 
-Berry 위상 (Stokes 정리):
+자기 선속 기반 위상 축적 (Abelian, Stokes 정리):
 ```
-Φ = ∮ A · dl = ∫∫ B dA
+Φ = ∫∫ B dA   (= ∮A·dl, 단 A(x) 미정의 — 면적분으로 계산)
 ```
 
 ### 구성 요소
@@ -616,7 +616,7 @@ Berry 위상 (Stokes 정리):
 |--------|------|
 | `MagneticForce` | 단일 입자 위치 의존 자기장형 힘 |
 | `NBodyMagneticForce` | N 입자 각각에 B(x) 적용 |
-| `GeometryAnalyzer` | Berry 위상, 선속, 곡률, drift 계산 |
+| `GeometryAnalyzer` | 선속 기반 위상 축적(Abelian), 곡률, drift 계산 |
 
 편의 함수:
 | 함수 | B(x) | 용도 |
@@ -636,7 +636,7 @@ Berry 위상 (Stokes 정리):
 | N=1 | 단일 입자와 동일 | 구조적 |
 | 사이클로트론 | ω_c = B/m, 원 궤도 | 적분기 의존 |
 | E×B drift | v = (∂V/∂y, −∂V/∂x)/B | 적분기 의존 |
-| Berry 위상 | ∮A·dl = ∫∫B dA | 수치 적분 정밀도 |
+| 선속 기반 위상 축적 | Φ = ∫∫B dA (Abelian) | 수치 적분 정밀도 |
 
 > **적분기 주의**: MagneticForce는 속도 의존 힘이므로, Strang splitting에서 에너지 error가 bounded O(dt²). Euler fallback에서는 drift 심각. `CoriolisGauge(0.0)` 또는 실제 gauge를 사용하여 Strang 활성화 권장.
 
@@ -652,7 +652,7 @@ python examples/layer3_verification.py → ALL PASS (5/5)
 | 2 | 사이클로트론 (균일 B) | PASS — r_c 오차 < 2% |
 | 3 | B=0 극한 | PASS — 궤적 차이 = 0 |
 | 4 | E×B drift (collisionless) | PASS — v_drift 오차 < 0.1% |
-| 5 | Berry 위상 (가우시안 B) | PASS — 면적분 오차 < 2% |
+| 5 | 선속 기반 위상 축적 (가우시안 B, Abelian) | PASS — 면적분 오차 < 2% |
 
 ---
 

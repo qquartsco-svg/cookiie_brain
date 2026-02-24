@@ -5,7 +5,7 @@
   2. 사이클로트론   : 균일 B, 자유 입자 → 원 궤도 (ω_c = B/m)
   3. B=0 극한      : B-field 없으면 궤적이 자유 입자와 동일
   4. E×B drift     : 선형 퍼텐셜 + 균일 B → gradient에 수직 표류
-  5. Berry 위상    : 닫힌 원형 경로의 선속 = 해석적 면적분과 일치
+  5. 선속 기반 위상 : 닫힌 원형 경로의 선속 = 해석적 면적분과 일치 (Abelian)
 
 극한 일관성:
   - B(x) = const → CoriolisGauge와 동일
@@ -271,13 +271,13 @@ def test_exb_drift():
 
 
 # ================================================================== #
-#  Test 5: Berry 위상 — 면적분 정합
+#  Test 5: 선속 기반 위상 축적 — 면적분 정합 (Abelian)
 # ================================================================== #
 
-def test_berry_phase():
-    """가우시안 B-field의 원형 경로 선속 ≈ 수치 면적분"""
+def test_flux_phase():
+    """가우시안 B-field의 원형 경로 선속 ≈ 수치 면적분 (Abelian case)"""
     print("\n" + "=" * 60)
-    print("Test 5: Berry 위상 — 면적분 정합")
+    print("Test 5: 선속 기반 위상 축적 — 면적분 정합 (Abelian)")
     print("=" * 60)
 
     B0 = 1.0
@@ -291,22 +291,22 @@ def test_berry_phase():
     theta = np.linspace(0, 2 * np.pi, n_path, endpoint=False)
     path = np.column_stack([radius * np.cos(theta), radius * np.sin(theta)])
 
-    flux_berry = GeometryAnalyzer.berry_phase_loop(B_func, path)
+    flux_loop = GeometryAnalyzer.flux_through_loop(B_func, path)
     flux_area = GeometryAnalyzer.magnetic_flux(B_func, center, radius, n_points=500)
 
     flux_exact = B0 * 2 * np.pi * sigma ** 2 * (1 - np.exp(-radius ** 2 / (2 * sigma ** 2)))
 
-    print(f"  Berry 위상 (경로):  {flux_berry:.6f}")
-    print(f"  면적분 (수치):      {flux_area:.6f}")
-    print(f"  해석적:            {flux_exact:.6f}")
+    print(f"  선속 (경로 삼각분할): {flux_loop:.6f}")
+    print(f"  선속 (동심 고리):     {flux_area:.6f}")
+    print(f"  해석적:              {flux_exact:.6f}")
 
-    err_berry = abs(flux_berry - flux_exact) / abs(flux_exact)
+    err_loop = abs(flux_loop - flux_exact) / abs(flux_exact)
     err_area = abs(flux_area - flux_exact) / abs(flux_exact)
 
-    print(f"  Berry 상대 오차: {err_berry:.2e}")
-    print(f"  면적분 상대 오차: {err_area:.2e}")
+    print(f"  경로 삼각분할 상대 오차: {err_loop:.2e}")
+    print(f"  동심 고리 상대 오차:     {err_area:.2e}")
 
-    ok = err_berry < 0.05 and err_area < 0.05
+    ok = err_loop < 0.05 and err_area < 0.05
     print(f"  결과: {'PASS ✓' if ok else 'FAIL ✗'}")
     return ok
 
@@ -324,7 +324,7 @@ if __name__ == "__main__":
     results.append(("사이클로트론 운동 — 원 궤도", test_cyclotron()))
     results.append(("B=0 극한 — 자유 입자와 동일", test_b_zero_limit()))
     results.append(("E×B drift — 수직 표류", test_exb_drift()))
-    results.append(("Berry 위상 — 면적분 정합", test_berry_phase()))
+    results.append(("선속 기반 위상 — 면적분 정합 (Abelian)", test_flux_phase()))
 
     print("\n" + "=" * 60)
     print("종합 결과")

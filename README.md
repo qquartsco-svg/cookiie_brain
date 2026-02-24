@@ -233,7 +233,7 @@ trunk의 전역 Coriolis 회전 ω가, 공간의 각 위치마다 다른 회전 
 
 - **MagneticForce**: F = B(x)·J·v — 속도에 수직 (F·v = 0, 에너지 보존 구조적 보장)
 - **NBodyMagneticForce**: N 입자 각각에 위치 의존 B(x) 적용
-- **GeometryAnalyzer**: Berry 위상, 자기 선속, E×B drift, 국소 곡률
+- **GeometryAnalyzer**: 자기 선속, 선속 기반 위상 축적(Abelian), E×B drift, 국소 곡률
 - **극한 일관성**: B(x) = const → CoriolisGauge, B(x) = 0 → 자유 입자
 
 ```python

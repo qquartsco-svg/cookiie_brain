@@ -125,7 +125,7 @@ N=1이면 `GaugeForce`와 동일 (극한 일관성).
 | 메서드 | 설명 | 수식 |
 |--------|------|------|
 | `magnetic_flux()` | 원형 영역의 자기 선속 | Φ = ∫∫ B dA |
-| `berry_phase_loop()` | 닫힌 경로의 Berry 위상 | Φ = Σ B(centroid) · ΔA |
+| `flux_through_loop()` | 닫힌 경로의 선속 기반 위상 축적 | Φ = Σ B(centroid) · ΔA |
 | `local_curvature()` | 국소 곡률 (2D에서 B 자체) | F₁₂ = B(x) |
 | `cyclotron_frequency()` | 사이클로트론 진동수 | ω_c = B/m |
 | `cyclotron_radius()` | 사이클로트론 반경 | r_c = mv⊥/\|B\| |
@@ -152,10 +152,24 @@ N=1이면 `GaugeForce`와 동일 (극한 일관성).
 | N=1 | 단일 입자와 동일 | 구조적 |
 | 사이클로트론 (B=const) | 원 궤도, ω_c=B/m | 적분기 의존 (dt) |
 | E×B drift | v_drift = (∂V/∂y, −∂V/∂x)/B | 적분기 의존 (dt) |
-| Berry 위상 | ∮A·dl = ∫∫B dA (Stokes) | 수치 적분 정밀도 |
+| 선속 기반 위상 축적 | Φ = ∫∫B dA (Abelian) | 수치 적분 정밀도 |
 
 > **"구조적"**: 반대칭성 Ωᵀ=−Ω 만으로 보장. dt, 적분기 무관.
 > **"적분기 의존"**: 이론적으로 정확하나, 수치 정밀도가 dt와 적분기에 의존.
+
+### Berry phase vs 자기 선속 — 용어 구분
+
+현재 구현은 **B(x)의 면적분** `∫∫ B dA`으로 위상을 계산한다.
+Abelian case에서 Stokes 정리에 의해 이것은 `∮A·dl`과 동일하지만,
+벡터 퍼텐셜 A(x)를 명시적으로 정의하지 않는다.
+
+엄밀한 Berry phase는:
+1. A(x) connection 정의
+2. gauge choice (대칭 게이지, 쿨롱 게이지 등)
+3. `∮A·dl` 선적분
+
+이 필요하다. 따라서 현재 단계를 **"Abelian 자기 선속 기반 위상 축적"**으로 표기한다.
+Non-Abelian 확장 시 A_μ(x) 도입은 향후 Layer 4 대상이다.
 
 ---
 
