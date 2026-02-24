@@ -143,12 +143,18 @@ def test_nonzero_curvature():
 
 
 # ================================================================== #
-#  Test 4: Fisher 거리 ≥ 유클리드 거리
+#  Test 4: Fisher 거리 ≠ 유클리드 — metric 비자명
 # ================================================================== #
 
-def test_fisher_vs_euclidean():
+def test_fisher_nontrivial():
+    """Fisher 거리가 유클리드 거리와 다름을 확인.
+
+    L_Fisher ≥ L_Euclid는 보편 부등식이 아니라
+    metric scale에 의존한다 (g_μν > δ_μν일 때만 성립).
+    여기서는 Fisher metric이 비자명하게 유클리드와 다른 것만 확인.
+    """
     print("\n" + "=" * 60)
-    print("Test 4: Fisher 거리 ≥ 유클리드 거리")
+    print("Test 4: Fisher 거리 ≠ 유클리드 — metric 비자명")
     print("=" * 60)
 
     calc = make_calc()
@@ -169,10 +175,12 @@ def test_fisher_vs_euclidean():
         print(f"    Fisher = {d_fisher:.4f}, Euclid = {d_euclid:.4f}, "
               f"비율 = {ratio:.4f}")
 
-        if d_fisher < d_euclid * 0.99:
+        if abs(ratio - 1.0) < 0.01:
             all_ok = False
+            print(f"    ⚠ Fisher ≈ Euclid → metric이 trivial")
 
     ok = all_ok
+    print(f"  Fisher ≠ Euclid (비자명 metric 확인)")
     print(f"  결과: {'PASS ✓' if ok else 'FAIL ✗'}")
     return ok
 
@@ -214,7 +222,7 @@ if __name__ == "__main__":
     results.append(("Fisher 계량 양정치", test_positive_definite()))
     results.append(("해석적 대조 (가우시안)", test_analytical_gaussian()))
     results.append(("가우스 곡률 비자명 K≠0", test_nonzero_curvature()))
-    results.append(("Fisher 거리 ≥ 유클리드", test_fisher_vs_euclidean()))
+    results.append(("Fisher ≠ 유클리드 (비자명)", test_fisher_nontrivial()))
     results.append(("대칭점 g₁₂=0", test_symmetry_metric()))
 
     print("\n" + "=" * 60)
