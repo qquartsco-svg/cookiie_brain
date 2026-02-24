@@ -354,7 +354,7 @@ python examples/layer1_verification.py → ALL PASS (5/5)
 | 1 | Kramers rate 공식 정합성 | PASS | 대칭, T·γ 의존성 4개 하위 검증 |
 | 2 | Kramers vs 시뮬레이션 전이 | PASS | 비율 0.13 (order-of-magnitude) |
 | 3 | 전이 행렬 + 상세 균형 | PASS | 행합=1, 평형 violation=0 |
-| 4 | 엔트로피 생산률 | PASS | 평형 Ṡ ≈ 0 (|Ṡ|/(γd/m) = 3.7%) |
+| 4 | 엔트로피 생산률 | PASS | 평형 Ṡ ≈ 0 (열역학 정합) |
 | 5 | Arrhenius 법칙 | PASS | T↑→rate↑ 확인 |
 
 ### 기존 검증 재실행 (회귀 확인)
@@ -417,6 +417,82 @@ trunk.update(state)
 | `layer1_verification.py` | 통계역학 (Kramers, 전이행렬, dS/dt) | ALL PASS |
 
 **하위 호환 완전 유지. 리팩터링으로 인한 동작 변경 없음.**
+
+### PHAM 서명
+- ⏳ 미서명
+
+---
+
+## 2026-02-24 — Layer 1 보강: well_frequency 수치 Hessian
+
+### 작업 내용
+- `well_frequency()`: 단일 우물 해석해(A/σ²) → 합성 퍼텐셜 수치 Hessian으로 교체
+- multi-well에서 다른 우물 꼬리의 곡률 기여를 정확히 반영
+- `saddle_frequency()`와 동일한 중심 차분 Hessian 방식으로 통일
+
+### 변경 파일
+| 파일 | 변경 |
+|------|------|
+| `Layer_1/statistical_mechanics.py` | `well_frequency()` 수치 Hessian 구현 |
+
+### 검증
+- 대칭 우물(±2.0): ω_a = 1.4145 (old: 1.4142, 차이 0.02%)
+- 대칭성 유지: k(0→1) = k(1→0) (정확히 일치)
+- `layer1_verification.py`: ALL PASS (5/5)
+
+---
+
+## 2026-02-24 — Layer 2: 다체/장론 구현
+
+### 작업 내용
+- N-body 다체 동역학 모듈 구현
+- trunk의 state_vector를 큰 벡터로 취급 → 레이어만 교체
+- Newton 제3법칙 구조적 보장 (F_ij = -F_ji)
+
+### 핵심 설계
+trunk은 state_vector의 내부 구조를 모른다.
+`[x₁...xₙ, v₁...vₙ]`를 그냥 큰 (x, v) 벡터로 적분한다.
+Layer 2 ForceLayer가 내부에서 (N, d) reshape를 처리한다.
+
+### 새 파일
+| 파일 | 역할 |
+|------|------|
+| `Layer_2/__init__.py` | 모듈 exports |
+| `Layer_2/nbody.py` | NBodyState, InteractionForce, ExternalForce, NBodyGauge |
+| `Layer_2/README.md` | 개념, 수식, 검증 결과 문서 |
+| `examples/layer2_verification.py` | 5개 물리 검증 |
+
+### 구성 요소
+| 클래스 | 역할 | 프로토콜 |
+|--------|------|----------|
+| `NBodyState` | flat ↔ (N,d) reshape 유틸리티 | — |
+| `InteractionForce` | 쌍체 상호작용 Σ_{i<j} φ(r_ij) | ForceLayer |
+| `ExternalForce` | 입자별 외부 퍼텐셜 Σᵢ V(xᵢ) | ForceLayer |
+| `NBodyGauge` | 입자별 코리올리 회전 | GaugeLayer |
+
+편의 함수: `gravitational_interaction()`, `spring_interaction()`, `coulomb_interaction()`
+
+### 극한 일관성
+| 극한 | 기대 | 검증 |
+|------|------|------|
+| N=1 | 단일 입자와 동일 | 차이 0.0 (exact) |
+| γ=0, σ=0 | 에너지 보존 | drift < 0.23% |
+| F_ij = -F_ji | 운동량 보존 | 변화 3.2e-14 |
+| FDT + N입자 | 등분배 | 오차 2.0% |
+| 중심력 | 각운동량 보존 | 변화 5.3e-15 |
+
+### 검증
+```
+layer2_verification.py: ALL PASS (5/5)
+  [PASS]  Newton 제3법칙 — 운동량 보존
+  [PASS]  에너지 보존 — 보존계
+  [PASS]  N=1 극한 — 단일 입자와 동일
+  [PASS]  등분배 정리 — 열평형
+  [PASS]  2체 순환 — 각운동량 보존
+```
+
+### 회귀 테스트
+전체 기존 검증 7개 + Layer 2 5개 = 12/12 ALL PASS
 
 ### PHAM 서명
 - ⏳ 미서명

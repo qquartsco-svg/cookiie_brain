@@ -33,6 +33,8 @@ from this layer, the upper branches have no roots.
 
 ## Components
 
+**Unit convention**: This module sets k_B = 1 (natural units); T is measured in energy units.
+
 ### ① Kramers Escape Rate
 
 **Physics**: Thermal transition frequency over barrier ΔV at temperature T.
@@ -43,14 +45,16 @@ k(i→j) = (λ₊ / ω_b) · (ω_a / 2π) · exp(−ΔV / T)
 
 | Symbol | Meaning |
 |--------|---------|
-| ω_a | Well-bottom frequency √(A / mσ²) |
-| ω_b | Saddle unstable frequency (numerical Hessian) |
+| ω_a | Well-bottom frequency √(λ_max / m) (numerical Hessian of composite potential) |
+| ω_b | Saddle unstable frequency (numerical Hessian, eps tunable) |
 | λ₊ | Kramers-Grote-Hynes correction: −γ/(2m) + √((γ/(2m))² + ω_b²) |
 | ΔV | Barrier height V_saddle − V_well |
 | T | Temperature (kB=1) |
 
 `kramers_rate_matrix(mwp, T, γ, m)` → full rate matrix K.
 K is the generator of a continuous-time Markov chain: dp/dt = K^T p.
+
+> **Note**: `well_frequency()` and `saddle_frequency()` use a central-difference Hessian with default `eps=1e-5`. For very narrow (σ < 0.1) or very wide (σ > 10) potentials, tuning `eps` may improve numerical accuracy.
 
 ### ② Transition Analyzer (`TransitionAnalyzer`)
 
@@ -80,6 +84,10 @@ Extracts empirical statistics from simulation trajectories.
 Limit consistency:
 - **Equilibrium (I=0, FDT)**: ⟨|v|²⟩ = dT/m → **Ṡ = 0** (2nd law consistent)
 - **Non-equilibrium (I≠0)**: Ṡ > 0 (irreversible entropy production)
+
+> **Distinction from dissipation power**: The frictional dissipation power γ⟨|v|²⟩ = γdT/m is positive even at equilibrium.
+> However, noise injection exactly cancels it, yielding Ṡ = 0 for the medium entropy production.
+> Ṡ measures only the imbalance between dissipation and injection.
 
 ---
 

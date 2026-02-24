@@ -292,18 +292,20 @@ def test_entropy_production():
 
     ep = entropy_production_rate(v_steady, gamma, T, mass)
 
-    dissipation_scale = gamma * dim / mass
-    normalized = abs(ep) / dissipation_scale
+    dissipation_scale = gamma * dim * T / mass
+    normalized = abs(ep) / dissipation_scale if dissipation_scale > 0 else 0.0
 
     ok = normalized < 0.10
     print(f"  Ṡ 실측 = {ep:.6f}")
-    print(f"  이론값 (평형) = 0")
-    print(f"  |Ṡ| / (γd/m) = {normalized:.4f} (<0.10 = 소산 스케일의 10% 이내)")
+    print(f"  이론값 (평형, FDT+I=0) = 0")
+    print(f"  |Ṡ| / (γdT/m) = {normalized:.4f} (<0.10 = 소산 파워 스케일의 10% 이내)")
+    print(f"  (참고: 마찰 소산 파워 γ⟨|v|²⟩ = γdT/m 은 평형에서도 양수이나,")
+    print(f"         노이즈 주입과 상쇄되어 Ṡ = 0. 위 비율은 정규화 기준일 뿐.)")
     print(f"  → {'PASS' if ok else 'FAIL'}")
 
     traj = entropy_production_trajectory(v_steady, gamma, T, mass, window=5000)
     print(f"  시계열: mean={traj.mean():.6f}, std={traj.std():.4f}")
-    print(f"  시계열 mean/scale = {abs(traj.mean())/dissipation_scale:.4f}")
+    print(f"  시계열 |mean| / (γdT/m) = {abs(traj.mean())/dissipation_scale:.4f}")
 
     return ok
 

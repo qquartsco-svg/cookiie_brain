@@ -3,7 +3,7 @@
 > 이 문서는 프로젝트의 물리적 개념, 구현 상태, 검증 결과, 다음 방향을
 > 하나로 정리한 것이다. 새로 합류하는 사람이 이 문서 하나로 전체를 파악할 수 있어야 한다.
 
-**마지막 업데이트: 2026-02-24 (Layer 1 통계역학 정식화 반영)**
+**마지막 업데이트: 2026-02-24 (Layer 2 다체/장론 구현 반영)**
 
 ---
 
@@ -470,15 +470,20 @@ k(i→j) = (λ₊ / ω_b) · (ω_a / 2π) · exp(−ΔV / T)
 λ₊ = −γ/(2m) + √((γ/(2m))² + ω_b²)    (Kramers-Grote-Hynes)
 ```
 
-- ω_a: 우물 바닥 고유 진동수 √(A/mσ²)
+- ω_a: 우물 바닥 고유 진동수 √(λ_max/m) (합성 퍼텐셜 수치 Hessian)
 - ω_b: 안장점 불안정 진동수 (수치 Hessian)
 - `kramers_rate_matrix(mwp, T, γ, m)` → 연속시간 Markov chain 생성 행렬
 
 #### ② 전이 행렬 분석기 (TransitionAnalyzer)
 
-- `transition_matrix()`: P[i,j] (확률 행렬, 행 합 = 1)
-- `net_circulation()`: J[i,j] = N(i→j) − N(j→i)
-- `detailed_balance_violation()`: 비평형 지표 (0=평형)
+기본 성질:
+- `transition_matrix()`: P[i,j] = N(i→j) / Σ_k N(i→k) (확률 행렬, 행 합 = 1)
+- `mean_residence_times()`: 우물별 평균 체류 시간
+- `occupation_fractions()`: 시간 기준 우물 점유 비율
+
+비평형 진단:
+- `net_circulation()`: J[i,j] = N(i→j) − N(j→i) (순환 흐름)
+- `detailed_balance_violation()`: Σ_{i<j}|J[i,j]| / (2·Σ_{i,j}N[i,j]) (0=평형, 1에 가까울수록 비평형)
 
 #### ③ 엔트로피 생산률
 
@@ -510,12 +515,70 @@ Layer 1은 나머지 모든 Layer의 토양이다:
 
 ```
 Layer 1 (Kramers, P[i,j], dS/dt)
-  ├→ Layer 2: N-입자, 상호작용, 연속 장
+  ├→ Layer 2: N-입자, 상호작용, 연속 장  ← 완료
   ├→ Layer 3: 위치 의존 J(x), 비가환 게이지
   ├→ Layer 4: Jarzynski, Crooks, Landauer
   ├→ Layer 5: Nelson 확률역학, Parisi-Wu
   └→ Layer 6: Berry 위상, Chern 수
 ```
+
+---
+
+## 6-2. Layer 2 — 다체/장론 [완료]
+
+### 왜 필요한가
+
+단일 입자에서 "통일장"은 없다. 장(field)은 입자가 여러 개일 때 비로소 의미를 갖는다.
+Layer 2는 N 입자 간의 상호작용을 도입하여, 집단 동역학(collective dynamics)의 토양을 만든다.
+
+### 핵심 설계
+
+trunk은 state_vector의 내부 구조를 모른다.
+`[x₁...xₙ, v₁...vₙ]`를 그냥 큰 (x, v) 벡터로 적분한다.
+Layer 2 ForceLayer가 내부에서 (N, d) reshape를 처리한다.
+
+### 구성 요소
+
+| 클래스 | 역할 |
+|--------|------|
+| `NBodyState` | flat ↔ (N,d) reshape 유틸리티 |
+| `InteractionForce` | 쌍체 상호작용 Σ_{i<j} φ(r_ij) |
+| `ExternalForce` | 입자별 외부 퍼텐셜 Σᵢ V(xᵢ) |
+| `NBodyGauge` | 입자별 코리올리 회전 |
+
+편의 함수: `gravitational_interaction()`, `spring_interaction()`, `coulomb_interaction()`
+
+### 수식
+
+```
+m ẍᵢ = -∇ᵢ V(xᵢ) + Σ_{j≠i} F_ij(xᵢ, xⱼ) + G(vᵢ, dt) - γvᵢ + σξᵢ(t)
+```
+
+Newton 제3법칙: `F_ij = -F_ji` (구조적 보장) → 총 운동량 보존
+
+### 극한 일관성
+
+| 극한 | 기대 | 검증 |
+|------|------|------|
+| N=1 | 단일 입자와 동일 | 차이 0.0 (exact) |
+| γ=0, σ=0 | 에너지 보존 | drift < 0.23% |
+| F_ij = -F_ji | 운동량 보존 | 변화 3.2e-14 |
+| FDT + N입자 | 등분배 | 오차 2.0% |
+| 중심력 | 각운동량 보존 | 변화 5.3e-15 |
+
+### 검증
+
+```
+python examples/layer2_verification.py → ALL PASS (5/5)
+```
+
+| # | 검증 | 결과 |
+|---|------|------|
+| 1 | Newton 제3법칙 — 운동량 보존 | PASS |
+| 2 | 에너지 보존 — 보존계 | PASS |
+| 3 | N=1 극한 — 단일 입자와 동일 | PASS |
+| 4 | 등분배 정리 — 열평형 | PASS |
+| 5 | 2체 순환 — 각운동량 보존 | PASS |
 
 ---
 

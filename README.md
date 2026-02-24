@@ -205,6 +205,27 @@ python examples/layer1_verification.py   # 5항목 ALL PASS
 
 상세: [Layer_1/README.md](Layer_1/README.md) · [Layer_1/README_EN.md](Layer_1/README_EN.md)
 
+## Layer 2 — 다체/장론
+
+Layer 1 위에 N-body 다체 동역학을 쌓습니다.
+단일 입자에서 "장(field)"은 의미가 없습니다. 입자가 여러 개여야 비로소 장이 됩니다.
+
+- **InteractionForce**: 쌍체 상호작용 (중력, 스프링, 쿨롱 등)
+- **ExternalForce**: 입자별 외부 퍼텐셜
+- **NBodyGauge**: 입자별 코리올리 회전
+- **Newton 제3법칙**: F_ij = -F_ji 구조적 보장 → 운동량 보존
+
+```python
+from Layer_2 import InteractionForce, NBodyState, spring_interaction
+```
+
+검증 실행:
+```bash
+python examples/layer2_verification.py   # 5항목 ALL PASS
+```
+
+상세: [Layer_2/README.md](Layer_2/README.md)
+
 ---
 
 ## 설계 원칙
@@ -268,6 +289,9 @@ CookiieBrain/
 │   ├── statistical_mechanics.py #  Kramers rate, TransitionAnalyzer, entropy
 │   ├── README.md               #   Layer 1 개념 (한국어)
 │   └── README_EN.md            #   Layer 1 concept (English)
+├── Layer_2/                    # 다체/장론
+│   ├── nbody.py               #   NBodyState, InteractionForce, ExternalForce
+│   └── README.md              #   Layer 2 개념 (한국어)
 ├── examples/                   # 실행 가능한 예제
 │   ├── phase_a_minimal_verification.py  # 자전 검증 (ALL PASS)
 │   ├── phase_b_orbit_verification.py    # 공전 검증 (ALL PASS)
@@ -276,6 +300,7 @@ CookiieBrain/
 │   ├── fluctuation_verification.py            # 요동 검증 (ALL PASS)
 │   ├── fdt_verification.py                   # FDT 등분배 검증 (ALL PASS)
 │   ├── layer1_verification.py                # Layer 1 통계역학 검증 (ALL PASS)
+│   ├── layer2_verification.py                # Layer 2 다체/장론 검증 (ALL PASS)
 │   ├── phase_a_integration_test.py      # 우물 + 자전 통합
 │   └── integration_test_demo.py         # 기본 통합 테스트
 └── docs/                       # 참고 문서
@@ -311,10 +336,12 @@ CookiieBrain/
 | 요동 (Langevin noise, σξ(t)) | 완료 |
 | FDT (σ²=2γT/m, Boltzmann 등분배) | 완료 |
 | **Layer 1: 통계역학 정식화** | 완료 |
+| **Layer 2: 다체/장론** | 완료 |
 
 > 고전 구조가 먼저, 확률은 마지막에 얹는다.
 > 구조가 있어야 요동의 의미가 생긴다.
 > 줄기가 닫힌 뒤, 토양(Layer 1)부터 쌓는다.
+> Layer 2에서 장(field)이 태어난다.
 
 단계 설명: [Phase_A/STAGES_SPIN_ORBIT_FLUCTUATION.md](Phase_A/STAGES_SPIN_ORBIT_FLUCTUATION.md)
 

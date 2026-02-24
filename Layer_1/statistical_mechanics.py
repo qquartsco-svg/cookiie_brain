@@ -39,15 +39,39 @@ def well_frequency(
     mwp: "MultiWellPotential",
     well_idx: int,
     mass: float = 1.0,
+    eps: float = 1e-5,
 ) -> float:
     """우물 바닥에서의 고유 진동수 ω_a
 
-    Gaussian well: V(x) = −A exp(−|x−c|²/(2σ²))
-    Hessian at center: H = (A/σ²) I
-    ω_a = √(A / (m σ²))
+    합성 퍼텐셜 V(x)의 수치 Hessian으로부터 계산.
+    ω_a = √(λ_max / m)  (λ_max = Hessian 최대 고유값, 양수)
+
+    multi-well에서는 다른 우물들의 꼬리가 곡률에 기여하므로,
+    단일 우물 해석해 A/σ² 대신 실제 합성 Hessian을 사용한다.
     """
-    w = mwp.wells[well_idx]
-    return float(np.sqrt(w.amplitude / (mass * w.sigma ** 2)))
+    center = mwp.wells[well_idx].center
+    dim = mwp.dim
+
+    hessian = np.zeros((dim, dim))
+    for a in range(dim):
+        for b in range(dim):
+            e_a = np.zeros(dim); e_a[a] = eps
+            e_b = np.zeros(dim); e_b[b] = eps
+
+            Vpp = mwp.potential(center + e_a + e_b)
+            Vpm = mwp.potential(center + e_a - e_b)
+            Vmp = mwp.potential(center - e_a + e_b)
+            Vmm = mwp.potential(center - e_a - e_b)
+
+            hessian[a, b] = (Vpp - Vpm - Vmp + Vmm) / (4.0 * eps * eps)
+
+    eigenvalues = np.linalg.eigvalsh(hessian)
+    lambda_max = eigenvalues[-1]
+
+    if lambda_max <= 0:
+        return 0.0
+
+    return float(np.sqrt(lambda_max / mass))
 
 
 def saddle_frequency(
@@ -174,14 +198,12 @@ class TransitionAnalyzer:
     """
     n_wells: int
     _counts: np.ndarray = field(init=False)
-    _residence: np.ndarray = field(init=False)
     _current_well: int = field(init=False, default=-1)
     _total_time: float = field(init=False, default=0.0)
     _well_time: np.ndarray = field(init=False)
 
     def __post_init__(self):
         self._counts = np.zeros((self.n_wells, self.n_wells), dtype=int)
-        self._residence = np.zeros(self.n_wells)
         self._well_time = np.zeros(self.n_wells)
 
     def observe(self, x: np.ndarray, mwp: "MultiWellPotential", dt: float) -> None:
