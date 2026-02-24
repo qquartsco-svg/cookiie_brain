@@ -247,6 +247,26 @@ python examples/layer3_verification.py   # 5항목 ALL PASS
 
 상세: [Layer_3/README.md](Layer_3/README.md)
 
+## Layer 4 — 비평형 일 정리
+
+Layer 1(평형 열역학) 위에 임의의 비평형 과정을 위한 정확한 등식을 쌓습니다.
+시간 의존 프로토콜 λ(t)로 퍼텐셜을 변화시키고, 일(W) 측정에서 자유 에너지를 추출합니다.
+
+- **Jarzynski 등식**: `⟨e^{-W/T}⟩ = e^{-ΔF/T}` — 정확한 등식 (근사 아님)
+- **제2법칙**: `⟨W⟩ ≥ ΔF` — Jensen 부등식
+- **Crooks 정리**: 정방향/역방향 일 분포의 대칭 관계
+
+```python
+from Layer_4 import JarzynskiEstimator, moving_trap, stiffness_change
+```
+
+검증 실행:
+```bash
+python examples/layer4_verification.py   # 5항목 ALL PASS
+```
+
+상세: [Layer_4/README.md](Layer_4/README.md)
+
 ---
 
 ## 설계 원칙
@@ -314,8 +334,11 @@ CookiieBrain/
 │   ├── nbody.py               #   NBodyState, InteractionForce, ExternalForce
 │   └── README.md              #   Layer 2 개념 (한국어)
 ├── Layer_3/                    # 게이지/기하학
-│   ├── gauge.py               #   MagneticForce, GeometryAnalyzer
+│   ├── gauge.py               #   GaugeForce, GeometryAnalyzer
 │   └── README.md              #   Layer 3 개념 (한국어)
+├── Layer_4/                    # 비평형 일 정리
+│   ├── fluctuation_theorems.py #  Jarzynski, Crooks, Protocol
+│   └── README.md              #   Layer 4 개념 (한국어)
 ├── examples/                   # 실행 가능한 예제
 │   ├── phase_a_minimal_verification.py  # 자전 검증 (ALL PASS)
 │   ├── phase_b_orbit_verification.py    # 공전 검증 (ALL PASS)
@@ -326,6 +349,7 @@ CookiieBrain/
 │   ├── layer1_verification.py                # Layer 1 통계역학 검증 (ALL PASS)
 │   ├── layer2_verification.py                # Layer 2 다체/장론 검증 (ALL PASS)
 │   ├── layer3_verification.py                # Layer 3 게이지/기하학 검증 (ALL PASS)
+│   ├── layer4_verification.py                # Layer 4 비평형 일 정리 검증 (ALL PASS)
 │   ├── phase_a_integration_test.py      # 우물 + 자전 통합
 │   └── integration_test_demo.py         # 기본 통합 테스트
 └── docs/                       # 참고 문서
@@ -363,12 +387,14 @@ CookiieBrain/
 | **Layer 1: 통계역학 정식화** | 완료 |
 | **Layer 2: 다체/장론** | 완료 |
 | **Layer 3: 게이지/기하학** | 완료 |
+| **Layer 4: 비평형 일 정리** | 완료 |
 
 > 고전 구조가 먼저, 확률은 마지막에 얹는다.
 > 구조가 있어야 요동의 의미가 생긴다.
 > 줄기가 닫힌 뒤, 토양(Layer 1)부터 쌓는다.
 > Layer 2에서 장(field)이 태어난다.
 > Layer 3에서 공간이 구부러진다.
+> Layer 4에서 비평형이 정확해진다.
 
 단계 설명: [Phase_A/STAGES_SPIN_ORBIT_FLUCTUATION.md](Phase_A/STAGES_SPIN_ORBIT_FLUCTUATION.md)
 
