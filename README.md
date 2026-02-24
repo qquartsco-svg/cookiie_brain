@@ -267,6 +267,26 @@ python examples/layer4_verification.py   # 5항목 ALL PASS
 
 상세: [Layer_4/README.md](Layer_4/README.md)
 
+## Layer 5 — 확률역학
+
+궤적(Langevin) 관점에서 확률 밀도(Fokker-Planck) 관점으로 전환합니다.
+Nelson 확률역학의 forward/backward 속도 분해를 포함합니다.
+
+- **Fokker-Planck**: `∂ρ/∂t = ∇·(∇V·ρ/(mγ)) + D∇²ρ`, 정상 분포 `ρ_eq ∝ exp(−V/T)`
+- **Nelson 분해**: `v = v_current + v_osmotic`, 평형에서 `v_+ = 0`
+- **확률류**: `J = bρ − D∇ρ`, 평형에서 `J = 0` (detailed balance)
+
+```python
+from Layer_5 import FokkerPlanckSolver1D, NelsonDecomposition
+```
+
+검증 실행:
+```bash
+python examples/layer5_verification.py   # 5항목 ALL PASS
+```
+
+상세: [Layer_5/README.md](Layer_5/README.md)
+
 ---
 
 ## 설계 원칙
@@ -339,6 +359,9 @@ CookiieBrain/
 ├── Layer_4/                    # 비평형 일 정리
 │   ├── fluctuation_theorems.py #  Jarzynski, Crooks, Protocol
 │   └── README.md              #   Layer 4 개념 (한국어)
+├── Layer_5/                    # 확률역학
+│   ├── stochastic_mechanics.py #  Fokker-Planck, Nelson, ProbabilityCurrent
+│   └── README.md              #   Layer 5 개념 (한국어)
 ├── examples/                   # 실행 가능한 예제
 │   ├── phase_a_minimal_verification.py  # 자전 검증 (ALL PASS)
 │   ├── phase_b_orbit_verification.py    # 공전 검증 (ALL PASS)
@@ -350,6 +373,7 @@ CookiieBrain/
 │   ├── layer2_verification.py                # Layer 2 다체/장론 검증 (ALL PASS)
 │   ├── layer3_verification.py                # Layer 3 게이지/기하학 검증 (ALL PASS)
 │   ├── layer4_verification.py                # Layer 4 비평형 일 정리 검증 (ALL PASS)
+│   ├── layer5_verification.py                # Layer 5 확률역학 검증 (ALL PASS)
 │   ├── phase_a_integration_test.py      # 우물 + 자전 통합
 │   └── integration_test_demo.py         # 기본 통합 테스트
 └── docs/                       # 참고 문서
@@ -388,6 +412,7 @@ CookiieBrain/
 | **Layer 2: 다체/장론** | 완료 |
 | **Layer 3: 게이지/기하학** | 완료 |
 | **Layer 4: 비평형 일 정리** | 완료 |
+| **Layer 5: 확률역학** | 완료 |
 
 > 고전 구조가 먼저, 확률은 마지막에 얹는다.
 > 구조가 있어야 요동의 의미가 생긴다.
@@ -395,6 +420,7 @@ CookiieBrain/
 > Layer 2에서 장(field)이 태어난다.
 > Layer 3에서 공간이 구부러진다.
 > Layer 4에서 비평형이 정확해진다.
+> Layer 5에서 궤적이 밀도가 된다.
 
 단계 설명: [Phase_A/STAGES_SPIN_ORBIT_FLUCTUATION.md](Phase_A/STAGES_SPIN_ORBIT_FLUCTUATION.md)
 

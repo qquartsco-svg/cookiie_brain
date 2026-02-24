@@ -518,7 +518,7 @@ Layer 1 (Kramers, P[i,j], dS/dt)
   ├→ Layer 2: N-입자, 상호작용, 연속 장  ← 완료
   ├→ Layer 3: 위치 의존 J(x), 비가환 게이지
   ├→ Layer 4: Jarzynski, Crooks, Landauer
-  ├→ Layer 5: Nelson 확률역학, Parisi-Wu
+  ├→ Layer 5: Nelson 확률역학, Fokker-Planck  ← 완료
   └→ Layer 6: Berry 위상, Chern 수
 ```
 
@@ -712,6 +712,45 @@ Layer 4는 평형에서 임의로 먼 과정에서도 정확한 등식을 제공
 | 3 | Jarzynski (강성 변화, 알려진 ΔF) | PASS — 오차 0.03% |
 | 4 | 준정적 극한 (τ↑ → ⟨W⟩↓) | PASS — 단조 감소 |
 | 5 | Crooks 대칭 (ΔF_f ≈ −ΔF_r) | PASS — |차이| = 0.016 |
+
+---
+
+## 6-5. Layer 5 — 확률역학 [완료]
+
+Layer 1–4의 궤적(trajectory) 관점을 확률 밀도 ρ(x,t) 진화 관점으로 전환한다.
+
+### 핵심 방정식
+
+- **Fokker-Planck**: `∂ρ/∂t = ∂/∂x [V'ρ/(mγ)] + D∂²ρ/∂x²`, D = T/(mγ)
+- **정상 분포**: ρ_eq ∝ exp(−V/T) (볼츠만)
+- **확률류**: J = bρ − D∇ρ, 평형에서 J = 0
+
+### Nelson 속도 분해
+
+```
+v_current = −V'/(mγ)     (표류, 외력)
+v_osmotic = D·∇ln ρ      (삼투, 확산 유도)
+v_+ = v_c + v_o           (forward, 평형에서 0)
+v_- = v_c − v_o           (backward)
+```
+
+### 구성 요소
+
+| 클래스 | 역할 |
+|--------|------|
+| `FokkerPlanckSolver1D` | 1D 격자 위 ρ(x,t) 시간 진화 |
+| `NelsonDecomposition` | v = v_current + v_osmotic |
+| `ProbabilityCurrent` | J = bρ − D∇ρ 분석 |
+
+### 검증 결과
+
+| # | 테스트 | 결과 |
+|---|------|------|
+| 1 | 정상 분포 = 볼츠만 | PASS — L1 = 0.023 |
+| 2 | 확률 보존 ∫ρ=1 | PASS — 편차 2.2e-16 |
+| 3 | 평형 확률류 J=0 | PASS — J_max = 2.9e-04 |
+| 4 | Nelson 삼투 속도 | PASS — 오차 = 0.000000 |
+| 5 | Langevin ↔ FP 일치 | PASS — L1 = 0.023 |
 
 ---
 
