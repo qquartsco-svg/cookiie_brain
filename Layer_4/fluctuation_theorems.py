@@ -11,21 +11,25 @@ Layer 1(통계역학)의 평형/근평형 열역학을 **임의의 비평형 과
 │    제2법칙:    ⟨W⟩ ≥ ΔF               (Jensen 부등식)   │
 │    Crooks:     P_F(W)/P_R(-W) = e^{(W-ΔF)/T}          │
 │                                                        │
-│  구성 요소:                                             │
-│    Protocol        : 시간 의존 퍼텐셜 V(x, λ(t))        │
-│    ProtocolForce   : ForceLayer 프로토콜 준수            │
-│    WorkAccumulator : 궤적 따라 일 W 축적                 │
-│    JarzynskiEstimator : ΔF 추정 + 제2법칙 검증          │
-│    CrooksAnalyzer  : 정방향/역방향 대칭 분석             │
+│  일(W)의 유형 — inclusive work:                         │
+│    W = Σ [V(x_n, λ_{n+1}) − V(x_n, λ_n)]             │
+│    고정 배치에서 λ 변화에 의한 퍼텐셜 차이.              │
+│    이것은 '프로토콜 일 측정' 방식이다.                    │
 │                                                        │
-│  물리적 위치:                                           │
-│    mẍ = −∇_x V(x, λ(t)) + Ω(x)v − γv + σξ(t)         │
-│    λ(t): 외부 프로토콜 (퍼텐셜 매개변수의 시간 변화)      │
-│    W = Σ [V(x_n, λ_{n+1}) − V(x_n, λ_n)]: 프로토콜 일  │
+│    ※ 경로 확률 기반 방식:                                │
+│    ΔS_tot = ln P[path] / P[reverse path]               │
+│    은 더 일반적이지만 현재 미구현.                        │
+│    → 경로 확률은 NESS(비평형 정상 상태) 분석에 필요.      │
+│    → inclusive work은 프로토콜 구동 과정에 정확하다.      │
 │                                                        │
-│  Layer 1과의 관계:                                      │
-│    Layer 1: 평형 근처 → Kramers, 전이행렬, EP            │
-│    Layer 4: 임의 비평형 → Jarzynski, Crooks, ΔF 추출    │
+│  Layer 1 의존성:                                       │
+│    σ² = 2γT/m (FDT) 반드시 유지 — LangevinThermo       │
+│    엔트로피 생산 연결: ΔS_tot = W_diss/T                 │
+│                                                        │
+│  극한:                                                  │
+│    γ→0: W가 결정론적 → 통계적 의미 소실 (등식은 성립)    │
+│    τ→∞: ⟨W⟩ → ΔF (준정적 극한, 가역 과정)               │
+│    dt→0: 이산화 오차 소실 (O-U exact step이 FDT 보존)    │
 └──────────────────────────────────────────────────────┘
 """
 
@@ -177,6 +181,11 @@ class CrooksAnalyzer:
     위 관계를 만족한다.
 
     따름정리: Jarzynski 등식은 Crooks로부터 유도된다.
+
+    현재 구현 수준:
+      verify_symmetry — 양방향 Jarzynski에서 ΔF_f ≈ −ΔF_r 검증.
+      이것은 Crooks의 '따름정리 수준' 검증이다.
+      P_F(W)/P_R(−W) 히스토그램 직접 검증은 향후 확장 사항.
     """
 
     @staticmethod
@@ -185,14 +194,51 @@ class CrooksAnalyzer:
         works_reverse: np.ndarray,
         T: float,
     ) -> Tuple[float, float]:
-        """정방향/역방향 Jarzynski에서 추출한 ΔF가 일치하는지 검증.
+        """양방향 Jarzynski에서 추출한 ΔF가 부호 반전인지 검증.
+
+        Crooks 정리의 따름정리: 정방향 ΔF_f와 역방향 ΔF_r에 대해
+        ΔF_f ≈ −ΔF_r 이면 Crooks 대칭이 만족된다.
+
+        완전한 Crooks 검증(히스토그램 P_F(W)/P_R(−W))은 향후 확장.
 
         Returns (ΔF_forward, ΔF_reverse).
-        Crooks 대칭이면 ΔF_forward ≈ −ΔF_reverse.
         """
         dF_f = JarzynskiEstimator.free_energy(works_forward, T)
         dF_r = JarzynskiEstimator.free_energy(works_reverse, T)
         return dF_f, dF_r
+
+
+# ================================================================== #
+#  EntropyBridge — Layer 1 엔트로피 생산과의 연결
+# ================================================================== #
+
+class EntropyBridge:
+    """Layer 4 ↔ Layer 1 엔트로피 생산 연결.
+
+    비평형 일 정리에서의 총 엔트로피 생산:
+      ΔS_tot = W_diss / T = (⟨W⟩ − ΔF) / T
+
+    Layer 1의 엔트로피 생산률 (Ṡ)과의 관계:
+      - Layer 1: Ṡ = (γ/T)(⟨|v|²⟩ − dT/m)  (순간, 미시적)
+      - Layer 4: ΔS_tot = W_diss/T          (적분, 거시적)
+      - 관계: 프로토콜 과정에서 ∫Ṡ dt ≈ ΔS_tot
+              (프로토콜 구동이 유일한 비평형 원인일 때)
+
+    γ→0 극한:
+      σ²=2γT/m에서 γ→0이면 σ→0 (결정론적).
+      Jarzynski 등식은 여전히 성립하지만 W는 결정론적이 되어
+      ⟨e^{-W/T}⟩ = e^{-W/T} (단일 값). 통계적 의미가 소실된다.
+    """
+
+    @staticmethod
+    def total_entropy_production(works: np.ndarray, delta_F: float, T: float) -> float:
+        """ΔS_tot = ⟨W_diss⟩ / T = (⟨W⟩ − ΔF) / T"""
+        return (float(np.mean(works)) - delta_F) / T
+
+    @staticmethod
+    def entropy_per_trajectory(works: np.ndarray, delta_F: float, T: float) -> np.ndarray:
+        """개별 궤적의 엔트로피 생산: ΔS_i = (W_i − ΔF) / T"""
+        return (np.asarray(works) - delta_F) / T
 
 
 # ================================================================== #

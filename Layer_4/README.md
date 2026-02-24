@@ -47,7 +47,7 @@ Jarzynski 등식은 Crooks의 따름정리이다.
 
 ---
 
-## 일(Work)의 정의
+## 일(Work)의 정의 — inclusive work
 
 시간 의존 프로토콜 λ(t)가 퍼텐셜 V(x, λ)를 변화시킬 때:
 
@@ -57,6 +57,22 @@ W = Σ_n [V(x_n, λ_{n+1}) − V(x_n, λ_n)]
 
 고정된 배치(x_n)에서 λ 변화에 의한 퍼텐셜 차이.
 이것이 열역학적 '일'이다 — 시스템에 주입된 에너지.
+
+### inclusive work vs 경로 확률
+
+| 방식 | 정의 | 적용 범위 |
+|------|------|-----------|
+| **inclusive work** (현재) | W = Σ[V(x_n,λ_{n+1})−V(x_n,λ_n)] | 프로토콜 구동 과정 |
+| 경로 확률 (미구현) | ΔS = ln P[path] / P[reverse path] | NESS + 프로토콜 모두 |
+
+현재 구현은 **inclusive work** 방식이다:
+- 외부 프로토콜 λ(t)에 의한 구동만 다룬다
+- 프로토콜이 없는 비평형 정상 상태(NESS)는 범위 밖
+- 프로토콜 구동 과정에서는 **정확**하다
+
+경로 확률 방식(path action ratio)은 더 일반적이지만,
+벡터 퍼텐셜 A(x) 또는 경로 적분의 이산화가 필요하다.
+향후 확장으로 분류한다.
 
 ---
 
@@ -116,6 +132,19 @@ print(f"W = {wa.W}")
 
 정방향/역방향 프로토콜의 대칭 검증.
 
+현재 구현: **양방향 Jarzynski** 수준 — `ΔF_f ≈ −ΔF_r` 검증.
+이것은 Crooks 정리의 따름정리이다.
+완전한 Crooks 검증(히스토그램 `P_F(W)/P_R(−W) = e^{(W−ΔF)/T}`)은 향후 확장.
+
+### EntropyBridge
+
+Layer 1 (엔트로피 생산률)과 Layer 4 (비평형 일)의 연결.
+
+| 메서드 | 설명 | 수식 |
+|--------|------|------|
+| `total_entropy_production(works, ΔF, T)` | 총 엔트로피 생산 | ΔS_tot = (⟨W⟩−ΔF)/T |
+| `entropy_per_trajectory(works, ΔF, T)` | 궤적별 엔트로피 | ΔS_i = (W_i−ΔF)/T |
+
 ### 편의 함수
 
 | 함수 | 프로토콜 | ΔF |
@@ -126,6 +155,63 @@ print(f"W = {wa.W}")
 
 ---
 
+## Layer 1 의존성 (필수 조건)
+
+Layer 4가 성립하려면 3가지가 반드시 유지되어야 한다:
+
+### 1. FDT: σ² = 2γT/m
+
+```
+LangevinThermo(gamma=γ, temperature=T, mass=m)
+→ sigma = sqrt(2γT/m)  (자동 계산, check_fdt()로 검증)
+```
+
+이 조건이 깨지면 Jarzynski/Crooks 등식이 **성립하지 않는다**.
+`TrunkChecker.check_fdt(thermo_layer)`로 항상 확인.
+
+### 2. 평형 초기 조건
+
+Jarzynski 등식은 **초기 평형 분포**에서 출발해야 한다:
+- x ~ exp(−V(x,λ₀)/T) — 볼츠만 분포
+- v ~ exp(−½m|v|²/T) — Maxwell 분포
+- `equilibrium_sample(k, T, m, d)` 이 이를 보장
+
+### 3. 시간 이산화와 Onsager 대칭
+
+trunk의 O-U exact step (`ou_step`)은 **선형 과정에서 FDT를 정확히 보존**한다:
+```
+decay = exp(−γh)
+amp = σ · sqrt((1 − exp(−2γh)) / (2γ))
+```
+이것은 연속 Langevin의 정확한 이산화이므로 Onsager 대칭을 깨지 않는다.
+dt가 커도 FDT 자체는 보존된다 (힘 적분의 정확도만 dt에 의존).
+
+---
+
+## 극한 일관성
+
+| 극한 | 결과 | 보장 타입 | 설명 |
+|------|------|-----------|------|
+| τ→∞ | ⟨W⟩ → ΔF | 구조적 | 가역 과정, W_diss → 0 |
+| ΔF=0 | ⟨e^{-W/T}⟩ → 1 | 구조적 | 같은 모양 퍼텐셜 이동 |
+| γ→0, σ→0 | W 결정론적 | 구조적 | Jarzynski 성립하나 통계적 의미 소실 |
+| dt→0 | 이산화 오차 → 0 | 수치적 | O-U exact step은 FDT 보존 |
+| N_traj→∞ | Jarzynski 수렴 | 통계적 | rare event sampling 필요 |
+| 정방향/역방향 | ΔF_f ≈ −ΔF_r | 구조적 (Crooks) | 양방향 Jarzynski |
+
+### γ→0 극한의 의미
+
+```
+γ=0, σ=0 → 해밀토니안계 → W는 궤적마다 동일
+⟨e^{-W/T}⟩ = e^{-W/T}  (단일 값, 통계 불필요)
+```
+
+Jarzynski 등식은 여전히 **수학적으로 성립**하지만,
+fluctuation theorem의 핵심인 "요동으로부터 정보 추출"이 불가능해진다.
+비평형 열역학은 **γ > 0인 dissipative 시스템**에서만 물리적으로 의미 있다.
+
+---
+
 ## 수렴 주의사항
 
 Jarzynski 지수 평균 `⟨e^{-W/T}⟩`은 **rare event에 민감**하다.
@@ -133,8 +219,11 @@ Jarzynski 지수 평균 `⟨e^{-W/T}⟩`은 **rare event에 민감**하다.
 - 빠른 프로토콜 → 일 분포가 넓음 → 수렴 느림
 - 느린 프로토콜 → 일 분포가 좁음 → 수렴 빠름
 - 궤적 수가 충분해야 rare low-W 이벤트를 포착
+- dt가 크면 Jarzynski 지수 평균이 발산할 수 있음
 
 이것은 Jarzynski 등식의 알려진 수치적 한계이며, 물리적 문제가 아니다.
+
+**실무 권장**: dt ≤ 0.01, N_traj ≥ 200, 느린 프로토콜(τ ≫ m/γ)에서 시작.
 
 ---
 
@@ -147,6 +236,23 @@ Jarzynski 지수 평균 `⟨e^{-W/T}⟩`은 **rare event에 민감**하다.
 | Jarzynski (강성 변화) | PASS | ΔF 오차 0.03% |
 | 준정적 극한 | PASS | τ↑ → ⟨W⟩↓ (단조 감소) |
 | Crooks 대칭 | PASS | \|ΔF_f + ΔF_r\| = 0.016 |
+
+---
+
+## Layer 1 ↔ Layer 4: 엔트로피 생산 연결
+
+```
+Layer 1: Ṡ = (γ/T)(⟨|v|²⟩ − dT/m)     (순간, 미시적)
+Layer 4: ΔS_tot = (⟨W⟩ − ΔF) / T       (적분, 거시적)
+```
+
+| | Layer 1 | Layer 4 |
+|---|---------|---------|
+| 관점 | 순간 엔트로피 생산률 | 프로토콜 총 엔트로피 |
+| 정의 | Ṡ = (γ/T)(⟨\|v\|²⟩ − dT/m) | ΔS = W_diss/T |
+| 평형 | Ṡ = 0 | ΔS = 0 (준정적) |
+| 비평형 | Ṡ > 0 | ΔS > 0 (제2법칙) |
+| 관계 | ∫Ṡ dt ≈ ΔS_tot (프로토콜 구동이 유일한 비평형 원인일 때) |
 
 ---
 
@@ -164,7 +270,9 @@ Jarzynski 지수 평균 `⟨e^{-W/T}⟩`은 **rare event에 민감**하다.
 
 ## 향후 확장 방향
 
-1. **Crooks 히스토그램 분석**: P_F(W)와 P_R(−W)의 교차점에서 ΔF 추출
-2. **최적 프로토콜**: 주어진 시간 내 소산 최소화하는 λ(t) 탐색
-3. **Landauer 원리**: 정보 삭제의 최소 비용 kT·ln2 검증
-4. **비평형 자유 에너지 지형**: 다중 우물 전이의 ΔF 프로파일
+1. **Crooks 히스토그램 분석**: P_F(W)와 P_R(−W)의 교차점에서 ΔF 추출 (현재는 양방향 Jarzynski 수준)
+2. **경로 확률 기반 엔트로피**: ΔS = ln P[path]/P[reverse] — NESS 분석 가능
+3. **최적 프로토콜**: 주어진 시간 내 소산 최소화하는 λ(t) 탐색
+4. **Landauer 원리**: 정보 삭제의 최소 비용 kT·ln2 검증
+5. **비평형 자유 에너지 지형**: 다중 우물 전이의 ΔF 프로파일
+6. **rare event sampling**: importance sampling 또는 weighted ensemble
