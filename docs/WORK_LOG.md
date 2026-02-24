@@ -677,3 +677,50 @@ Nelson 확률역학의 forward/backward 속도 분해로 확산 과정의 기하
 |------|---------------|--------|----------|
 | `stochastic_mechanics.py` | `afc605aaafa9cf91` | 0.9997 | `pham_chain_stochastic_mechanics.json` |
 | `layer5_verification.py` | `1006598f801045cf` | 0.9998 | `pham_chain_layer5_verification.json` |
+
+---
+
+## Layer 6 — 정보 기하학 구현
+
+**날짜**: 2026-02-23
+
+### 동기
+
+Layer 3(물리 공간 게이지) 위에 매개변수 공간의 기하학적 구조를 쌓는다.
+원래 Berry 위상을 목표로 했으나, **1D 고전계에서 naive Berry phase = 0** (A = ∇f → curl = 0)임을 발견.
+이는 수학적 사실이지 버그가 아니다: 양자계의 복소 위상과 달리, 고전 확률 분포는 실수.
+
+대안으로 **Fisher 정보 계량** 채택 — 매개변수 공간 위의 비자명한 Riemannian 기하를 제공.
+
+### 구현
+
+| 구성 요소 | 역할 |
+|-----------|------|
+| `FisherMetricCalculator` | g_μν = (1/T²) Cov(∂_μV, ∂_νV), 곡률 K (Brioschi), 측지선 거리 |
+| `ParameterSpace` | 2D 매개변수 격자 |
+| `tilted_double_well` | V = x⁴ − 4x² + λ₁x + λ₂x² |
+
+### 핵심 물리
+
+- **Fisher 계량**: 매개변수 변화에 대한 분포 민감도 (양정치)
+- **가우스 곡률**: 매개변수 공간의 내재적 곡률 (K ≠ 0)
+- **양자 대응**: Fisher = Fubini-Study의 고전 극한
+- **수학적 필연**: curl(∇f) = 0이므로 1D 고전 Berry phase는 항상 trivial
+
+### 검증 결과 (5/5 ALL PASS)
+
+| # | 테스트 | 결과 |
+|---|------|------|
+| 1 | Fisher 계량 양정치 | PASS |
+| 2 | 해석적 대조 (가우시안) | PASS — 오차 < 1e-12 |
+| 3 | 가우스 곡률 K ≠ 0 | PASS — |K|_max = 0.24 |
+| 4 | Fisher ≥ 유클리드 거리 | PASS |
+| 5 | 대칭점 g₁₂ = 0 | PASS |
+
+### 기술 노트
+
+- **초기 실패**: naive Berry connection A = ∇⟨x⟩는 gradient이므로 curvature = 0.
+  이를 발견하고 Fisher 계량으로 전환.
+- **Brioschi 공식**: 가우스 곡률을 g_μν와 그 1차/2차 미분만으로 계산.
+  수치 안정성을 위해 eps = 0.02 사용.
+- **가우시안 해석해**: V = ½kx² + λ₁x에서 g₁₁ = 1/(Tk), g₂₂ = 1/(2k²).

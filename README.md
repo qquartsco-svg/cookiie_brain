@@ -287,6 +287,29 @@ python examples/layer5_verification.py   # 5항목 ALL PASS
 
 상세: [Layer_5/README.md](Layer_5/README.md)
 
+## Layer 6 — 정보 기하학
+
+매개변수 공간의 기하학적 구조를 Fisher 정보 계량으로 분석합니다.
+Layer 3(물리 공간 게이지)의 매개변수 공간 확장입니다.
+
+- **Fisher 계량**: `g_μν = (1/T²) Cov(∂_μV, ∂_νV)` — 매개변수 변화에 대한 분포 민감도
+- **가우스 곡률**: K — 비자명한 내재적 곡률 (구면/쌍곡면/평탄)
+- **측지선 거리**: 분포 변화의 통계적 비용 (항상 ≥ 유클리드)
+
+1D 고전계에서 naive Berry phase = 0 (A = ∇f → curl = 0)이지만,
+Fisher 계량의 곡률은 비자명하다 — 이것이 양자 Fubini-Study 계량의 고전 극한이다.
+
+```python
+from Layer_6 import FisherMetricCalculator, ParameterSpace
+```
+
+검증 실행:
+```bash
+python examples/layer6_verification.py   # 5항목 ALL PASS
+```
+
+상세: [Layer_6/README.md](Layer_6/README.md)
+
 ---
 
 ## 설계 원칙
@@ -362,6 +385,9 @@ CookiieBrain/
 ├── Layer_5/                    # 확률역학
 │   ├── stochastic_mechanics.py #  Fokker-Planck, Nelson, ProbabilityCurrent
 │   └── README.md              #   Layer 5 개념 (한국어)
+├── Layer_6/                    # 정보 기하학
+│   ├── geometric_phase.py     #  FisherMetricCalculator, ParameterSpace
+│   └── README.md              #   Layer 6 개념 (한국어)
 ├── examples/                   # 실행 가능한 예제
 │   ├── phase_a_minimal_verification.py  # 자전 검증 (ALL PASS)
 │   ├── phase_b_orbit_verification.py    # 공전 검증 (ALL PASS)
@@ -374,6 +400,7 @@ CookiieBrain/
 │   ├── layer3_verification.py                # Layer 3 게이지/기하학 검증 (ALL PASS)
 │   ├── layer4_verification.py                # Layer 4 비평형 일 정리 검증 (ALL PASS)
 │   ├── layer5_verification.py                # Layer 5 확률역학 검증 (ALL PASS)
+│   ├── layer6_verification.py                # Layer 6 정보 기하학 검증 (ALL PASS)
 │   ├── phase_a_integration_test.py      # 우물 + 자전 통합
 │   └── integration_test_demo.py         # 기본 통합 테스트
 └── docs/                       # 참고 문서
@@ -413,6 +440,7 @@ CookiieBrain/
 | **Layer 3: 게이지/기하학** | 완료 |
 | **Layer 4: 비평형 일 정리** | 완료 |
 | **Layer 5: 확률역학** | 완료 |
+| **Layer 6: 정보 기하학** | 완료 |
 
 > 고전 구조가 먼저, 확률은 마지막에 얹는다.
 > 구조가 있어야 요동의 의미가 생긴다.
@@ -421,6 +449,7 @@ CookiieBrain/
 > Layer 3에서 공간이 구부러진다.
 > Layer 4에서 비평형이 정확해진다.
 > Layer 5에서 궤적이 밀도가 된다.
+> Layer 6에서 매개변수 공간에 기하학이 생긴다.
 
 단계 설명: [Phase_A/STAGES_SPIN_ORBIT_FLUCTUATION.md](Phase_A/STAGES_SPIN_ORBIT_FLUCTUATION.md)
 

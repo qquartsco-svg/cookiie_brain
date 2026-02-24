@@ -516,10 +516,10 @@ Layer 1은 나머지 모든 Layer의 토양이다:
 ```
 Layer 1 (Kramers, P[i,j], dS/dt)
   ├→ Layer 2: N-입자, 상호작용, 연속 장  ← 완료
-  ├→ Layer 3: 위치 의존 J(x), 비가환 게이지
-  ├→ Layer 4: Jarzynski, Crooks, Landauer
+  ├→ Layer 3: 위치 의존 J(x), 비가환 게이지  ← 완료
+  ├→ Layer 4: Jarzynski, Crooks, Landauer  ← 완료
   ├→ Layer 5: Nelson 확률역학, Fokker-Planck  ← 완료
-  └→ Layer 6: Berry 위상, Chern 수
+  └→ Layer 6: Fisher 정보 기하학  ← 완료
 ```
 
 ---
@@ -751,6 +751,51 @@ v_- = v_c − v_o           (backward)
 | 3 | 평형 확률류 J=0 | PASS — J_max = 2.9e-04 |
 | 4 | Nelson 삼투 속도 | PASS — 오차 = 0.000000 |
 | 5 | Langevin ↔ FP 일치 | PASS — L1 = 0.023 |
+
+---
+
+### 6-6. Layer 6 — 정보 기하학 [완료]
+
+**목적**: 매개변수 공간의 기하학적 구조를 Fisher 정보 계량으로 분석한다.
+
+**Layer 3과의 관계**:
+- Layer 3: 물리 공간의 게이지 — Ω(x)v, B-field
+- Layer 6: 매개변수 공간의 기하 — g_μν, K (Fisher 계량)
+
+**왜 naive Berry phase = 0인가 (1D 고전)**:
+
+```
+A_μ = ∂⟨x⟩/∂λ_μ  →  A = ∇_λ f  (gradient of scalar)
+F = curl(∇f) = 0              (항상, Schwarz 정리)
+```
+
+1D overdamped 고전계에서 스칼라 기대값의 Berry connection은 trivial.
+이것은 수학적 사실이지 구현 오류가 아니다.
+
+**Fisher 계량은 비자명**:
+
+```
+g_μν(λ) = (1/T²) · Cov_λ(∂_μV, ∂_νV)
+```
+
+- 양정치 (positive definite)
+- 가우스 곡률 K ≠ 0 (비평탄 매개변수 공간)
+- 양자 Fubini-Study 계량의 고전 극한
+
+| 구성 요소 | 역할 |
+|-----------|------|
+| `FisherMetricCalculator` | Fisher 계량, 곡률, 측지선 거리 |
+| `ParameterSpace` | 2D 매개변수 격자 |
+
+### 검증 결과
+
+| # | 테스트 | 결과 |
+|---|------|------|
+| 1 | Fisher 계량 양정치 | PASS — 5점 모두 pd=True |
+| 2 | 해석적 대조 (가우시안) | PASS — 오차 < 1e-12 |
+| 3 | 가우스 곡률 비자명 K≠0 | PASS — |K|_max = 0.24 |
+| 4 | Fisher ≥ 유클리드 거리 | PASS — 비율 > 1.5 |
+| 5 | 대칭점 g₁₂ = 0 | PASS — |g₁₂| < 1e-6 |
 
 ---
 
