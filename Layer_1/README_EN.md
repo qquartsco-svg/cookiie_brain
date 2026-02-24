@@ -68,15 +68,18 @@ Extracts empirical statistics from simulation trajectories.
 ### ③ Entropy Production Rate
 
 ```
-dS/dt = (γ/T) ⟨|v|²⟩ − (1/T) ⟨v·I⟩
+Ṡ = (γ/T)(⟨|v|²⟩ − dT/m) − (1/T)⟨v·I⟩
 ```
 
 | Term | Physics |
 |------|---------|
-| (γ/T)⟨\|v\|²⟩ | Irreversible heat dissipation from damping |
-| (1/T)⟨v·I⟩ | Work done by external injection |
+| (γ/T)⟨\|v\|²⟩ | Dissipation power / T |
+| (γ/T)(dT/m) | Equilibrium maintenance cost from heat bath (baseline) |
+| (1/T)⟨v·I⟩ | Work done by external driving |
 
-At equilibrium (I=0) + equipartition → dS/dt = γd/m (d = spatial dimension).
+Limit consistency:
+- **Equilibrium (I=0, FDT)**: ⟨|v|²⟩ = dT/m → **Ṡ = 0** (2nd law consistent)
+- **Non-equilibrium (I≠0)**: Ṡ > 0 (irreversible entropy production)
 
 ---
 
@@ -91,7 +94,7 @@ python examples/layer1_verification.py → ALL PASS (5/5)
 | 1 | Kramers rate formula consistency (symmetry, T↑→k↑, γ↑→k↓) | PASS |
 | 2 | Kramers rate vs simulation transition frequency | PASS (order-of-magnitude) |
 | 3 | Transition matrix row-sum=1, equilibrium detailed balance ≈0 | PASS |
-| 4 | Entropy production dS/dt ≈ γd/m (error 3.7%) | PASS |
+| 4 | Entropy production: equilibrium Ṡ ≈ 0 (limit consistency) | PASS |
 | 5 | Arrhenius law (T↑ → rate↑ confirmed) | PASS |
 
 ---

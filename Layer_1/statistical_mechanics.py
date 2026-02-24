@@ -264,29 +264,41 @@ def entropy_production_rate(
     mass: float = 1.0,
     injection_powers: Optional[np.ndarray] = None,
 ) -> float:
-    """비평형 엔트로피 생산률 dS/dt
+    """비평형 엔트로피 생산률 Ṡ (medium entropy production)
 
-    dS/dt = (γ/T) ⟨|v|²⟩ − (1/T) ⟨v · I⟩
+    Ṡ = (γ/T)(⟨|v|²⟩ − dT/m) − (1/T)⟨v·I⟩
 
-    항 1: 감쇠가 만드는 비가역 열 방출
-    항 2: 외부 주입이 하는 일 (음이면 에너지를 공급 중)
+    극한 일관성:
+      평형 (I=0, FDT 성립, 등분배):
+        ⟨|v|²⟩ = dT/m  →  Ṡ = 0  ✓
 
-    단위: kB/time (kB=1)
+      비평형 (I≠0 또는 ⟨|v|²⟩ ≠ dT/m):
+        Ṡ > 0  (제2법칙)
 
-    I=0, 정상 상태에서는 equipartition에 의해
-    ⟨|v|²⟩ = dT/m 이므로 dS/dt = γd/m (d = dimension)
+    각 항의 물리:
+      (γ/T)⟨|v|²⟩      : 마찰에 의한 소산 파워 / T
+      (γ/T)(dT/m)       : 열욕조(노이즈)가 되돌려주는 평형 유지 비용 (baseline)
+      (1/T)⟨v·I⟩        : 외부 구동이 하는 일
+
+    baseline을 빼는 이유:
+      underdamped Langevin에서 마찰 소산 γ⟨|v|²⟩와 노이즈 주입은
+      평형에서 정확히 상쇄된다. 이 상쇄를 명시적으로 반영하지 않으면
+      평형에서도 Ṡ ≠ 0이 되어 열역학 제2법칙과 모순된다.
     """
     if temperature <= 0:
         return 0.0
 
+    dim = velocities.shape[-1] if velocities.ndim > 1 else 1
     v2_mean = np.mean(np.sum(velocities ** 2, axis=-1))
-    dissipation_term = gamma * v2_mean / temperature
 
-    injection_term = 0.0
+    equilibrium_baseline = dim * temperature / mass
+    excess = v2_mean - equilibrium_baseline
+    ep = gamma * excess / temperature
+
     if injection_powers is not None:
-        injection_term = np.mean(injection_powers) / temperature
+        ep -= np.mean(injection_powers) / temperature
 
-    return float(dissipation_term - injection_term)
+    return float(ep)
 
 
 def entropy_production_trajectory(
@@ -299,21 +311,24 @@ def entropy_production_trajectory(
 ) -> np.ndarray:
     """시간에 따른 엔트로피 생산률 (이동 평균)
 
+    Ṡ(t) = (γ/T)(⟨|v|²⟩_window − dT/m) − (1/T)⟨v·I⟩_window
+
     velocities: shape (n_steps, dim)
     반환: shape (n_steps - window + 1,)
     """
     if temperature <= 0:
         return np.zeros(max(1, len(velocities) - window + 1))
 
+    dim = velocities.shape[-1] if velocities.ndim > 1 else 1
+    equilibrium_baseline = dim * temperature / mass
+
     v2 = np.sum(velocities ** 2, axis=-1)
-    n = len(v2)
-    result = np.zeros(n - window + 1)
 
     cumsum = np.cumsum(v2)
     cumsum = np.insert(cumsum, 0, 0)
     v2_avg = (cumsum[window:] - cumsum[:-window]) / window
 
-    result = gamma * v2_avg / temperature
+    result = gamma * (v2_avg - equilibrium_baseline) / temperature
 
     if injection_powers is not None:
         ip_cumsum = np.cumsum(injection_powers)

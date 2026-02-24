@@ -252,8 +252,14 @@ def test_transition_matrix_properties():
 # ================================================================== #
 
 def test_entropy_production():
-    """평형 dS/dt ≈ γd/m 검증 (등분배 정리 결과)."""
-    print("[4] 엔트로피 생산률")
+    """평형 Ṡ ≈ 0 검증 (극한 일관성).
+
+    FDT 성립 + I=0 → 등분배 ⟨|v|²⟩ = dT/m
+    → Ṡ = (γ/T)(⟨|v|²⟩ − dT/m) = 0
+
+    이것이 열역학 제2법칙과의 정합: 평형에서 엔트로피 생산 없음.
+    """
+    print("[4] 엔트로피 생산률 (평형 Ṡ ≈ 0)")
     print("-" * 50)
 
     k = 1.0
@@ -284,19 +290,20 @@ def test_entropy_production():
     velocities = np.array(velocities)
     v_steady = velocities[burn_in:]
 
-    dS_dt = entropy_production_rate(v_steady, gamma, T, mass)
+    ep = entropy_production_rate(v_steady, gamma, T, mass)
 
-    expected = gamma * dim / mass
-    rel_err = abs(dS_dt - expected) / expected
+    dissipation_scale = gamma * dim / mass
+    normalized = abs(ep) / dissipation_scale
 
-    ok = rel_err < 0.15
-    print(f"  dS/dt 실측 = {dS_dt:.4f}")
-    print(f"  이론값 γd/m = {expected:.4f}")
-    print(f"  상대 오차 = {rel_err*100:.1f}%")
+    ok = normalized < 0.10
+    print(f"  Ṡ 실측 = {ep:.6f}")
+    print(f"  이론값 (평형) = 0")
+    print(f"  |Ṡ| / (γd/m) = {normalized:.4f} (<0.10 = 소산 스케일의 10% 이내)")
     print(f"  → {'PASS' if ok else 'FAIL'}")
 
     traj = entropy_production_trajectory(v_steady, gamma, T, mass, window=5000)
-    print(f"  시계열: mean={traj.mean():.4f}, std={traj.std():.4f}")
+    print(f"  시계열: mean={traj.mean():.6f}, std={traj.std():.4f}")
+    print(f"  시계열 mean/scale = {abs(traj.mean())/dissipation_scale:.4f}")
 
     return ok
 

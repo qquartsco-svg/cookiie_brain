@@ -68,15 +68,18 @@ K는 연속시간 Markov chain 생성 행렬: dp/dt = K^T p.
 ### ③ 엔트로피 생산률
 
 ```
-dS/dt = (γ/T) ⟨|v|²⟩ − (1/T) ⟨v·I⟩
+Ṡ = (γ/T)(⟨|v|²⟩ − dT/m) − (1/T)⟨v·I⟩
 ```
 
 | 항 | 물리 |
 |----|------|
-| (γ/T)⟨\|v\|²⟩ | 감쇠에 의한 비가역 열 방출 |
-| (1/T)⟨v·I⟩ | 외부 주입이 하는 일 |
+| (γ/T)⟨\|v\|²⟩ | 마찰에 의한 소산 파워 / T |
+| (γ/T)(dT/m) | 열욕조가 되돌려주는 평형 유지 비용 (baseline) |
+| (1/T)⟨v·I⟩ | 외부 구동이 하는 일 |
 
-평형 (I=0) + 등분배 → dS/dt = γd/m (d = 공간 차원).
+극한 일관성:
+- **평형 (I=0, FDT)**: ⟨|v|²⟩ = dT/m → **Ṡ = 0** (열역학 제2법칙 정합)
+- **비평형 (I≠0)**: Ṡ > 0 (비가역 엔트로피 생산)
 
 ---
 
@@ -127,7 +130,7 @@ python examples/layer1_verification.py → ALL PASS (5/5)
 | 1 | Kramers rate 공식 정합성 (대칭, T↑→rate↑, γ↑→rate↓) | PASS |
 | 2 | Kramers rate vs 시뮬레이션 전이 빈도 | PASS (order-of-magnitude) |
 | 3 | 전이 행렬 행 합=1, 평형 상세 균형 violation≈0 | PASS |
-| 4 | 엔트로피 생산률 dS/dt ≈ γd/m (오차 3.7%) | PASS |
+| 4 | 엔트로피 생산률: 평형 Ṡ ≈ 0 (극한 일관성) | PASS |
 | 5 | Arrhenius 법칙 (T↑ → rate↑ 방향 확인) | PASS |
 
 ---
