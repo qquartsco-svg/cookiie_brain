@@ -367,6 +367,62 @@ Layer 1은 분석 모듈이므로 기존 엔진 코드를 변경하지 않았다
 
 ---
 
+## 2026-02-24 — Trunk 리팩터링: 레이어 아키텍처
+
+### 개요
+
+줄기(trunk) `potential_field_engine.py`를 레이어 구조로 리팩터링.
+기존 API 100% 하위 호환 유지. 내부를 3종 레이어로 분리.
+
+### 아키텍처
+
+```
+trunk.update(state)
+  ├─ Force Layers    (GradientForce, InjectionForce, CallbackForce, ...)
+  ├─ Gauge Layer     (CoriolisGauge, NullGauge, ...)
+  ├─ Thermo Layer    (LangevinThermo, NullThermo, ...)
+  └─ TrunkChecker    (skew, fdt, conservation, dimensions)
+```
+
+고정한 것 (물리의 뼈대):
+1. 상태공간: (x, v, t) 확장 가능
+2. Newton 업데이트 구조
+3. 보존/소산/요동 분리 (Strang splitting)
+4. 극한 일관성: σ→0, γ→0, FDT, 차원
+
+열어둔 것 (레이어에서 교체):
+- 특정 퍼텐셜/차원/노이즈/상호작용/해석
+
+### 변경사항
+
+| 파일 | 변경 | 상태 |
+|------|------|------|
+| `potential_field_engine.py` (PFE) | Layer 인터페이스, _build_layers, _strang_step, _euler_step | 수정 |
+| `layers.py` (PFE) | Force/Gauge/Thermo 프로토콜 + 기본 구현 + TrunkChecker | 신규 |
+
+### 검증 결과
+
+```
+7개 기존 검증 스크립트: ALL PASS (7/7)
+```
+
+| 스크립트 | 항목 | 결과 |
+|----------|------|------|
+| `phase_a_minimal_verification.py` | 자전 (v·R=0, 에너지, 궤도) | ALL PASS |
+| `phase_b_orbit_verification.py` | 공전 (3-우물, 순환, 갇힘) | ALL PASS |
+| `bridge_verification.py` | 브릿지 (변환, dedup, 공전) | ALL PASS |
+| `dissipation_injection_verification.py` | 감쇠/주입 (밸런스, 전이) | ALL PASS |
+| `fluctuation_verification.py` | 요동 (Kramers, 비편향, 정상) | ALL PASS |
+| `fdt_verification.py` | FDT (등분배, override, γ=0) | ALL PASS |
+| `layer1_verification.py` | 통계역학 (Kramers, 전이행렬, dS/dt) | ALL PASS |
+
+**하위 호환 완전 유지. 리팩터링으로 인한 동작 변경 없음.**
+
+### PHAM 서명
+- ⏳ 미서명
+
+---
+
 ## PHAM 서명 상태
 
 | 파일 | 서명 상태 | 체인 파일 |
