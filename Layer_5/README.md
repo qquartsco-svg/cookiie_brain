@@ -27,7 +27,7 @@ Fokker-Planck (밀도):   ∂ρ/∂t = ∇·(∇V·ρ/(mγ)) + D∇²ρ
 
 ## 핵심 방정식
 
-### Fokker-Planck (overdamped)
+### Fokker-Planck (overdamped 한정)
 
 ```
 ∂ρ/∂t = ∂/∂x [V'(x)·ρ/(mγ)] + D·∂²ρ/∂x²
@@ -37,6 +37,15 @@ Fokker-Planck (밀도):   ∂ρ/∂t = ∇·(∇V·ρ/(mγ)) + D∇²ρ
 - **D = T/(mγ)**: 확산 계수 — FDT로부터 유도
 - **J = b·ρ − D·∇ρ**: 확률류
 - **b = −V'/(mγ)**: overdamped drift
+
+**현재 구현은 overdamped (위치 공간) FP에 한정된다.**
+underdamped Kramers FP (위상 공간):
+
+```
+∂ρ/∂t = −v·∂ₓρ + ∂ᵥ(γvρ + V'ρ/m) + (γT/m)·∂²ᵥρ
+```
+
+는 향후 확장 사항이다.
 
 ### 정상 분포
 
