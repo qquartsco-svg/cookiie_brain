@@ -3,7 +3,7 @@
 > 이 문서는 프로젝트의 물리적 개념, 구현 상태, 검증 결과, 다음 방향을
 > 하나로 정리한 것이다. 새로 합류하는 사람이 이 문서 하나로 전체를 파악할 수 있어야 한다.
 
-**마지막 업데이트: 2026-02-24 (Layer 2 다체/장론 구현 반영)**
+**마지막 업데이트: 2026-02-25 (HippoMemoryEngine 구현 반영)**
 
 ---
 
@@ -793,7 +793,75 @@ g_μν(λ) = (1/T²) · Cov_λ(∂_μV, ∂_νV)
 
 ---
 
-## 7. 설계 원칙
+## 7. HippoMemoryEngine — 태양 (운영층) [완료]
+
+### 왜 필요한가
+
+Phase A~C + Layer 1~6은 "물리 엔진 + 측정 도구"다.
+우물을 수동 배치하고 궤적을 생성하고 분석할 수 있지만,
+**시스템이 스스로 뭔가를 하지는 않는다.**
+
+HippoMemoryEngine은 이 빈자리를 채운다:
+- 우물(기억)이 자동으로 생성·강화·망각·소멸한다
+- 에너지 주입 I(x,v,t)가 상황에 따라 자동 조절된다
+- V(x)가 V(x, **t**)로 변한다 — 살아 움직이는 지형
+
+### 세 관점에서 본 역할
+
+| 솔라시스템 | 인지과학 | 물리 |
+|-----------|---------|------|
+| 태양 (에너지원) | 해마 (장기기억) | V(x,t) 시간 진화 |
+| 핵반응 (강화) | LTP | A += η·proximity |
+| 행성 소멸 | 망각 | A *= exp(-λt) |
+| 태양풍 (탐색) | 주의 분산 | I_explore |
+| 중력 포획 (정착) | 주의 집중 | I_exploit |
+| 소행성 충돌 | 새 자극 | encode(pattern) |
+
+### 구성 요소
+
+| 모듈 | 역할 |
+|------|------|
+| `MemoryStore` | 우물 생성·강화·감쇠·소멸 (기억 생애주기) |
+| `EnergyBudgeter` | I(x,v,t) 자동 제어 (탐색/정착/리콜) |
+| `HippoMemoryEngine` | 위 둘을 통합, CookiieBrainEngine에 연결 |
+
+### 수식
+
+```
+강화: A_i += η · exp(-||x - c_i||² / (2σ²)) · dt
+망각: A_i *= exp(-λ · dt)
+생성: min_dist(x, centers) > d_create → new well
+소멸: A_i < A_min → delete
+주입: I = α_e·I_explore + α_x·I_exploit + α_r·I_recall
+```
+
+### 극한 일관성
+
+| 극한 | 기대 | 보장 |
+|------|------|------|
+| η=0, λ=0 | 정적 시스템 (하위 호환) | 구조적 |
+| λ>0, η=0 | 모든 우물 소멸 | 구조적 |
+| I=0 | Phase C 요동으로만 전이 | 하위 호환 |
+
+### 검증 결과
+
+```
+python examples/hippo_memory_verification.py → ALL PASS (7/7)
+```
+
+| # | 검증 | 결과 |
+|---|------|------|
+| 1 | 우물 자동 생성 (3개) | PASS |
+| 2 | 반복 자극 → amplitude 증가 | PASS (1.0 → 6.0) |
+| 3 | 자연 감쇠 → amplitude 감소 | PASS (5.0 → 1.84) |
+| 4 | threshold 이하 → 우물 삭제 | PASS (count=0) |
+| 5 | recall → 리콜 방향 정확 | PASS |
+| 6 | 하위 호환 (η=0, λ=0) | PASS (amplitude 불변) |
+| 7 | PFE + HippoMemory + BrainAnalyzer 통합 | PASS |
+
+---
+
+## 8. 설계 원칙
 
 | 원칙 | 설명 |
 |---|---|
@@ -821,6 +889,11 @@ g_μν(λ) = (1/T²) · Cov_λ(∂_μV, ∂_νV)
 | 요동 (fluctuation) | σξ(t). 확률적 노이즈. 비결정론적 전이의 원인 |
 | Strang splitting | 적분 방법. 각 물리 연산자를 대칭적으로 분할 적용 |
 | WellRegistry | 우물 누적 저장소. WellFormation 결과를 Gaussian으로 변환·축적 |
+| HippoMemoryEngine | 운영층. 우물 생애주기(생성/강화/망각/소멸) + 에너지 주입 정책 |
+| MemoryStore | 동적 우물 관리. V(x) → V(x,t)로 시간 진화 |
+| EnergyBudgeter | I(x,v,t) 자동 제어. 탐색/정착/리콜 세 모드 합성 |
+| 강화 (reinforcement) | 우물 방문 시 amplitude 증가. η·proximity·dt |
+| 망각 (forgetting) | 자연 감쇠. A *= exp(-λ·dt) |
 
 ---
 

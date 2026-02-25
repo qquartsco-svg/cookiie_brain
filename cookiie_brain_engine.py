@@ -16,7 +16,7 @@
 5. 기타 엔진들...
 
 Author: GNJz (Qquarts)
-Version: 0.5.0
+Version: 0.6.0
 """
 
 from __future__ import annotations
@@ -106,21 +106,20 @@ except ImportError:
     WellRegistry = None
     WellToGaussianConfig = None
 
-# HippoMemoryEngine import (선택적)
+# HippoMemoryEngine import
 try:
-    # 메인 폴더 기준: CookiieBrain/ -> Archive/Integrated/4.Hippo_Memory_Engine/
-    hippo_path = Path(__file__).parent.parent / "Archive" / "Integrated" / "4.Hippo_Memory_Engine"
-    sys.path.insert(0, str(hippo_path))
-    # HippoMemoryEngine의 실제 import 경로는 구조에 따라 조정 필요
-    HIPPO_MEMORY_AVAILABLE = False  # 일단 False로 설정, 나중에 구현
+    from hippo import HippoMemoryEngine, HippoConfig
+    HIPPO_MEMORY_AVAILABLE = True
 except ImportError:
     HIPPO_MEMORY_AVAILABLE = False
+    HippoMemoryEngine = None
+    HippoConfig = None
 
-__version__ = "0.5.0"
+__version__ = "0.6.0"
 
 # BrainAnalyzer import
 try:
-    from brain_analyzer import BrainAnalyzer
+    from analysis.brain_analyzer import BrainAnalyzer
     BRAIN_ANALYZER_AVAILABLE = True
 except ImportError:
     BRAIN_ANALYZER_AVAILABLE = False
@@ -155,8 +154,10 @@ class CookiieBrainEngine(SelfOrganizingEngine):
         enable_cerebellum: bool = False,
         well_formation_config: Optional[Dict[str, Any]] = None,
         potential_field_config: Optional[Dict[str, Any]] = None,
-        cerebellum_config: Optional[Dict[str, Any]] = None,  # CerebellumEngine 설정
-        error_isolation: bool = False,  # True면 엔진 실패 시 격리, False면 전체 실패
+        cerebellum_config: Optional[Dict[str, Any]] = None,
+        hippo_memory_config: Optional[Dict[str, Any]] = None,
+        well_to_gaussian_config: Optional[Dict[str, Any]] = None,
+        error_isolation: bool = False,
         enable_logging: bool = True,
     ):
         """CookiieBrainEngine 초기화
@@ -164,15 +165,14 @@ class CookiieBrainEngine(SelfOrganizingEngine):
         Args:
             enable_well_formation: WellFormationEngine 활성화 여부
             enable_potential_field: PotentialFieldEngine 활성화 여부
-            enable_hippo_memory: HippoMemoryEngine 활성화 여부 (선택적)
-            enable_cerebellum: CerebellumEngine 활성화 여부 (선택적)
-            well_formation_config: WellFormationEngine 설정 (None이면 {}로 처리)
-            potential_field_config: PotentialFieldEngine 설정 (enable_phase_a, phase_a_pole_position 등)
-            cerebellum_config: CerebellumEngine 설정 (None이면 기본값 사용)
-                - memory_dim: int = 5 (기본값)
-                - dt: float = 0.001 (기본값)
-                - correction_scale: float = 0.01 (기본값)
-            error_isolation: True면 엔진 실패 시 격리하고 계속 진행, False면 전체 실패
+            enable_hippo_memory: HippoMemoryEngine 활성화 여부
+            enable_cerebellum: CerebellumEngine 활성화 여부
+            well_formation_config: WellFormationEngine 설정
+            potential_field_config: PotentialFieldEngine + 물리 파라미터 설정
+            cerebellum_config: CerebellumEngine 설정
+            hippo_memory_config: HippoMemoryEngine 설정 (eta, decay_rate 등)
+            well_to_gaussian_config: WellToGaussian 변환 설정
+            error_isolation: True면 엔진 실패 시 격리
             enable_logging: 로깅 활성화 여부
         """
         self.enable_well_formation = enable_well_formation
@@ -181,9 +181,19 @@ class CookiieBrainEngine(SelfOrganizingEngine):
         self.enable_cerebellum = enable_cerebellum
         self.error_isolation = error_isolation
         
-        # PotentialFieldEngine / Phase A 설정 저장
+        # PotentialFieldEngine / 물리 파라미터 설정
         self.potential_field_config = potential_field_config or {}
+        self.gamma: float = self.potential_field_config.get("gamma", 0.0)
+        self.temperature: Optional[float] = self.potential_field_config.get("temperature", None)
+        self.mass: float = self.potential_field_config.get("mass", 1.0)
+        self.noise_sigma: float = self.potential_field_config.get("noise_sigma", 0.0)
+        self.noise_seed: Optional[int] = self.potential_field_config.get("noise_seed", None)
+        self.injection_func: Optional[Callable] = self.potential_field_config.get("injection_func", None)
+        
+        # Phase A 설정
         self.enable_phase_a = self.potential_field_config.get("enable_phase_a", False)
+        self.phase_a_mode: str = self.potential_field_config.get("phase_a_mode", "minimal")
+        self.phase_a_omega: float = self.potential_field_config.get("phase_a_omega", 0.0)
         self.phase_a_pole_position = self.potential_field_config.get("phase_a_pole_position")
         self.phase_a_strength = self.potential_field_config.get("phase_a_strength", 1.0)
         self.phase_a_rotation_direction = self.potential_field_config.get("phase_a_rotation_direction", 1)
@@ -211,12 +221,11 @@ class CookiieBrainEngine(SelfOrganizingEngine):
             if not WELL_FORMATION_AVAILABLE:
                 raise ImportError("WellFormationEngine을 import할 수 없습니다.")
             try:
-                # WellFormationEngine 초기화 (설정은 well_formation_config에서 가져옴)
-                config = well_formation_config or {}
+                wf_config = well_formation_config or {}
                 self.well_formation_engine = WellFormationEngine(
-                    hebbian_config=config.get("hebbian_config"),
-                    stability_constraints=config.get("stability_constraints"),
-                    bias_config=config.get("bias_config"),
+                    hebbian_config=wf_config.get("hebbian_config"),
+                    stability_constraints=wf_config.get("stability_constraints"),
+                    bias_config=wf_config.get("bias_config"),
                 )
                 if self.logger:
                     self.logger.info("WellFormationEngine 초기화 완료")
@@ -225,14 +234,11 @@ class CookiieBrainEngine(SelfOrganizingEngine):
                     self.logger.error(f"WellFormationEngine 초기화 실패: {e}")
                 raise
         
-        # PotentialFieldEngine은 WellFormationEngine 결과를 받아서 초기화
-        # 따라서 여기서는 초기화하지 않고, update()에서 동적으로 생성
-        
         # CerebellumEngine 초기화
         if enable_cerebellum:
             if not CEREBELLUM_AVAILABLE:
                 if self.logger:
-                    self.logger.warning("CerebellumEngine을 import할 수 없습니다. CerebellumEngine을 비활성화합니다.")
+                    self.logger.warning("CerebellumEngine을 import할 수 없습니다. 비활성화합니다.")
                 self.enable_cerebellum = False
             else:
                 try:
@@ -248,16 +254,28 @@ class CookiieBrainEngine(SelfOrganizingEngine):
                         self.logger.warning(f"CerebellumEngine 초기화 실패: {e}")
                     self.enable_cerebellum = False
         
-        # HippoMemoryEngine 초기화 (선택적, 나중에 구현)
+        # HippoMemoryEngine 초기화
+        self.hippo_memory_engine = None
         if enable_hippo_memory:
             if not HIPPO_MEMORY_AVAILABLE:
                 if self.logger:
-                    self.logger.warning("HippoMemoryEngine을 import할 수 없습니다. HippoMemoryEngine을 비활성화합니다.")
+                    self.logger.warning("HippoMemoryEngine import 실패. 비활성화.")
                 self.enable_hippo_memory = False
             else:
-                # TODO: HippoMemoryEngine 초기화 구현
-                if self.logger:
-                    self.logger.info("HippoMemoryEngine 초기화 (구현 예정)")
+                try:
+                    hippo_cfg = HippoConfig(**(hippo_memory_config or {}))
+                    dim = len(self.potential_field_config.get("initial_state", [0, 0])) // 2 or 1
+                    self.hippo_memory_engine = HippoMemoryEngine(
+                        config=hippo_cfg,
+                        dim=dim,
+                        rng_seed=self.noise_seed,
+                    )
+                    if self.logger:
+                        self.logger.info("HippoMemoryEngine 초기화 완료")
+                except Exception as e:
+                    if self.logger:
+                        self.logger.warning(f"HippoMemoryEngine 초기화 실패: {e}")
+                    self.enable_hippo_memory = False
         
         # Phase B 브릿지: WellRegistry (우물 누적 저장소)
         self.well_registry = None
@@ -380,12 +398,25 @@ class CookiieBrainEngine(SelfOrganizingEngine):
                 # PotentialFieldEngine 업데이트
                 new_state = self.potential_field_engine.update(new_state)
             
-            # 3. HippoMemoryEngine 실행 (선택적)
+            # 3. HippoMemoryEngine 실행
             if self.enable_hippo_memory and self.hippo_memory_engine:
-                # TODO: HippoMemoryEngine 통합 구현
-                if self.logger:
-                    self.logger.info("HippoMemoryEngine 실행 (구현 예정)")
-                # new_state = self.hippo_memory_engine.update(new_state)
+                sv = new_state.state_vector
+                n_dim = len(sv) // 2
+                x = sv[:n_dim]
+                v = sv[n_dim:]
+                dt = self.potential_field_config.get("dt", 0.01)
+
+                injection, pot_changed = self.hippo_memory_engine.step(x, v, dt)
+
+                if pot_changed and self.hippo_memory_engine.store.count > 0:
+                    mwp = self.hippo_memory_engine.export_potential()
+                    if mwp is not None:
+                        self.current_potential_func = mwp.potential
+                        self.current_field_func = mwp.field
+                        self.potential_field_engine = None
+
+                new_state.set_extension("hippo_injection", injection)
+                new_state.set_extension("hippo_info", self.hippo_memory_engine.info())
             
             # 4. CerebellumEngine 실행 (선택적)
             if self.enable_cerebellum and self.cerebellum_engine:

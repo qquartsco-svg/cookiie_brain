@@ -83,24 +83,25 @@ class InteractionForce:
     """쌍체 상호작용: Σ_{i<j} φ(r_ij)
 
     φ(r) : 쌍체 퍼텐셜 함수 (스칼라 → 스칼라)
-    φ'(r): 쌍체 힘의 크기 (양수 = 인력, 음수 = 척력)
+    pair_force(r) = dφ/dr : 퍼텐셜의 r 미분 (힘 자체가 아님!)
 
-    힘:
-      F_i = -∇_i Σ_{j≠i} φ(|x_i - x_j|)
-          = -Σ_{j≠i} φ'(r_ij) · (x_i - x_j) / r_ij
+    부호 규약 (코드에서 F = −dφ/dr · r̂ 으로 계산):
+      dφ/dr > 0  →  F가 r 감소 방향  →  인력 (끌림)
+      dφ/dr < 0  →  F가 r 증가 방향  →  척력 (밀림)
+
+    예시:
+      중력  φ = −G/r  →  dφ/dr = G/r² (양수)  →  인력 ✓
+      쿨롱  φ = q²/r  →  dφ/dr = −q²/r² (음수) →  척력 ✓
+      스프링 φ = ½k(r−r₀)² → dφ/dr = k(r−r₀)  →  r>r₀ 인력, r<r₀ 척력
 
     Newton 제3법칙: F_ij = -F_ji (구조적 보장)
     → 총 운동량 보존
 
     사용법:
-        # 중력형: φ(r) = -G/r, φ'(r) = G/r²
-        def gravity_potential(r): return -1.0 / r
-        def gravity_force(r): return 1.0 / r**2
-
         interaction = InteractionForce(
             n_particles=3, dim=2,
-            pair_potential=gravity_potential,
-            pair_force=gravity_force,
+            pair_potential=lambda r: -1.0/r,     # φ(r)
+            pair_force=lambda r: 1.0/r**2,       # dφ/dr
             softening=1e-3,
         )
     """
@@ -254,7 +255,7 @@ def gravitational_interaction(
     G: float = 1.0,
     softening: float = 0.01,
 ) -> InteractionForce:
-    """뉴턴 중력: φ(r) = -Gm²/r, F = Gm²/r² (인력)"""
+    """뉴턴 중력: φ(r) = -G/r, dφ/dr = G/r² → F = -G/r² · r̂ (인력)"""
     return InteractionForce(
         n_particles=n_particles,
         dim=dim,
@@ -270,7 +271,7 @@ def spring_interaction(
     k: float = 1.0,
     r0: float = 1.0,
 ) -> InteractionForce:
-    """조화 스프링: φ(r) = ½k(r-r₀)², F = -k(r-r₀)/r (복원력)"""
+    """조화 스프링: φ(r) = ½k(r-r₀)², dφ/dr = k(r-r₀) → F = -k(r-r₀)·r̂ (복원력)"""
     return InteractionForce(
         n_particles=n_particles,
         dim=dim,
@@ -286,7 +287,7 @@ def coulomb_interaction(
     q: float = 1.0,
     softening: float = 0.01,
 ) -> InteractionForce:
-    """쿨롱: φ(r) = q²/r, F = -q²/r² (척력, 동종 전하)"""
+    """쿨롱: φ(r) = q²/r, dφ/dr = -q²/r² → F = +q²/r²·r̂ (척력, 동종 전하)"""
     return InteractionForce(
         n_particles=n_particles,
         dim=dim,

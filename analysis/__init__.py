@@ -8,7 +8,14 @@ trunk(줄기) 위에 쌓이는 물리 분석 레이어:
   Layer 5: 확률역학 (Fokker-Planck, Nelson)
   Layer 6: 정보 기하학 (Fisher 계량, 곡률)
 
-사용법:
+통합 분석기:
+  from analysis.brain_analyzer import BrainAnalyzer
+
+개별 레이어:
   from analysis.Layer_1 import kramers_rate
   from analysis.Layer_6 import FisherMetricCalculator
 """
+
+from analysis.brain_analyzer import BrainAnalyzer, AnalyzerConfig
+
+__all__ = ["BrainAnalyzer", "AnalyzerConfig"]

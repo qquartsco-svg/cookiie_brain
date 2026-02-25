@@ -41,7 +41,7 @@ except ImportError:
     from brain_core.global_state import GlobalState
 
 from trunk.Phase_B.multi_well_potential import MultiWellPotential, GaussianWell
-from brain_analyzer import BrainAnalyzer
+from analysis.brain_analyzer import BrainAnalyzer
 
 
 def build_double_well_1d():
