@@ -7,20 +7,26 @@
 자전: θ_spin = ω_spin·t  (tidal_locking이면 spin=orbit)
 조석 텐서: T_ij = -∂²V/∂x_i∂x_j
 
+v0.7.2: host_center가 Callable이면 매 호출 시 동적으로 위치를 가져온다.
+         지구(상태점)가 이동하면 달의 공전 중심도 자동으로 따라간다.
+
 Author: GNJz (Qquarts)
 """
 
 from __future__ import annotations
 import numpy as np
-from dataclasses import dataclass
-from typing import Dict
+from dataclasses import dataclass, field
+from typing import Callable, Dict, Optional, Union
 
 
 @dataclass
 class OrbitalMoon:
-    """타원 궤도 공전 + 자전하는 달."""
+    """타원 궤도 공전 + 자전하는 달.
 
-    host_center: np.ndarray
+    host_center: np.ndarray (고정) 또는 Callable[[], np.ndarray] (동적)
+    """
+
+    host_center: Union[np.ndarray, Callable[[], np.ndarray]]
     semi_major_axis: float = 1.5
     eccentricity: float = 0.0
     orbit_frequency: float = 2.0
@@ -35,10 +41,21 @@ class OrbitalMoon:
     quadrupole_moment: float = 0.0
 
     def __post_init__(self):
-        self.host_center = np.asarray(self.host_center, dtype=float)
-        self._dim = len(self.host_center)
+        if callable(self.host_center):
+            self._host_func = self.host_center
+            sample = self._host_func()
+            self._dim = len(sample)
+        else:
+            self.host_center = np.asarray(self.host_center, dtype=float)
+            self._host_func = None
+            self._dim = len(self.host_center)
         if self.tidal_locking:
             self.spin_frequency = self.orbit_frequency
+
+    def _get_host_center(self) -> np.ndarray:
+        if self._host_func is not None:
+            return np.asarray(self._host_func(), dtype=float)
+        return self.host_center
 
     @property
     def orbit_radius(self) -> float:
@@ -69,7 +86,7 @@ class OrbitalMoon:
     def position(self, t: float) -> np.ndarray:
         theta = self._true_anomaly(t)
         r = self.orbital_radius(t)
-        pos = self.host_center.copy()
+        pos = self._get_host_center().copy()
         pos[0] += r * np.cos(theta)
         if self._dim >= 2:
             pos[1] += r * np.sin(theta)
@@ -128,6 +145,8 @@ class OrbitalMoon:
     def info(self, t: float = 0.0) -> Dict:
         return {
             "position": self.position(t).tolist(),
+            "host_center": self._get_host_center().tolist(),
+            "host_dynamic": self._host_func is not None,
             "orbital_radius": self.orbital_radius(t),
             "spin_angle": self.spin_angle(t),
             "velocity": self.velocity(t).tolist(),

@@ -119,7 +119,7 @@ except ImportError:
     OrbitalMoon = None
     TidalField = None
 
-__version__ = "0.7.1"
+__version__ = "0.7.2"
 
 # BrainAnalyzer import
 try:
@@ -217,6 +217,7 @@ class CookiieBrainEngine(SelfOrganizingEngine):
             self.logger = None
         
         # 엔진 초기화
+        self._last_state: Optional[GlobalState] = None
         self.well_formation_engine = None
         self.potential_field_engine = None
         self.hippo_memory_engine = None
@@ -317,8 +318,9 @@ class CookiieBrainEngine(SelfOrganizingEngine):
         
         엔진 연결 순서:
         1. WellFormationEngine → W, b 생성
-        2. PotentialFieldEngine → 퍼텐셜 필드 변환 및 상태 업데이트
-        3. HippoMemoryEngine → 장기 기억 시스템 (선택적)
+        2. Hippo store 갱신 (기억 강화/감쇠, PFE 전)
+        3. PotentialFieldEngine → 적분 (injection = user + tidal + hippo)
+        3.5 Tidal/Hippo 상태 기록
         4. CerebellumEngine → 운동 조율 및 학습 (선택적)
         
         Args:
@@ -330,6 +332,7 @@ class CookiieBrainEngine(SelfOrganizingEngine):
         # 상태 복사 (불변성 유지)
         # deep=True로 완전한 복제 (extension 내부 dict, numpy 배열도 복제)
         new_state = state.copy(deep=True)
+        self._last_state = new_state
         
         try:
             # 1. WellFormationEngine 실행
@@ -382,7 +385,31 @@ class CookiieBrainEngine(SelfOrganizingEngine):
                             "well_registry", self.well_registry.info()
                         )
             
-            # 2. PotentialFieldEngine 실행
+            # 2. Hippo 기억 갱신 (PFE 전에 실행)
+            #    store.step()으로 기억 강화/감쇠/소멸을 먼저 처리.
+            #    퍼텐셜이 바뀌면 PFE를 재구성한다.
+            #    injection은 PFE의 injection_func 안에서 자동 실행됨.
+            if self.enable_hippo_memory and self.hippo_memory_engine:
+                sv = new_state.state_vector
+                n_dim = len(sv) // 2
+                x = sv[:n_dim]
+                dt = self.potential_field_config.get("dt", 0.01)
+
+                self.hippo_memory_engine.store.step(x, dt)
+
+                if self.hippo_memory_engine.potential_changed:
+                    self.hippo_memory_engine._prev_version = (
+                        self.hippo_memory_engine.store.version
+                    )
+                    if self.hippo_memory_engine.store.count > 0:
+                        mwp = self.hippo_memory_engine.export_potential()
+                        if mwp is not None:
+                            self.current_potential_func = mwp.potential
+                            self.current_field_func = mwp.field
+                    self.potential_field_engine = None
+
+            # 3. PotentialFieldEngine 실행
+            #    injection_func = user + tidal + hippo (전부 합성)
             if self.enable_potential_field and self.current_well_result:
                 if not self.potential_field_engine:
                     omega_coriolis = None
@@ -419,10 +446,9 @@ class CookiieBrainEngine(SelfOrganizingEngine):
                         noise_seed=self.noise_seed,
                     )
                 
-                # PotentialFieldEngine 업데이트
                 new_state = self.potential_field_engine.update(new_state)
             
-            # 2.5. TidalField 상태 기록
+            # 3.5. TidalField + Hippo 상태 기록
             if self.enable_tidal and self.tidal_field is not None:
                 sv = new_state.state_vector
                 n_dim = len(sv) // 2
@@ -434,25 +460,15 @@ class CookiieBrainEngine(SelfOrganizingEngine):
                     "tidal_potential": self.tidal_field.potential(x, t),
                     "time": t,
                 })
-            
-            # 3. HippoMemoryEngine 실행
+
             if self.enable_hippo_memory and self.hippo_memory_engine:
                 sv = new_state.state_vector
                 n_dim = len(sv) // 2
-                x = sv[:n_dim]
-                v = sv[n_dim:]
-                dt = self.potential_field_config.get("dt", 0.01)
-
-                injection, pot_changed = self.hippo_memory_engine.step(x, v, dt)
-
-                if pot_changed and self.hippo_memory_engine.store.count > 0:
-                    mwp = self.hippo_memory_engine.export_potential()
-                    if mwp is not None:
-                        self.current_potential_func = mwp.potential
-                        self.current_field_func = mwp.field
-                        self.potential_field_engine = None
-
-                new_state.set_extension("hippo_injection", injection)
+                x, v = sv[:n_dim], sv[n_dim:]
+                inj = self.hippo_memory_engine.budgeter.compute_injection(
+                    x, v, self.hippo_memory_engine.store
+                )
+                new_state.set_extension("hippo_injection", inj)
                 new_state.set_extension("hippo_info", self.hippo_memory_engine.info())
             
             # 4. CerebellumEngine 실행 (선택적)
@@ -626,7 +642,23 @@ class CookiieBrainEngine(SelfOrganizingEngine):
 
         moons = []
         for m_cfg in cfg.get("moons", []):
-            hc = np.asarray(m_cfg.get("host_center", [0.0, 0.0]), dtype=float)
+            hc_raw = m_cfg.get("host_center", [0.0, 0.0])
+
+            if hc_raw == "state":
+                # 동적 추적: 현재 상태 벡터의 위치를 host_center로 사용
+                def _make_tracker(eng=self):
+                    def _get_pos():
+                        if eng._last_state is not None:
+                            sv = eng._last_state.state_vector
+                            return sv[: len(sv) // 2]
+                        return np.zeros(2)
+                    return _get_pos
+                hc = _make_tracker()
+            elif callable(hc_raw):
+                hc = hc_raw
+            else:
+                hc = np.asarray(hc_raw, dtype=float)
+
             moon = OrbitalMoon(
                 host_center=hc,
                 semi_major_axis=m_cfg.get("semi_major_axis", m_cfg.get("orbit_radius", 1.5)),
@@ -646,24 +678,35 @@ class CookiieBrainEngine(SelfOrganizingEngine):
         return TidalField(central=central, moons=moons)
 
     def _build_combined_injection(self) -> Optional[Callable]:
-        """사용자 injection_func + TidalField 힘을 합성한 injection 함수 반환.
+        """user + tidal + hippo injection을 합성한 injection 함수 반환.
 
-        둘 다 없으면 None.
+        PFE가 매 적분 스텝마다 호출하는 I(x,v,t).
+        hippo injection은 budgeter.compute_injection()을 실시간 호출한다.
         """
-        user_inj = self.injection_func
-        tidal_inj = None
-        if self.enable_tidal and self.tidal_field is not None:
-            tidal_inj = self.tidal_field.create_injection_func()
+        sources = []
 
-        if user_inj is None and tidal_inj is None:
+        if self.injection_func is not None:
+            sources.append(self.injection_func)
+
+        if self.enable_tidal and self.tidal_field is not None:
+            sources.append(self.tidal_field.create_injection_func())
+
+        if self.enable_hippo_memory and self.hippo_memory_engine is not None:
+            engine = self.hippo_memory_engine
+            def hippo_inj(x: np.ndarray, v: np.ndarray, t: float) -> np.ndarray:
+                return engine.budgeter.compute_injection(x, v, engine.store)
+            sources.append(hippo_inj)
+
+        if not sources:
             return None
-        if user_inj is not None and tidal_inj is None:
-            return user_inj
-        if user_inj is None and tidal_inj is not None:
-            return tidal_inj
+        if len(sources) == 1:
+            return sources[0]
 
         def combined(x: np.ndarray, v: np.ndarray, t: float) -> np.ndarray:
-            return user_inj(x, v, t) + tidal_inj(x, v, t)
+            total = sources[0](x, v, t)
+            for src in sources[1:]:
+                total = total + src(x, v, t)
+            return total
         return combined
 
     # ──────────────────────────────────────────────────────────
