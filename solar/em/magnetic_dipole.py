@@ -29,6 +29,8 @@ import numpy as np
 from dataclasses import dataclass
 from typing import Optional
 
+from ._constants import EPS_ZERO, EPS_GEOM
+
 
 @dataclass
 class DipoleFieldPoint:
@@ -91,19 +93,19 @@ class MagneticDipole:
         ndarray, shape (3,)
             자기축 단위 벡터.
         """
-        s = spin_axis / (np.linalg.norm(spin_axis) + 1e-30)
+        s = spin_axis / (np.linalg.norm(spin_axis) + EPS_ZERO)
 
-        if abs(self._tilt_rad) < 1e-10:
+        if abs(self._tilt_rad) < EPS_GEOM:
             return s.copy()
 
         if abs(s[2]) < 0.999:
             perp1 = np.cross(s, np.array([0.0, 0.0, 1.0]))
         else:
             perp1 = np.cross(s, np.array([1.0, 0.0, 0.0]))
-        perp1 /= np.linalg.norm(perp1) + 1e-30
+        perp1 /= np.linalg.norm(perp1) + EPS_ZERO
 
         perp2 = np.cross(s, perp1)
-        perp2 /= np.linalg.norm(perp2) + 1e-30
+        perp2 /= np.linalg.norm(perp2) + EPS_ZERO
 
         cos_t = np.cos(self._tilt_rad)
         sin_t = np.sin(self._tilt_rad)
@@ -111,7 +113,7 @@ class MagneticDipole:
         sin_az = np.sin(self._tilt_az_rad)
 
         m_hat = cos_t * s + sin_t * (cos_az * perp1 + sin_az * perp2)
-        m_hat /= np.linalg.norm(m_hat) + 1e-30
+        m_hat /= np.linalg.norm(m_hat) + EPS_ZERO
 
         return m_hat
 
@@ -145,7 +147,7 @@ class MagneticDipole:
         r_vec = position - body_pos
         r = np.linalg.norm(r_vec)
 
-        if r < 1e-30 or body_radius < 1e-30:
+        if r < EPS_ZERO or body_radius < EPS_ZERO:
             return np.zeros(3)
 
         r_hat = r_vec / r
@@ -184,7 +186,7 @@ class MagneticDipole:
         r = np.linalg.norm(r_vec)
 
         m_hat = self.magnetic_axis(spin_axis)
-        if r > 1e-30:
+        if r > EPS_ZERO:
             r_hat = r_vec / r
             sin_lat = np.dot(r_hat, m_hat)
             sin_lat = np.clip(sin_lat, -1.0, 1.0)
@@ -194,7 +196,7 @@ class MagneticDipole:
             sin_lat = 0.0
 
         cos_lat = np.cos(np.arcsin(sin_lat))
-        if body_radius > 1e-30 and cos_lat > 1e-10:
+        if body_radius > EPS_ZERO and cos_lat > EPS_GEOM:
             L_shell = (r / body_radius) / (cos_lat ** 2)
         else:
             L_shell = 0.0
@@ -275,7 +277,7 @@ class MagneticDipole:
         float
             마그네토포즈 거리 [AU].
         """
-        if solar_wind_pressure < 1e-30:
+        if solar_wind_pressure < EPS_ZERO:
             return float('inf')
 
         B0_sq = self.magnetic_moment ** 2
@@ -313,9 +315,9 @@ class MagneticDipole:
             eq1 = np.cross(m_hat, np.array([0.0, 0.0, 1.0]))
         else:
             eq1 = np.cross(m_hat, np.array([1.0, 0.0, 0.0]))
-        eq1 /= np.linalg.norm(eq1) + 1e-30
+        eq1 /= np.linalg.norm(eq1) + EPS_ZERO
         eq2 = np.cross(m_hat, eq1)
-        eq2 /= np.linalg.norm(eq2) + 1e-30
+        eq2 /= np.linalg.norm(eq2) + EPS_ZERO
 
         r_vals = np.linspace(r_min_mult, r_max_mult, n_r) * body_radius
         theta_vals = np.linspace(0, 2 * np.pi, n_theta, endpoint=False)
@@ -335,10 +337,10 @@ class MagneticDipole:
                 theta_grid[i, j] = th
 
                 r_hat = (point - body_pos)
-                r_hat /= np.linalg.norm(r_hat) + 1e-30
+                r_hat /= np.linalg.norm(r_hat) + EPS_ZERO
                 th_hat = np.cross(m_hat, r_hat)
                 th_norm = np.linalg.norm(th_hat)
-                if th_norm > 1e-10:
+                if th_norm > EPS_GEOM:
                     th_hat /= th_norm
 
                 Br[i, j] = np.dot(B, r_hat)

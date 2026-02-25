@@ -38,6 +38,8 @@ import numpy as np
 from dataclasses import dataclass
 from typing import Optional
 
+from ._constants import EPS_ZERO
+
 
 @dataclass
 class SolarWindState:
@@ -64,6 +66,9 @@ class SolarWind:
         태양 천체 이름 (EvolutionEngine에서 find()).
     P0 : float
         1 AU에서의 동압 [정규화, 기본 1.0].
+    Phi0 : float
+        1 AU에서의 입자 플럭스 [정규화, 기본 1.0].
+        P0과 별도로 관리하여 동압/플럭스 의미 혼합 방지.
     v_sw : float
         태양풍 속도 [정규화, 기본 1.0]. 실제 ≈ 400 km/s.
     radiation_ratio : float
@@ -78,6 +83,7 @@ class SolarWind:
         self,
         sun_name: str = "Sun",
         P0: float = 1.0,
+        Phi0: float = 1.0,
         v_sw: float = 1.0,
         radiation_ratio: float = 0.002,
         imf_B0: float = 1.0,
@@ -85,6 +91,7 @@ class SolarWind:
     ):
         self.sun_name = sun_name
         self.P0 = P0
+        self.Phi0 = Phi0
         self.v_sw = v_sw
         self.radiation_ratio = radiation_ratio
         self.imf_B0 = imf_B0
@@ -92,7 +99,7 @@ class SolarWind:
 
     def _r_factor(self, r: float) -> float:
         """1/r² 감쇠 인자."""
-        if r < 1e-30:
+        if r < EPS_ZERO:
             return 0.0
         return (self.r_ref / r) ** 2
 
@@ -102,7 +109,7 @@ class SolarWind:
 
     def particle_flux(self, distance_au: float) -> float:
         """입자 플럭스 Φ(r) = Φ₀ · (r₀/r)²."""
-        return self.P0 * self._r_factor(distance_au)
+        return self.Phi0 * self._r_factor(distance_au)
 
     def radiation_pressure(self, distance_au: float) -> float:
         """복사압 P_rad(r) = P₀ · ratio · (r₀/r)²."""
@@ -118,7 +125,7 @@ class SolarWind:
         """태양풍 방향 (태양 → 관측점, 방사상)."""
         d = position - sun_pos
         norm = np.linalg.norm(d)
-        if norm < 1e-30:
+        if norm < EPS_ZERO:
             return np.array([1.0, 0.0, 0.0])
         return d / norm
 
@@ -142,7 +149,7 @@ class SolarWind:
         """
         r_vec = position - sun_pos
         r = np.linalg.norm(r_vec)
-        direction = r_vec / r if r > 1e-30 else np.array([1.0, 0.0, 0.0])
+        direction = r_vec / r if r > EPS_ZERO else np.array([1.0, 0.0, 0.0])
 
         return SolarWindState(
             position=position.copy(),

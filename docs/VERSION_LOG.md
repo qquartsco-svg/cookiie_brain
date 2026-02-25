@@ -1,5 +1,41 @@
 # solar/ 버전 로그 / Version Log
 
+## v1.2.2 — EM 레이어 개념 문서화
+
+**날짜**: 2026-02-25
+**작업**: README에 전자기 레이어 물리 개념 해설 추가
+
+| 파일 | 설명 |
+|------|------|
+| `solar/README.md` | "전자기 레이어 개념 / EM Layer Concepts" 섹션 추가 |
+
+추가 내용:
+- Phase 2 (자기쌍극자): 물리 개념, B ∝ 1/r³ 수식, 세차 연동 원리, 코드 흐름
+- Phase 3 (태양풍): 동압·플럭스·복사압·IMF 각각의 역할, 1/r² 감쇠 이유
+- Phase 4 (자기권): Chapman-Ferraro 균형, 1/6 지수 유도, 자기권 구조 다이어그램
+- 3개 Phase 체인 연결 흐름도
+- 1/r³ vs 1/r² 감쇠 법칙 차이와 마그네토포즈 생성 원리
+
+---
+
+## v1.2.1 — 문서 정비 + EPS 중앙 관리
+
+**날짜**: 2026-02-25
+**작업**: 피드백 기반 README 강화 + em/ 코드 정비
+
+| 파일 | 설명 |
+|------|------|
+| `solar/README.md` | 통합 단위 체계(Unit System) 섹션 추가 |
+| `solar/README.md` | 파라미터 정책(Parameter Policy) 섹션 추가 |
+| `solar/em/_constants.py` | EPS_ZERO, EPS_GEOM 중앙 상수 파일 신설 |
+| `solar/em/magnetic_dipole.py` | 매직 넘버 → EPS_ZERO/EPS_GEOM 교체 (13개소) |
+| `solar/em/solar_wind.py` | 매직 넘버 → EPS_ZERO 교체 (3개소) |
+| `solar/em/magnetosphere.py` | 매직 넘버 → EPS_ZERO 교체 (3개소) |
+
+검증: 기존 em_layer_demo.py 동일 결과 확인 (값 변동 없음)
+
+---
+
 ## v1.2.0 — 전자기 레이어 완비 (Phase 2+3+4)
 
 **날짜**: 2026-02-25

@@ -41,6 +41,7 @@ import numpy as np
 from dataclasses import dataclass
 from typing import Optional
 
+from ._constants import EPS_ZERO
 from .magnetic_dipole import MagneticDipole
 from .solar_wind import SolarWind
 
@@ -138,7 +139,7 @@ class Magnetosphere:
         float
             마그네토포즈 반지름 [AU].
         """
-        if P_sw < 1e-30:
+        if P_sw < EPS_ZERO:
             return float('inf')
 
         ratio = self.k_mp * B0 ** 2 / P_sw
@@ -218,10 +219,10 @@ class Magnetosphere:
         B0 = self.dipole.magnetic_moment
 
         r_mp = self.magnetopause_distance(body_radius, B0, sw_state.dynamic_pressure)
-        r_mp_Req = r_mp / body_radius if body_radius > 1e-30 else 0.0
+        r_mp_Req = r_mp / body_radius if body_radius > EPS_ZERO else 0.0
 
         r_bs = r_mp * self.bow_shock_ratio
-        r_bs_Req = r_bs / body_radius if body_radius > 1e-30 else 0.0
+        r_bs_Req = r_bs / body_radius if body_radius > EPS_ZERO else 0.0
 
         tail_Req = r_mp_Req * self.tail_factor
 
