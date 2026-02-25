@@ -170,7 +170,7 @@ core/EvolutionEngine
 
 | 물리량 | 수식 | 감쇠 | 모듈 |
 |--------|------|------|------|
-| 광도 | L = M^α | — | solar_luminosity |
+| 광도 | L = M^α (α=4.0, ~0.5–2 M☉ 근방 근사) | — | solar_luminosity |
 | 복사 조도 | F = L/(4πr²) | 1/r² | solar_luminosity |
 | 복사압 | P_rad = F/c | 1/r² | solar_luminosity |
 | 평형 온도 | T = [F(1-A)/(f·ε·σ)]^¼ | r^(-1/2) | solar_luminosity |
@@ -188,6 +188,8 @@ core/EvolutionEngine
 |--------|-----------|--------|
 | 광도 L | L☉ = 1.0 | 3.828 × 10²⁶ W |
 | 조도 F | F☉ = 1.0 (1 AU) | 1,361 W/m² |
+
+> 정규화 단위는 내부 계산용이며, `irradiance_si()`에서만 SI 단위를 반환한다.
 | 동압 P_sw | P₀ = 1.0 (1 AU) | ~2 nPa |
 | 자기장 B | B₀ = 1.0 (표면 적도) | ~31,000 nT (지구) |
 | 플럭스 Φ | Φ₀ = 1.0 (1 AU) | ~3 × 10⁸ cm⁻²s⁻¹ |
