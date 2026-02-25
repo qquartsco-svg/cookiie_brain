@@ -118,6 +118,6 @@ v1.3.0:  태양 = { mass: 1.0, gravity: ON, luminosity: M^4.0 = 1.0 L☉ }
 ---
 
 *이 문서는 `solar/em/` 레이어의 기술 참조가 아닌 기록(record)이다.*
-*기술 문서: [em/README.md](README.md)*
+*기술 문서: [solar/em/README.md](../README.md)*
 
 *v1.3.0 · PHAM Signed · GNJz (Qquarts)*

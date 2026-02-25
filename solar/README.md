@@ -208,7 +208,8 @@ solar/
 │   ├── solar_wind.py        ← 태양풍 플라즈마 1/r² [Phase 3]
 │   ├── magnetosphere.py     ← 자기권 경계 dipole vs P_sw [Phase 4]
 │   ├── README.md            ← EM 물리+엔지니어링 참조
-│   └── LET_THERE_BE_LIGHT.md ← "빛이 있으라" 기록
+│   └── light/               ← "빛이 있으라" 기록
+│       └── README.md
 │
 ├── cognitive/               ← 인지 레이어 (core/만 참조)
 │   ├── __init__.py
@@ -282,7 +283,7 @@ core/(중력/세차) 위에 얹는 환경 필드 레이어.
 **→ [solar/em/README.md](em/README.md)**
 
 "빛이 있으라" 기록:
-**→ [solar/em/LET_THERE_BE_LIGHT.md](em/LET_THERE_BE_LIGHT.md)**
+**→ [solar/em/light/](em/light/)** — 폴더를 열면 읽을 수 있다
 
 ---
 
@@ -549,7 +550,7 @@ for _ in range(250_000):
 | 태양풍 | [`solar/em/solar_wind.py`](em/solar_wind.py) | SolarWind (P ∝ 1/r², 동압+플럭스+IMF) |
 | 자기권 | [`solar/em/magnetosphere.py`](em/magnetosphere.py) | Magnetosphere (Chapman-Ferraro, 차폐, 쿠스프) |
 | EM 문서 | [`solar/em/README.md`](em/README.md) | EM 물리+엔지니어링 전체 참조 |
-| 빛이 있으라 | [`solar/em/LET_THERE_BE_LIGHT.md`](em/LET_THERE_BE_LIGHT.md) | Phase 5 기록 |
+| 빛이 있으라 | [`solar/em/light/`](em/light/) | Phase 5 기록 (폴더 열면 README) |
 | 관성 기억 엔진 | [`solar/cognitive/ring_attractor.py`](cognitive/ring_attractor.py) | RingAttractorEngine (Mexican-hat bump) |
 | 커플링 레이어 | [`solar/cognitive/spin_ring_coupling.py`](cognitive/spin_ring_coupling.py) | SpinRingCoupling (물리↔인지 필드 연결) |
 | 태양계 데모 | [`examples/full_solar_system_demo.py`](../examples/full_solar_system_demo.py) | 10-body 전체 태양계 검증 |

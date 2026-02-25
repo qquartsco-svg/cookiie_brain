@@ -6,7 +6,7 @@ core/(중력/세차) 위에 얹는 환경 필드 레이어.
 이 레이어는 항성 내부 물리(핵융합, 대류, 중심온도)를 풀지 않는다.
 주계열 항성을 가정하고, 외부 출력(광도, 자기장, 태양풍, 자기권)만 계산한다.
 
-> *"빛이 있으라"의 기록: [LET_THERE_BE_LIGHT.md](LET_THERE_BE_LIGHT.md)*
+> *"빛이 있으라"의 기록: [light/](light/) — 폴더를 열면 읽을 수 있다*
 
 ---
 
@@ -19,8 +19,9 @@ solar/em/
 ├── solar_wind.py         ← Phase 3: 태양풍 (v1.2.0)
 ├── magnetosphere.py      ← Phase 4: 자기권 (v1.2.0)
 ├── _constants.py         ← EPS_ZERO, EPS_GEOM
-├── README.md             ← 이 문서
-└── LET_THERE_BE_LIGHT.md ← "빛이 있으라" 기록
+├── README.md             ← 이 문서 (EM 기술 참조)
+└── light/                ← "빛이 있으라" 기록 (폴더 열면 README로 읽힘)
+    └── README.md
 ```
 
 ```
