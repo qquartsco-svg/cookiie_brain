@@ -1,4 +1,4 @@
-# solar/ — 3D 행성 진화 엔진 (v0.8.0)
+# solar/ — 3D 행성 진화 엔진 + 관성 기억 (v0.9.0)
 
 스핀-궤도 결합을 포함한 경량 N-body 엔진.
 첫 원리(first principles)로부터 지구 자전축 세차운동을 재현한다.
@@ -136,7 +136,9 @@ NumPy만 필요. 약 13초 소요.
 ```
 solar/
 ├── README.md              ← 지금 보고 있는 파일
-├── evolution_engine.py    ← 3D N-body + 스핀-궤도 + 표면 해양
+├── evolution_engine.py    ← 3D N-body + 스핀-궤도 + 표면 해양 (물리 층)
+├── ring_attractor.py      ← 관성 기억 엔진 (인지 층)
+├── spin_ring_coupling.py  ← 물리↔인지 필드 연결 (커플링 층)
 ├── central_body.py        ← 태양 (1/r 중력 우물)
 ├── orbital_moon.py        ← 달 (타원 공전 + 조석)
 ├── tidal_field.py         ← 힘 합성기 (태양 + 달)
@@ -144,15 +146,17 @@ solar/
 └── ocean_simulator.py     ← 하위 호환 re-export → analysis/
 ```
 
-핵심 파일: **`evolution_engine.py`**
+핵심 파일: **`evolution_engine.py`** (물리) + **`ring_attractor.py`** (기억) + **`spin_ring_coupling.py`** (연결)
 
 ### 주요 클래스
 
-| 클래스 | 역할 |
-|--------|------|
-| `Body3D` | 위치, 속도, 스핀 벡터, J2, 반지름, 관성모멘트 비 |
-| `SurfaceOcean` | 파라메트릭 표면 우물: 조석 변형, 압력 해류, 와도 |
-| `EvolutionEngine` | 심플렉틱 적분기 + 토크 결합 + 해양 업데이트 루프 |
+| 클래스 | 층 | 역할 |
+|--------|------|------|
+| `Body3D` | 물리 | 위치, 속도, 스핀 벡터, J2, 반지름, 관성모멘트 비 |
+| `SurfaceOcean` | 물리 | 파라메트릭 표면 우물: 조석 변형, 압력 해류, 와도 |
+| `EvolutionEngine` | 물리 | 심플렉틱 적분기 + 토크 결합 + 해양 업데이트 루프 |
+| `RingAttractorEngine` | 인지 | 관성 기억: Mexican-hat bump attractor, 위상 보존 |
+| `SpinRingCoupling` | 커플링 | 물리↔인지 필드 연결, 자전축 방위각 → Ring 위상 투영 |
 
 ### 시뮬레이션 단계
 
@@ -183,6 +187,40 @@ Phase 5 — 해류:  코리올리 + 조석 압력 → 표면 유동 패턴
 지배 방정식과 초기/경계 조건은 설정된다.
 "창발"로 표시된 동역학 현상들은 명시적으로 코딩된 것이 아니라,
 해당 방정식의 수치 적분으로부터 발생한다.
+
+---
+
+## 레이어 구조 / Layer Architecture (v0.9.0)
+
+```
+┌──────────────────────────────────────────────┐
+│  인지 층 — RingAttractorEngine               │
+│  Mexican-hat bump attractor                  │
+│  위상 기억 + 안정화 + 관성 보존              │
+│  φ(t) ∈ S¹                                   │
+└──────────────┬───────────────────────────────┘
+               │ 필드 결합 (coupling_strength)
+               │ 물리 → 인지: 자전축 방위각 투영
+               │ 인지 → 물리: 없음 (관측자 모드)
+┌──────────────┴───────────────────────────────┐
+│  물리 층 — EvolutionEngine                   │
+│  N-body 중력 + 스핀-궤도 토크 + 해양 역학    │
+│  ŝ(t) ∈ S²                                   │
+└──────────────────────────────────────────────┘
+```
+
+검증 결과 (v0.9.0):
+
+| 항목 | 결과 |
+|------|------|
+| 물리 보존 (dE/E) | 8.24×10⁻¹¹ — PASS |
+| Ring 위상 추적 오차 | 평균 0.12° — PASS |
+| Ring 안정성 | 0.908 — PASS |
+| 동기화 비율 | 100% — PASS |
+| 물리↔인지 간섭 | 없음 (물리 정확도 동일) |
+
+물리 엔진은 건드리지 않는다. Ring Attractor가 물리 상태의 **관측자**로 작동한다.
+기어가 직접 맞물리지 않고, 필드장 안에서 위상이 동기화된다.
 
 ---
 
@@ -274,9 +312,12 @@ for _ in range(250_000):
 
 | 파일 | 경로 | 설명 |
 |------|------|------|
-| 엔진 코드 | [`solar/evolution_engine.py`](evolution_engine.py) | Body3D, SurfaceOcean, EvolutionEngine |
-| 데모 스크립트 | [`examples/planet_evolution_demo.py`](../examples/planet_evolution_demo.py) | 6단계 전과정 실행 |
-| 검증 로그 | [`docs/PRECESSION_VERIFICATION_LOG.txt`](../docs/PRECESSION_VERIFICATION_LOG.txt) | 시뮬레이션 전체 출력 |
+| 물리 엔진 | [`solar/evolution_engine.py`](evolution_engine.py) | Body3D, SurfaceOcean, EvolutionEngine |
+| 관성 기억 엔진 | [`solar/ring_attractor.py`](ring_attractor.py) | RingAttractorEngine (Mexican-hat bump) |
+| 커플링 레이어 | [`solar/spin_ring_coupling.py`](spin_ring_coupling.py) | SpinRingCoupling (물리↔인지 필드 연결) |
+| 세차 데모 | [`examples/planet_evolution_demo.py`](../examples/planet_evolution_demo.py) | 6단계 전과정 실행 |
+| 커플링 데모 | [`examples/spin_ring_coupling_demo.py`](../examples/spin_ring_coupling_demo.py) | 물리↔인지 통합 검증 |
+| 검증 로그 | [`docs/PRECESSION_VERIFICATION_LOG.txt`](../docs/PRECESSION_VERIFICATION_LOG.txt) | 세차 시뮬레이션 출력 |
 | 개념 문서 | [`docs/COGNITIVE_SOLAR_SYSTEM.md`](../docs/COGNITIVE_SOLAR_SYSTEM.md) | 인지 매핑 & 로드맵 |
 | 블록체인 서명 | [`blockchain/pham_chain_evolution_engine.json`](../blockchain/pham_chain_evolution_engine.json) | PHAM A_HIGH (0.9999) |
 
@@ -328,4 +369,4 @@ for _ in range(250_000):
 
 ---
 
-*v0.8.0 · PHAM Signed · GNJz (Qquarts)*
+*v0.9.0 · PHAM Signed · GNJz (Qquarts)*
