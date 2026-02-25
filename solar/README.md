@@ -1,48 +1,51 @@
-# solar/ — 3D Planetary Evolution Engine (v0.8.0)
+# solar/ — 3D 행성 진화 엔진 (v0.8.0)
 
-A lightweight N-body engine with spin-orbit coupling that reproduces
-Earth's axial precession from first principles.
-Two equations in, six emergent phenomena out.
+스핀-궤도 결합을 포함한 경량 N-body 엔진.
+첫 원리(first principles)로부터 지구 자전축 세차운동을 재현한다.
+방정식 2개 입력, 창발 현상 6개 출력.
 
----
-
-## What This Engine Demonstrates
-
-1. **Obliquity precession naturally emerges from gravitational torque**
-   on an oblate (J2) body — not from any precession-specific code.
-2. **Coupled orbital-spin dynamics** can be reproduced with a symplectic
-   leapfrog integrator under realistic mass and distance ratios.
-3. **Long-term numerical stability** is preserved over ~250,000 steps
-   (energy drift < 10⁻¹⁵).
-4. **Tidal deformation and surface currents** arise from gravitational
-   gradients and Coriolis deflection without explicit fluid solvers.
+> *A lightweight N-body engine with spin-orbit coupling that reproduces
+> Earth's axial precession from first principles.
+> Two equations in, six emergent phenomena out.*
 
 ---
 
-## What This Engine Does NOT Claim
+## 이 엔진이 증명하는 것 / What This Engine Demonstrates
 
-- To fully reproduce Earth's geophysical evolution.
-- To include general relativistic corrections (e.g. Mercury perihelion advance).
-- To directly prove cognitive equivalence through physical analogy.
-- To model realistic fluid turbulence, climate feedbacks, or atmospheric dynamics.
-- To replace high-fidelity ephemeris codes (JPL DE series, REBOUND, etc.).
-
----
-
-## Verification Results
-
-| Quantity | Simulation | Observed (NASA) | Error |
-|----------|-----------|-----------------|-------|
-| Precession period | 24,575 yr | 25,772 yr | 4.6% |
-| Precession direction | Retrograde | Retrograde | Match |
-| Obliquity | 23.44° (conserved) | 23.44° | Match |
-| Energy conservation | dE/E = 2.06×10⁻¹⁵ | — | PASS |
-
-Full simulation output: [PRECESSION_VERIFICATION_LOG.txt](../docs/PRECESSION_VERIFICATION_LOG.txt)
+1. **경사 세차(obliquity precession)는 중력 토크에서 자연 발생한다**
+   — 편평(J2) 천체에 작용하는 토크로부터. 세차 전용 코드 없음.
+2. **결합 궤도-스핀 역학**을 심플렉틱 립프로그 적분기로
+   실제 질량비·거리비 하에서 재현할 수 있다.
+3. **장기 수치 안정성** — ~250,000 스텝에서 에너지 드리프트 < 10⁻¹⁵.
+4. **조석 변형 및 표면 해류**가 중력 구배와 코리올리 편향으로부터
+   유체 솔버 없이 발생한다.
 
 ---
 
-## Installation & Run
+## 이 엔진이 주장하지 않는 것 / What This Engine Does NOT Claim
+
+- 지구의 지구물리학적 진화를 완전히 재현한다.
+- 일반상대론 보정을 포함한다 (수성 근일점 이동 등).
+- 물리적 유사성으로 인지적 동치를 직접 증명한다.
+- 실제 유체 난류, 기후 피드백, 대기 역학을 모델링한다.
+- 고정밀 천체력 코드를 대체한다 (JPL DE 시리즈, REBOUND 등).
+
+---
+
+## 검증 결과 / Verification Results
+
+| 항목 | 시뮬레이션 | 관측값 (NASA) | 오차 |
+|------|-----------|--------------|------|
+| 세차 주기 | 24,575년 | 25,772년 | 4.6% |
+| 세차 방향 | 역행(retrograde) | 역행(retrograde) | 일치 |
+| 자전축 기울기 | 23.44° (보존됨) | 23.44° | 일치 |
+| 에너지 보존 | dE/E = 2.06×10⁻¹⁵ | — | PASS |
+
+전체 시뮬레이션 출력: [PRECESSION_VERIFICATION_LOG.txt](../docs/PRECESSION_VERIFICATION_LOG.txt)
+
+---
+
+## 설치 및 실행 / Installation & Run
 
 ```bash
 git clone https://github.com/qquartsco-svg/cookiie_brain.git
@@ -50,125 +53,125 @@ cd cookiie_brain
 python examples/planet_evolution_demo.py
 ```
 
-Requires only NumPy. Runs in ~13 seconds.
+NumPy만 필요. 약 13초 소요.
 
 ---
 
-## Architecture
+## 아키텍처 / Architecture
 
-### File Structure
+### 파일 구조
 
 ```
 solar/
-├── README.md              ← this file
-├── evolution_engine.py    ← 3D N-body + spin-orbit + surface ocean
-├── central_body.py        ← Sun (1/r gravity well)
-├── orbital_moon.py        ← Moon (elliptical orbit + tides)
-├── tidal_field.py         ← force combiner (Sun + Moon)
-├── tidal.py               ← backward-compat re-export
-└── ocean_simulator.py     ← backward-compat re-export → analysis/
+├── README.md              ← 지금 보고 있는 파일
+├── evolution_engine.py    ← 3D N-body + 스핀-궤도 + 표면 해양
+├── central_body.py        ← 태양 (1/r 중력 우물)
+├── orbital_moon.py        ← 달 (타원 공전 + 조석)
+├── tidal_field.py         ← 힘 합성기 (태양 + 달)
+├── tidal.py               ← 하위 호환 re-export
+└── ocean_simulator.py     ← 하위 호환 re-export → analysis/
 ```
 
-Core file: **`evolution_engine.py`**
+핵심 파일: **`evolution_engine.py`**
 
-### Key Classes
+### 주요 클래스
 
-| Class | Role |
-|-------|------|
-| `Body3D` | Position, velocity, spin vector, J2, radius, moment of inertia ratio |
-| `SurfaceOcean` | Parametric surface wells: tidal stretch, pressure currents, vorticity |
-| `EvolutionEngine` | Symplectic integrator + torque coupling + ocean update loop |
+| 클래스 | 역할 |
+|--------|------|
+| `Body3D` | 위치, 속도, 스핀 벡터, J2, 반지름, 관성모멘트 비 |
+| `SurfaceOcean` | 파라메트릭 표면 우물: 조석 변형, 압력 해류, 와도 |
+| `EvolutionEngine` | 심플렉틱 적분기 + 토크 결합 + 해양 업데이트 루프 |
 
-### Simulation Phases
+### 시뮬레이션 단계
 
 ```
-Phase 0 — Birth:   Point mass placed in solar gravity field
-Phase 1 — Ocean:   Surface wells form (12 parametric wells)
-Phase 2 — Impact:  Giant impact → Moon ejected, spin axis tilted to 23.44°
-Phase 3 — Tides:   Lunar gravity deforms circular wells into ellipses
-Phase 4 — Precess: Sun+Moon torque → spin axis retrograde rotation (~25 kyr)
-Phase 5 — Currents: Coriolis + tidal pressure → surface flow patterns
+Phase 0 — 탄생:  태양 중력장에 점 질량 배치
+Phase 1 — 바다:  표면 우물 형성 (12개 파라메트릭 우물)
+Phase 2 — 충돌:  거대 충돌 → 달 방출, 자전축 23.44° 기울어짐
+Phase 3 — 조석:  달 중력이 원형 우물을 타원으로 변형
+Phase 4 — 세차:  태양+달 토크 → 자전축 역행 회전 (~25,000년 주기)
+Phase 5 — 해류:  코리올리 + 조석 압력 → 표면 유동 패턴
 ```
 
-**What is prescribed vs. what emerges:**
+### 설정된 것 vs 창발된 것 / Prescribed vs. Emergent
 
-| Element | Prescribed | Emergent |
-|---------|-----------|----------|
-| Gravity law (F = GMm/r²) | Yes | — |
-| Torque law (τ = r × F on J2 body) | Yes | — |
-| Initial positions & velocities | Yes | — |
-| Giant impact event trigger | Yes | — |
-| Number of ocean wells (12) | Yes | — |
-| Obliquity precession | — | **Yes** |
-| Precession period & direction | — | **Yes** |
-| Tidal deformation pattern | — | **Yes** |
-| Surface current directions | — | **Yes** |
-| Latitude-dependent vorticity | — | **Yes** |
+| 요소 | 설정(Prescribed) | 창발(Emergent) |
+|------|:---:|:---:|
+| 중력 법칙 (F = GMm/r²) | O | — |
+| 토크 법칙 (τ = r × F, J2 천체) | O | — |
+| 초기 위치 & 속도 | O | — |
+| 거대 충돌 이벤트 트리거 | O | — |
+| 해양 우물 개수 (12) | O | — |
+| 경사 세차운동 | — | **O** |
+| 세차 주기 & 방향 | — | **O** |
+| 조석 변형 패턴 | — | **O** |
+| 표면 해류 방향 | — | **O** |
+| 위도별 와도 분포 | — | **O** |
 
-The governing equations and initial/boundary conditions are prescribed.
-The dynamical phenomena listed as "emergent" are not coded explicitly —
-they arise from numerical integration of those equations.
+지배 방정식과 초기/경계 조건은 설정된다.
+"창발"로 표시된 동역학 현상들은 명시적으로 코딩된 것이 아니라,
+해당 방정식의 수치 적분으로부터 발생한다.
 
 ---
 
-## Limitations
+## 한계 / Limitations
 
-| Limitation | Impact |
-|-----------|--------|
-| Newtonian gravity only | No GR corrections (Mercury perihelion, frame-dragging) |
-| Simplified J2 model | Higher-order terms (J4, J6) omitted |
-| No tidal dissipation | Moon does not recede; Earth spin does not slow |
-| Fixed Moon orbital plane | Full nutation (18.6 yr cycle) not reproduced |
-| Parametric ocean model | Not a fluid solver; wells are geometric, not hydrodynamic |
-| Rigid body assumption | No mantle convection, elastic deformation, or core-mantle coupling |
-| No atmospheric coupling | Climate, albedo, greenhouse feedbacks absent |
-| Two-body torque | Multi-planet precession perturbations not included |
+| 한계 | 영향 |
+|------|------|
+| 뉴턴 중력만 사용 | GR 보정 없음 (수성 근일점, 관성계 끌림) |
+| 단순화된 J2 모델 | 고차항 (J4, J6) 생략 |
+| 조석 소산 없음 | 달이 후퇴하지 않음; 지구 자전이 느려지지 않음 |
+| 달 궤도면 고정 | 완전한 장동 (18.6년 주기) 미재현 |
+| 파라메트릭 해양 모델 | 유체 솔버가 아님; 우물은 기하학적, 유체역학적이 아님 |
+| 강체 가정 | 맨틀 대류, 탄성 변형, 핵-맨틀 결합 없음 |
+| 대기 결합 없음 | 기후, 알베도, 온실 피드백 부재 |
+| 2체 토크 | 다행성 세차 섭동 미포함 |
 
-This engine reproduces the **core spin-orbit coupling dynamics** accurately.
-It is not a complete geophysical simulator.
-
----
-
-## Extension Possibilities
-
-### Route A — Physics Refinement
-
-| Extension | Effect |
-|-----------|--------|
-| J4, J6 gravity harmonics | Improved precession accuracy |
-| Nutation (lunar node regression) | 18.6 yr oscillation on top of precession |
-| Tidal dissipation | Moon recession + Earth spin-down over Gyr |
-| Multi-planet (Mercury–Saturn) | Full solar system N-body |
-
-→ Toward a geophysically realistic Earth-Moon evolution simulator.
-
-### Route B — Cognitive Dynamics (CookiieBrain Integration)
-
-| Extension | Effect |
-|-----------|--------|
-| CookiieBrainEngine coupling | 2D main engine ↔ 3D evolution engine |
-| Information particles on currents | Data flowing along surface streams |
-| Multi-body cognitive resonance | Multiple memory masses in orbital resonance |
-| Value-axis tracking | Long-term drift of cognitive reference frame |
-
-→ Toward a dynamics-based AI architecture.
-See [Appendix: Cognitive Mapping](#appendix-cognitive-mapping-structural-analogy) for the analogy framework.
-
-### Route C — Distributed Edge AI
-
-| Extension | Effect |
-|-----------|--------|
-| Planet → physical device | Each edge node runs autonomously (spin = local processing) |
-| Gravity field → network protocol | Coupling strength decays as 1/r² (distance-weighted influence) |
-| Galaxy scale | Multiple solar systems = multiple cognitive clusters |
-
-→ Toward a field-based distributed edge AI network.
-
-Detailed roadmap: [docs/COGNITIVE_SOLAR_SYSTEM.md](../docs/COGNITIVE_SOLAR_SYSTEM.md)
+이 엔진은 **핵심 스핀-궤도 결합 역학**을 정확히 재현한다.
+완전한 지구물리 시뮬레이터는 아니다.
 
 ---
 
-## Minimal Usage
+## 확장 가능성 / Extension Possibilities
+
+### 루트 A — 물리 정밀화
+
+| 확장 | 효과 |
+|------|------|
+| J4, J6 중력 고조파 | 세차 정밀도 향상 |
+| 장동 (달 교점 퇴행) | 세차 위 18.6년 진동 |
+| 조석 소산 | Gyr 스케일 달 후퇴 + 지구 자전 감속 |
+| 다행성 (수성~토성) | 완전 태양계 N-body |
+
+→ 지구물리학적으로 현실적인 지구-달 진화 시뮬레이터 방향.
+
+### 루트 B — 인지 동역학 (CookiieBrain 통합)
+
+| 확장 | 효과 |
+|------|------|
+| CookiieBrainEngine 결합 | 2D 메인 엔진 ↔ 3D 진화 엔진 |
+| 해류 위 정보 입자 | 표면 흐름을 따라 데이터 유동 |
+| 다체 인지 공명 | 다중 기억 질량의 궤도 공명 |
+| 가치축 추적 | 인지 기준 프레임의 장기 드리프트 |
+
+→ 동역학 기반 AI 아키텍처 방향.
+유비 프레임워크는 [부록: 인지 매핑](#부록-인지-매핑-구조적-유비--appendix-cognitive-mapping) 참조.
+
+### 루트 C — 분산 엣지 AI
+
+| 확장 | 효과 |
+|------|------|
+| 행성 → 물리 디바이스 | 각 엣지 노드가 자율 실행 (자전 = 로컬 처리) |
+| 중력장 → 네트워크 프로토콜 | 결합 강도가 1/r²로 감쇠 (거리 가중 영향) |
+| 은하 스케일 | 다중 태양계 = 다중 인지 클러스터 |
+
+→ 필드 기반 분산 엣지 AI 네트워크 방향.
+
+상세 로드맵: [docs/COGNITIVE_SOLAR_SYSTEM.md](../docs/COGNITIVE_SOLAR_SYSTEM.md)
+
+---
+
+## 최소 사용 예 / Minimal Usage
 
 ```python
 from solar import EvolutionEngine, Body3D
@@ -183,66 +186,73 @@ earth = Body3D("Earth", mass=3e-6, pos=[1,0,0], vel=[0, 2*np.pi, 0],
 engine.add_body(sun)
 engine.add_body(earth)
 
+# 달 생성 + 자전축 기울기
 engine.giant_impact("Earth", obliquity_deg=23.44, spin_period_days=1.0)
 
+# 시뮬레이션 실행
 for _ in range(250_000):
     engine.step(0.0002)
 
-# Result: spin axis is now retrograde-precessing
+# 결과: 자전축이 역행 세차운동 중
 ```
 
 ---
 
-## Related Files
+## 관련 파일 / Related Files
 
-| File | Path | Description |
-|------|------|-------------|
-| Engine code | [`solar/evolution_engine.py`](evolution_engine.py) | Body3D, SurfaceOcean, EvolutionEngine |
-| Demo script | [`examples/planet_evolution_demo.py`](../examples/planet_evolution_demo.py) | Full 6-phase run |
-| Verification log | [`docs/PRECESSION_VERIFICATION_LOG.txt`](../docs/PRECESSION_VERIFICATION_LOG.txt) | Complete simulation output |
-| Concept document | [`docs/COGNITIVE_SOLAR_SYSTEM.md`](../docs/COGNITIVE_SOLAR_SYSTEM.md) | Cognitive mapping & roadmap |
-| Blockchain signature | [`blockchain/pham_chain_evolution_engine.json`](../blockchain/pham_chain_evolution_engine.json) | PHAM A_HIGH (0.9999) |
+| 파일 | 경로 | 설명 |
+|------|------|------|
+| 엔진 코드 | [`solar/evolution_engine.py`](evolution_engine.py) | Body3D, SurfaceOcean, EvolutionEngine |
+| 데모 스크립트 | [`examples/planet_evolution_demo.py`](../examples/planet_evolution_demo.py) | 6단계 전과정 실행 |
+| 검증 로그 | [`docs/PRECESSION_VERIFICATION_LOG.txt`](../docs/PRECESSION_VERIFICATION_LOG.txt) | 시뮬레이션 전체 출력 |
+| 개념 문서 | [`docs/COGNITIVE_SOLAR_SYSTEM.md`](../docs/COGNITIVE_SOLAR_SYSTEM.md) | 인지 매핑 & 로드맵 |
+| 블록체인 서명 | [`blockchain/pham_chain_evolution_engine.json`](../blockchain/pham_chain_evolution_engine.json) | PHAM A_HIGH (0.9999) |
 
 ---
 
-## Appendix: Cognitive Mapping (Structural Analogy)
+## 부록: 인지 매핑 (구조적 유비) / Appendix: Cognitive Mapping
 
-> **Note on scope:** The mappings below are *structural analogies* — not
-> proven functional equivalences. Two systems governed by similar
-> differential equations may exhibit structurally similar attractors and
-> phase-space behaviors. This does **not** imply semantic or functional
-> equivalence between physical and cognitive phenomena.
+> **범위 주의:** 아래 매핑은 *구조적 유비(structural analogy)*이며,
+> 증명된 기능적 동치가 아니다. 유사한 미분방정식이 지배하는 두 시스템은
+> 구조적으로 유사한 끌개(attractor)와 위상 공간 거동을 보일 수 있다.
+> 이것이 물리 현상과 인지 현상 사이의 **의미적 또는 기능적 동치를
+> 함의하지는 않는다.**
+>
+> *The mappings below are structural analogies — not proven functional
+> equivalences. Similar differential equations may yield structurally
+> similar attractors and phase-space behaviors. This does not imply
+> semantic or functional equivalence between physical and cognitive phenomena.*
 
-### Analogy Table
+### 유비 테이블 / Analogy Table
 
-| Physics | Math Structure | Cognitive Interpretation |
-|---------|---------------|------------------------|
-| Gravity F = GMm/r² | Conservative attractive field | Memory attraction (long-term memory pulls) |
-| Orbital motion | Hamiltonian flow | Cognitive state transitions |
-| Spin (rotation) | Autonomous angular momentum | Independent internal processing (edge node) |
-| Precession | Long-period axis rotation | Gradual shift in value/perspective reference frame |
-| Tidal deformation | External gradient reshaping | Unconscious influence deforming conscious landscape |
-| Ocean currents | Constrained flow under Coriolis | Thought-flow patterns under cognitive rotation |
+| 물리 현상 | 수학 구조 | 인지 해석 |
+|-----------|-----------|-----------|
+| 중력 F = GMm/r² | 보존적 인력 장 | 기억 간 끌림 (장기기억이 당김) |
+| 공전 (궤도 운동) | 해밀턴 흐름 | 인지 상태 전이 |
+| 자전 (회전) | 자율 각운동량 | 독립 내부 처리 (엣지 노드) |
+| 세차운동 | 장주기 축 회전 | 가치관/관점 기준 프레임의 점진적 이동 |
+| 조석 변형 | 외부 구배에 의한 재형성 | 무의식이 의식 지형을 변형 |
+| 해류 | 코리올리 하 구속 유동 | 인지 회전 하의 사고 흐름 패턴 |
 
-### State Vector Reinterpretation
+### 상태 벡터 재해석 / State Vector Reinterpretation
 
 ```
-Physical:   State = (positions, velocities, spin_vectors)
-Cognitive:  State = (memory_positions, activation_levels, value_axes)
+물리:  State = (positions, velocities, spin_vectors)
+인지:  State = (memory_positions, activation_levels, value_axes)
 ```
 
-The governing equations remain identical under this reinterpretation.
-Whether this structural correspondence produces meaningful cognitive
-predictions is an open research question — not a settled claim.
+지배 방정식은 이 재해석 하에서 동일하게 유지된다.
+이 구조적 대응이 의미 있는 인지 예측을 생성하는지는
+**열린 연구 질문이며, 확정된 주장이 아니다.**
 
-### Concrete Mechanisms (Hypothetical)
+### 구체적 메커니즘 (가설) / Concrete Mechanisms (Hypothetical)
 
-- Memory A → B optimal transition = Hohmann transfer orbit
-- External shock absorption = Jupiter-like mass capturing perturbations
-- Creative association = tidal force lowering well barriers → state tunneling
-- Worldview shift = precession of value axis over long timescales
+- 기억 A → B 최적 전이 = 호만 전이 궤도
+- 외부 충격 흡수 = 목성형 대질량에 의한 섭동 포획
+- 창의적 연상 = 조석력이 우물 장벽을 낮춤 → 상태 터널링
+- 세계관 변화 = 가치축의 장기 세차운동
 
-These are proposed analogies for future investigation, not validated models.
+**위 메커니즘은 향후 조사를 위한 가설적 유비이며, 검증된 모델이 아니다.**
 
 ---
 
