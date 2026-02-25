@@ -1,0 +1,25 @@
+[
+  {
+    "index": 0,
+    "timestamp": 1772003697.406495,
+    "data": {
+      "name": "GENESIS"
+    },
+    "hash": "0"
+  },
+  {
+    "index": 1,
+    "timestamp": 1772003697.406504,
+    "data": {
+      "title": "spin_ring_coupling.py",
+      "author": "GNJz",
+      "timestamp": "2026-02-25 18:14:57",
+      "hash": "66c0c1f6de864a6a87966392109bd89924fd88ea47b40ccc5494e88a443602dc",
+      "description": "v0.9.0 — SpinRingCoupling: EvolutionEngine(물리)↔RingAttractor(인지) 필드 연결. 자전축 방위각→Ring 위상 투영, 동기화 100%, 물리 간섭 없음",
+      "score": 0.99,
+      "label": "A_HIGH"
+    },
+    "previous_hash": "0",
+    "hash": "81e2c14462cc1841e8caba1e702a3c45745de4473db673de5d27bbe2914398af"
+  }
+]
