@@ -82,8 +82,11 @@ SolarWind(P0=1.0, Phi0=1.0, v_sw=1.0, imf_B0=1.0)
 ### MagneticDipole
 
 ```python
-MagneticDipole(body_name="Earth", tilt_deg=11.5, magnetic_moment=1.0)
+MagneticDipole(body_name="Earth", B_surface_equator=1.0, tilt_deg=11.5)
 
+# B_surface_equator: 표면 적도 자기장 크기 [B₀ 단위]
+#   주의: 자기쌍극자 모멘트(Am²)가 아님. 표면 자기장 스케일.
+#   지구 기준: ~31 μT = 1.0 B₀
 # 입력: spin_axis → tilt_deg 적용 → magnetic_axis
 # 출력: B(r) = B₀(R/r)³ [3(m̂·r̂)r̂ - m̂]
 .B_field(point, origin, spin_axis, R)  → ndarray [B₀]
@@ -95,8 +98,10 @@ MagneticDipole(body_name="Earth", tilt_deg=11.5, magnetic_moment=1.0)
 ```python
 Magnetosphere(dipole, wind, magnetic_pressure_ratio=1.9e5)
 
-# 입력: dipole.B₀ + wind.P_sw
+# 입력: dipole.B_surface_equator + wind.P_sw
 # 핵심 계산: r_mp = R · (k·B₀²/P_sw)^(1/6)  ← Chapman-Ferraro
+#   B₀ = dipole.B_surface_equator (표면 적도 자기장, B₀ 단위)
+#   P_sw = wind.dynamic_pressure (태양풍 동압, P₀ 단위)
 # 복사압(P_rad)은 참여하지 않는다.
 # 광자는 자기장과 상호작용하지 않으므로.
 .evaluate(body_pos, R, spin_axis, sun_pos) → MagnetosphereState
@@ -206,7 +211,7 @@ core/EvolutionEngine
 | 파라미터 | 기본값 | 의미 |
 |---------|-------|------|
 | `tilt_deg` | 11.5 | 자기축-자전축 기울기 [°] |
-| `magnetic_moment` | 1.0 | 표면 적도 자기장 [B₀] |
+| `B_surface_equator` | 1.0 | 표면 적도 자기장 [B₀] (모멘트 Am²가 아님) |
 
 ---
 

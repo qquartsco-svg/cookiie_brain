@@ -216,7 +216,7 @@ class Magnetosphere:
         """
         sw_state = self.wind.state_at(body_pos, sun_pos)
         m_hat = self.dipole.magnetic_axis(spin_axis)
-        B0 = self.dipole.magnetic_moment
+        B0 = self.dipole.B_surface_equator
 
         r_mp = self.magnetopause_distance(body_radius, B0, sw_state.dynamic_pressure)
         r_mp_Req = r_mp / body_radius if body_radius > EPS_ZERO else 0.0

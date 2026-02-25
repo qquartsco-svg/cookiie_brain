@@ -53,9 +53,10 @@ class MagneticDipole:
     ----------
     body_name : str
         추적할 천체 이름 (EvolutionEngine에서 find()로 검색).
-    magnetic_moment : float
-        무차원 자기 모멘트 크기. 기본값 1.0 (정규화).
-        실제 스케일이 필요하면 B₀ 단위로 환산.
+    B_surface_equator : float
+        표면 적도 자기장 크기 [B₀ 단위, 정규화]. 기본 1.0.
+        B_field() 계산의 스케일 인자. 지구 기준 ~31 μT = 1.0.
+        주의: 자기쌍극자 모멘트(Am²)가 아님.
     tilt_deg : float
         자전축 대비 자기축 기울기 [°]. 지구 = 11.5°.
     tilt_azimuth_deg : float
@@ -65,12 +66,17 @@ class MagneticDipole:
     def __init__(
         self,
         body_name: str = "Earth",
-        magnetic_moment: float = 1.0,
+        B_surface_equator: float = 1.0,
         tilt_deg: float = 11.5,
         tilt_azimuth_deg: float = 0.0,
+        # backward compat
+        magnetic_moment: float = None,
     ):
         self.body_name = body_name
-        self.magnetic_moment = magnetic_moment
+        if magnetic_moment is not None:
+            self.B_surface_equator = magnetic_moment
+        else:
+            self.B_surface_equator = B_surface_equator
         self.tilt_deg = tilt_deg
         self.tilt_azimuth_deg = tilt_azimuth_deg
 
@@ -154,7 +160,7 @@ class MagneticDipole:
         m_hat = self.magnetic_axis(spin_axis)
 
         r_norm = r / body_radius
-        scale = self.magnetic_moment / (r_norm ** 3)
+        scale = self.B_surface_equator / (r_norm ** 3)
 
         m_dot_r = np.dot(m_hat, r_hat)
         B = scale * (3.0 * m_dot_r * r_hat - m_hat)
@@ -226,7 +232,7 @@ class MagneticDipole:
             자기장 세기 [B₀ 단위].
         """
         sin_lat = np.sin(np.radians(latitude_deg))
-        return self.magnetic_moment * np.sqrt(1.0 + 3.0 * sin_lat ** 2)
+        return self.B_surface_equator * np.sqrt(1.0 + 3.0 * sin_lat ** 2)
 
     def field_line_r(
         self, L: float, latitude_deg: float,
@@ -280,7 +286,7 @@ class MagneticDipole:
         if solar_wind_pressure < EPS_ZERO:
             return float('inf')
 
-        B0_sq = self.magnetic_moment ** 2
+        B0_sq = self.B_surface_equator ** 2
         ratio = B0_sq / (2.0 * mu0_over_4pi * solar_wind_pressure)
         r_mp = body_radius * (ratio ** (1.0 / 6.0))
         return r_mp
