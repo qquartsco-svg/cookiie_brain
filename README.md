@@ -3,10 +3,11 @@
 **상태 공간 장(Field) 동역학 통합 엔진**
 
 ```
-Version : 0.7.1
+Version : 0.8.0
 License : PHAM-OPEN v2.0
 Python  : 3.8+
 Author  : GNJz (Qquarts)
+Repo    : https://github.com/qquartsco-svg/cookiie_brain
 ```
 
 ---
@@ -51,7 +52,7 @@ This engine implements the **same mathematical structure** on a state space.
 The same equation structure applies to celestial navigation, cognitive dynamics, and control theory.
 It is not that "the solar system = the brain," but that they **share the same dynamical structure.**
 
-**Full equation of motion (v0.7.1):**
+**Full equation of motion (v0.8.0):**
 
 ```
 m ẍ = -∇V_sun(x)       Tier 1: central gravity (1/r, long-range)
@@ -61,6 +62,10 @@ m ẍ = -∇V_sun(x)       Tier 1: central gravity (1/r, long-range)
     - γv                 damping
     + I(x,v,t)           Hippo energy injection
     + σξ(t)              Phase C: thermal fluctuation
+
+3D N-body (v0.8.0):
+  F_i = Σ_{j≠i} G·m_j·(r_j - r_i) / |r_j - r_i|³
+  τ = (3GM/r³)(C-A)(ŝ·r̂)(r̂×ŝ)   → precession
 ```
 
 Full concept (English): [docs/FULL_CONCEPT_AND_STATUS_EN.md](docs/FULL_CONCEPT_AND_STATUS_EN.md)
@@ -465,6 +470,49 @@ python examples/tidal_orbit_verification.py   # 17항목 ALL PASS
 
 ---
 
+## 3D 진화 엔진 — EvolutionEngine (v0.8.0)
+
+**점 객체 탄생 → 세차운동하는 행성까지의 전체 진화를 시뮬레이션합니다.**
+
+하나의 점에서 시작해서, 중력 방정식만으로 자전·공전·세차·조석·해류가 자연 발생하는 것을 증명했습니다.
+
+### 시뮬레이션 검증 결과
+
+| Phase | 내용 | 결과 |
+|-------|------|------|
+| 0. 탄생 | 태양 중력장에 점 객체 | 에너지 오차 2.06e-15 |
+| 1. 바다 | 12개 우물 형성 | 균일 깊이, 원형 |
+| 2. 충돌 | Giant Impact → 달 + 자전 + 기울기 | 2294.9 rad/yr, 23.44° |
+| 3. 조석 | 달 조석력 → 우물 타원 변형 | 깊이 0.44~0.65 |
+| 4. 세차 | 자전축 역행 회전 | **24,575yr (실제 25,772yr, 오차 4.6%)** |
+| 5. 해류 | 코리올리 + 조석 → 해류 패턴 | 12/12 활성 |
+
+### 사용
+
+```python
+from solar import EvolutionEngine, Body3D
+import numpy as np
+
+engine = EvolutionEngine()
+sun = Body3D("Sun", mass=1.0, pos=np.zeros(3), vel=np.zeros(3))
+earth = Body3D("Earth", mass=3e-6, pos=np.array([1.,0.,0.]),
+               vel=np.array([0., 2*np.pi, 0.]), radius=4.26e-5)
+engine.add_body(sun)
+engine.add_body(earth)
+
+for _ in range(10000):
+    engine.step(0.001)
+```
+
+검증 실행:
+```bash
+python examples/planet_evolution_demo.py   # 6 Phase 전과정
+```
+
+상세: [docs/COGNITIVE_SOLAR_SYSTEM.md](docs/COGNITIVE_SOLAR_SYSTEM.md)
+
+---
+
 ## BrainAnalyzer — 통합 분석 (v0.5.0)
 
 trunk 궤적을 Layer 1 + 5 + 6에 자동으로 통과시켜 한 장의 리포트를 생성합니다.
@@ -531,52 +579,51 @@ engine.reset()                         # 선택
 
 ```
 CookiieBrain/
-├── cookiie_brain_engine.py     # 통합 오케스트레이션 엔진 (v0.6.0)
+├── cookiie_brain_engine.py     # 통합 오케스트레이션 엔진 (v0.7.2)
 ├── README.md
+├── ARCHITECTURE.md             # 5-Layer 아키텍처 명세
 ├── QUICK_START.md
 │
-├── trunk/                      # ── 줄기 (운동방정식 구성요소) ──
-│   ├── Phase_A/                #   자전 + 중력 동역학
-│   │   ├── rotational_field.py #     ωJv 코리올리 회전
-│   │   ├── moon.py             #     (레거시)
-│   │   └── tidal.py            #     ★ 3계층 중력 [v0.7.0~v0.7.1]
-│   │       ├── CentralBody     #       Tier 1: 태양 (1/r)
-│   │       ├── OrbitalMoon     #       Tier 3: 달 (타원+자전+조석텐서)
-│   │       ├── TidalField      #       세 층 합성
-│   │       └── OceanSimulator  #       바다 시뮬레이터
+├── solar/                      # ── L2 Field: 중력장 + 3D 진화 (v0.8.0) ──
+│   ├── central_body.py         #   CentralBody (태양: 1/r)
+│   ├── orbital_moon.py         #   OrbitalMoon (달: 타원공전+조석)
+│   ├── tidal_field.py          #   TidalField (합성기)
+│   └── evolution_engine.py     #   ★ EvolutionEngine (3D N-body+세차+해양)
+│
+├── trunk/                      # ── L1 Dynamics: 운동방정식 구성요소 ──
+│   ├── Phase_A/                #   자전 (코리올리 회전)
 │   ├── Phase_B/                #   공전 (가우시안 다중 우물)
-│   │   ├── multi_well_potential.py
-│   │   └── well_to_gaussian.py
 │   └── Phase_C/                #   요동 (Langevin noise, FDT)
 │
-├── hippo/                      # ── 운영층 (태양/장기기억) [v0.6.0] ──
+├── hippo/                      # ── L3 Memory: 장기기억 (v0.6.0) ──
 │   ├── memory_store.py         #   우물 생애주기 (생성·강화·감쇠·소멸)
 │   ├── energy_budgeter.py      #   I(x,v,t) 자동 제어 (탐색/정착/리콜)
-│   ├── hippo_memory_engine.py  #   통합 엔진 + HippoConfig
-│   └── README.md               #   모듈 설명서
+│   └── hippo_memory_engine.py  #   통합 엔진 + HippoConfig
 │
-├── analysis/                   # ── 분석 도구 (trunk 위에 쌓임) ──
+├── analysis/                   # ── L4 Analysis: 분석 도구 ──
 │   ├── Layer_1~6/              #   통계역학 ~ 정보 기하학
-│   └── brain_analyzer.py       #   Layer 1+5+6 통합 분석 파이프라인
+│   ├── brain_analyzer.py       #   Layer 1+5+6 통합 분석
+│   └── ocean_simulator.py      #   바다 시뮬레이터
 │
-├── examples/                   # 실행 가능한 검증 스크립트 (16개)
-│   ├── phase_a/b 검증           # 자전·공전 (ALL PASS)
-│   ├── bridge/dissipation 검증  # 브릿지·에너지 (ALL PASS)
-│   ├── fluctuation/fdt 검증     # 요동·FDT (ALL PASS)
-│   ├── layer1~6 검증            # Layer 1~6 각 5항목 (ALL PASS)
-│   ├── hippo_memory 검증        # HippoMemory 7항목 (ALL PASS)
-│   ├── integrated_pipeline 검증 # 통합 파이프라인 7항목 (ALL PASS)
-│   └── tidal_orbit 검증         # ★ 3계층 중력 17항목 (ALL PASS)
+├── examples/                   # 실행 가능한 검증 스크립트 (25+개)
+│   ├── planet_evolution_demo.py    # ★ 탄생→세차운동 6Phase (v0.8.0)
+│   ├── real_solar_system_verification.py  # 실제 태양계 비율 20/20
+│   ├── lagrange_point_verification.py     # 라그랑주 L1~L5 20/20
+│   ├── hippo_injection_force_verification.py  # hippo 힘 합성 12/12
+│   ├── dynamic_host_center_verification.py    # 달 동적 추적 15/15
+│   ├── tidal_orbit_verification.py   # 3계층 중력 17/17
+│   ├── layer1~6_verification.py      # Layer 1~6 각 5항목
+│   └── ...                    # phase_a/b, fdt, hippo 등
 │
-├── blockchain/                 # PHAM 블록체인 서명 (35+개 체인)
+├── blockchain/                 # PHAM 블록체인 서명 (45+개 체인)
 │
 └── docs/
-    ├── FULL_CONCEPT_AND_STATUS.md     # 전체 개념 · 현재 상태 (한국어)
+    ├── COGNITIVE_SOLAR_SYSTEM.md    # ★ 인지 태양계 설계 (v0.8.0)
+    ├── FULL_CONCEPT_AND_STATUS.md  # 전체 개념 (한국어)
     ├── FULL_CONCEPT_AND_STATUS_EN.md  # Full concept (English)
-    ├── HIPPO_MEMORY_CONCEPT.md        # HippoMemory 설계 문서
-    ├── TIDAL_DYNAMICS_CONCEPT.md      # ★ 3계층 중력 설계 문서 [v0.7.0]
-    ├── WORK_LOG.md                    # 시간순 작업 기록
-    └── archive/                       # 과거 작업 문서 아카이브
+    ├── HIPPO_MEMORY_CONCEPT.md     # HippoMemory 설계
+    ├── TIDAL_DYNAMICS_CONCEPT.md   # 3계층 중력 설계
+    └── WORK_LOG.md                 # 시간순 작업 기록
 ```
 
 ---
@@ -608,8 +655,10 @@ CookiieBrain/
 | Layer 4~6 (비평형, 확률역학, 정보기하) | 완료 | v0.4.0 |
 | BrainAnalyzer (Layer 1+5+6 통합) | 완료 | v0.5.0 |
 | HippoMemoryEngine (태양/운영층) | 완료 | v0.6.0 |
-| **3계층 중력 (태양+달+조석)** | **완료** | **v0.7.0** |
-| **달 타원공전+자전+조석텐서+OceanSimulator** | **완료** | **v0.7.1** |
+| 3계층 중력 (태양+달+조석) | 완료 | v0.7.0 |
+| 달 타원공전+자전+조석텐서+OceanSimulator | 완료 | v0.7.1 |
+| hippo 힘 합성 + 달 동적 추적 + 아키텍처 정리 | 완료 | v0.7.2 |
+| **3D EvolutionEngine — 점 객체→세차운동** | **완료** | **v0.8.0** |
 
 ```
 v0.1  정적 퍼텐셜
@@ -619,14 +668,13 @@ v0.4  폴더 정리 + Layer 4~6
 v0.5  BrainAnalyzer (통합 분석)
 v0.6  HippoMemoryEngine (태양 = V(x)→V(x,t))
 v0.7  3계층 중력 (태양·지구·달 = 장·끌림·리듬)
+v0.8  ★ 3D EvolutionEngine — 세차운동 실증 (실제 지구 4.6% 오차)
 ```
 
-> **태양이 장을 만들고, 지구가 기억을 담고, 달이 리듬을 만든다.**
-> 같은 동역학이 항법이 되고, 인지가 되고, 제어가 된다.
-
-단계 설명: [trunk/Phase_A/STAGES_SPIN_ORBIT_FLUCTUATION.md](trunk/Phase_A/STAGES_SPIN_ORBIT_FLUCTUATION.md)
+> **점 하나에서 시작해, 중력 방정식만으로 자전·공전·세차·조석·해류가 자연 발생한다.**
+> 그 결과가 실제 우주와 4.6% 오차로 일치한다.
 
 ---
 
-*GNJz (Qquarts) · Cookiie Brain v0.7.1*
+*GNJz (Qquarts) · Cookiie Brain v0.8.0*
 *"Code is Free. Success is Shared."*
