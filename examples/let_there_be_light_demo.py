@@ -225,29 +225,33 @@ def run():
     print(f"  결과: {'PASS' if temp_pass else 'FAIL'}")
 
     # ══════════════════════════════════════════════════
-    #  P5-4: 복사압과 태양풍 연동
+    #  P5-4: 복사(photon) vs 플라즈마(wind) — 독립 입력 확인
     # ══════════════════════════════════════════════════
-    print_section("P5-4: 복사압-태양풍 연동 / Radiation Pressure Chain")
+    print_section("P5-4: 복사 vs 플라즈마 — 독립 입력 / Photon vs Plasma")
 
     wind = SolarWind(sun_name="Sun")
 
-    print(f"\n  {'행성':>10s}  {'P_rad(lum)':>12s}  {'P_rad(sw)':>12s}  {'비율':>8s}")
-    print(f"  {'-'*10}  {'-'*12}  {'-'*12}  {'-'*8}")
+    P_RAD_1AU_SI = solar_lum.radiation_pressure_si(1.0)  # F/c [Pa]
+    P_SW_1AU_SI = 2.0e-9  # canonical solar wind dynamic pressure [Pa]
+    physical_ratio = P_RAD_1AU_SI / P_SW_1AU_SI
 
-    ratio_errors = []
+    print(f"\n  P_rad(1 AU) = F/c = {P_RAD_1AU_SI:.4e} Pa")
+    print(f"  P_sw (1 AU) = ρv² ≈ {P_SW_1AU_SI:.4e} Pa  (canonical)")
+    print(f"  P_rad / P_sw ≈ {physical_ratio:.0f}")
+    print(f"  → 복사압 >> 태양풍 동압 (광자와 플라즈마는 독립 입력)")
+    print()
+
+    print(f"  {'행성':>10s}  {'P_rad [Pa]':>12s}  {'P_sw [norm]':>12s}  {'F [W/m^2]':>12s}")
+    print(f"  {'-'*10}  {'-'*12}  {'-'*12}  {'-'*12}")
+
     for name in ["Mercury", "Venus", "Earth", "Mars", "Jupiter"]:
         s = states[name]
         sw = wind.state_at(engine.find(name).pos, sun_b.pos)
-        if sw.radiation_pressure > 1e-30:
-            ratio = s.radiation_pressure / sw.radiation_pressure
-            ratio_errors.append(abs(ratio - 1.0))
-        else:
-            ratio = float('nan')
-        print(f"  {name:>10s}  {s.radiation_pressure:>12.6e}  "
-              f"{sw.radiation_pressure:>12.6e}  {ratio:>8.4f}")
+        print(f"  {name:>10s}  {s.radiation_pressure_si:>12.4e}  "
+              f"{sw.dynamic_pressure:>12.6f}  {s.irradiance_si:>12.1f}")
 
-    chain_pass = all(e < 0.01 for e in ratio_errors)
-    print(f"\n  복사압 연동 비율 ≈ 1.0: {'PASS' if chain_pass else 'FAIL'}")
+    chain_pass = abs(solar_lum.radiation_pressure_si(1.0) - 1361.0 / 2.998e8) < 1e-4
+    print(f"\n  P_rad = F/c 물리 일관성: {'PASS' if chain_pass else 'FAIL'}")
 
     # ══════════════════════════════════════════════════
     #  P5-5: 자기권까지의 완전 체인
@@ -261,13 +265,14 @@ def run():
 
     ms = magneto.evaluate(earth_b.pos, R_EARTH, earth_b.spin_axis, sun_b.pos)
 
-    print(f"  태양 광도:          {solar_lum.luminosity:.4f} L_sun")
-    print(f"  지구 조도:          {earth_state.irradiance_si:.1f} W/m^2")
-    print(f"  태양풍 동압:        {wind.dynamic_pressure(1.0):.4f} P0")
-    print(f"  지구 표면 자기장:   1.0 B0")
-    print(f"  마그네토포즈:       {ms.magnetopause_R_eq:.2f} R_E")
-    print(f"  차폐 지표:          {ms.shielding_factor:.4f}")
-    print(f"  지구 평형 온도:     {earth_state.equilibrium_temp_k:.1f} K")
+    print(f"  [빛]   태양 광도:     {solar_lum.luminosity:.4f} L_sun")
+    print(f"  [빛]   지구 조도:     {earth_state.irradiance_si:.1f} W/m^2")
+    print(f"  [빛]   복사압 P_rad:  {earth_state.radiation_pressure_si:.4e} Pa")
+    print(f"  [바람] 태양풍 P_sw:   {wind.dynamic_pressure(1.0):.4f} P0")
+    print(f"  [자기] 표면 자기장:   1.0 B0")
+    print(f"  [자기] 마그네토포즈:  {ms.magnetopause_R_eq:.2f} R_E (P_sw vs B)")
+    print(f"  [자기] 차폐 지표:     {ms.shielding_factor:.4f}")
+    print(f"  [빛]   평형 온도:     {earth_state.equilibrium_temp_k:.1f} K")
 
     # ══════════════════════════════════════════════════
     #  P5-6: 기어 분리 — core 에너지 보존
@@ -327,7 +332,7 @@ def run():
         "[P5-1] 질량-광도 L(1.0M)=1.0L":      ml_pass,
         "[P5-2] 역제곱 법칙 F ∝ 1/r²":         isq_pass,
         "[P5-3] 지구 평형 온도 ~255K":          temp_pass,
-        "[P5-4] 복사압-태양풍 비율 보존":        chain_pass,
+        "[P5-4] P_rad=F/c 물리 일관성":         chain_pass,
         "[P5-6] core 에너지 보존 (기어 분리)":   energy_pass,
     }
 

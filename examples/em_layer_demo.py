@@ -115,8 +115,8 @@ def run():
     sw_earth = wind.state_at(earth_b.pos, sun_b.pos)
     print(f"  지구 거리:      {sw_earth.distance_au:.4f} AU")
     print(f"  동압 P_sw:      {sw_earth.dynamic_pressure:.6f} P₀")
-    print(f"  복사압 P_rad:   {sw_earth.radiation_pressure:.6f} P₀")
     print(f"  IMF:            {sw_earth.imf_magnitude:.6f} B_sw₀")
+    print(f"  (복사압은 solar_luminosity.py에서 L→F/c로 유도)")
 
     print(f"\n  {'행성':>10s}  {'거리(AU)':>10s}  {'P_sw':>10s}  {'이론 P_sw':>10s}  {'오차':>8s}")
     print(f"  {'-'*10}  {'-'*10}  {'-'*10}  {'-'*10}  {'-'*8}")

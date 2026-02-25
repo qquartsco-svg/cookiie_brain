@@ -1,5 +1,31 @@
 # solar/ 버전 로그 / Version Log
 
+## v1.3.1 — 복사-플라즈마 독립 분리 (피드백 반영)
+
+**날짜**: 2026-02-25
+**작업**: 복사(photons)와 플라즈마(solar wind)의 물리적 독립성 확보
+
+| 파일 | 설명 |
+|------|------|
+| `solar/em/solar_wind.py` | `radiation_ratio` 파라미터 제거, `radiation_pressure()` 메서드 삭제 |
+| `solar/em/solar_wind.py` | `SolarWindState`에서 `radiation_pressure` 필드 삭제 — 플라즈마만 남김 |
+| `solar/em/solar_luminosity.py` | `P0_sw` 파라미터 제거, `radiation_pressure_normalized()` 삭제 |
+| `solar/em/solar_luminosity.py` | `emissivity` (ε) + `redistribution` (f) 파라미터 추가 |
+| `solar/em/solar_luminosity.py` | T_eq = [F(1-A)/(f·ε·σ)]^¼ 일반형으로 확장 |
+| `examples/let_there_be_light_demo.py` | P5-4를 "복사 vs 플라즈마 독립 입력" 검증으로 재작성 |
+| `examples/em_layer_demo.py` | `radiation_pressure` 참조 제거 |
+
+물리적 수정 근거:
+- 복사압 P_rad = F/c (광자 운동량 전달) — 광도(L)에서 유도
+- 태양풍 동압 P_sw = ρv² (플라즈마 압력) — 독립 물리량
+- 둘은 같은 단위(Pa)이지만 물리적 원인이 다르므로 하나에서 다른 하나를 유도하면 안 됨
+- P_rad(1 AU) ≈ 4.54 μPa >> P_sw(1 AU) ≈ 2 nPa (비율 ~2270:1)
+- 자기권(magnetopause)은 P_sw만으로 결정됨 (광자는 자기장과 상호작용하지 않음)
+
+검증: ALL PASS (let_there_be_light_demo, em_layer_demo)
+
+---
+
 ## v1.3.0 — 빛이 있으라 / Let There Be Light (Solar Luminosity)
 
 **날짜**: 2026-02-25

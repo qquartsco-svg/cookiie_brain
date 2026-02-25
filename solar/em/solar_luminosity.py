@@ -21,9 +21,11 @@
     P_rad = F / c
     1 AU: ≈ 4.54 μPa
 
-  평형 온도 (이상 흑체):
-    T_eq = [ F·(1-A) / (4σ) ]^(1/4)
+  평형 온도 (일반형):
+    T_eq = [ F·(1-A) / (f·ε·σ) ]^(1/4)
     A: 본드 알베도 (지구 ≈ 0.306)
+    ε: 표면 방출율 (기본 1.0)
+    f: 열 재분배 계수 (4.0 = 전구면 방출, 1.0 = 서브스텔라 점만)
     σ: 슈테판-볼츠만 상수
 
   태양 참값:
@@ -61,15 +63,19 @@ AU_TO_M = 1.496e11            # m
 
 @dataclass
 class IrradianceState:
-    """특정 위치에서의 복사 상태."""
+    """특정 위치에서의 복사 상태.
+
+    복사압은 SI 단위(Pa)로만 제공한다.
+    복사(photons)와 플라즈마(solar wind)는 독립 입력이므로
+    P₀(태양풍 동압) 단위로 정규화하지 않는다.
+    """
     body_name: str
     distance_au: float
     luminosity: float             # [L☉]
     irradiance: float             # [F☉] (1 AU = 1.0 = 1361 W/m²)
     irradiance_si: float          # [W/m²]
-    radiation_pressure: float     # [P₀ 단위] (solar_wind 연동용)
-    radiation_pressure_si: float  # [Pa]
-    equilibrium_temp_k: float     # [K] (알베도 0 기준)
+    radiation_pressure_si: float  # [Pa] = F/c (광자 운동량 전달)
+    equilibrium_temp_k: float     # [K]
     direction: np.ndarray         # 빛 방향 (태양 → 행성, 단위벡터)
 
 
@@ -89,8 +95,12 @@ class SolarLuminosity:
         광도 직접 지정 [L☉]. None이면 질량-광도 관계로 자동 계산.
     alpha : float
         질량-광도 관계 지수. 기본 4.0 (0.43~2 M☉ 범위).
-    P0_sw : float
-        태양풍 동압 기준값 [정규화]. solar_wind.py 연동용.
+        구간별 piecewise 모델이 필요하면 이 값을 조정.
+    emissivity : float
+        표면 방출율 ε (0~1). 기본 1.0 (이상 흑체).
+    redistribution : float
+        열 재분배 계수 f. 기본 4.0 (빠른 자전 → 전구면 방출).
+        1.0 = 조석 고정(서브스텔라 점만), 2.0 = 부분 재분배.
     """
 
     def __init__(
@@ -99,12 +109,14 @@ class SolarLuminosity:
         mass_solar: float = 1.0,
         luminosity_override: Optional[float] = None,
         alpha: float = 4.0,
-        P0_sw: float = 1.0,
+        emissivity: float = 1.0,
+        redistribution: float = 4.0,
     ):
         self.star_name = star_name
         self.mass_solar = mass_solar
         self.alpha = alpha
-        self.P0_sw = P0_sw
+        self.emissivity = emissivity
+        self.redistribution = redistribution
 
         if luminosity_override is not None:
             self.luminosity = luminosity_override
@@ -136,22 +148,21 @@ class SolarLuminosity:
         return self._F0_si / (distance_au ** 2)
 
     def radiation_pressure_si(self, distance_au: float) -> float:
-        """복사압 P_rad = F/c [Pa]."""
+        """복사압 P_rad = F/c [Pa].
+
+        광자 운동량 전달에 의한 압력.
+        solar_wind 동압(P_sw)과는 물리적으로 독립.
+        """
         return self.irradiance_si(distance_au) / C_LIGHT_SI
 
-    def radiation_pressure_normalized(self, distance_au: float) -> float:
-        """복사압 [P₀ 단위]. solar_wind.py 연동용.
-
-        P₀ = 1 AU 태양풍 동압 = 1.0.
-        P_rad(1 AU) ≈ 0.002 × P₀ (자연 비율 보존).
-        """
-        F_ratio = self.irradiance(distance_au)
-        return self.P0_sw * 0.002 * F_ratio
-
     def equilibrium_temperature(
-        self, distance_au: float, albedo: float = 0.0,
+        self,
+        distance_au: float,
+        albedo: float = 0.0,
+        emissivity: Optional[float] = None,
+        redistribution: Optional[float] = None,
     ) -> float:
-        """평형 온도 T_eq = [F·(1-A)/(4σ)]^(1/4) [K].
+        """평형 온도 T_eq = [F·(1-A)/(f·ε·σ)]^(1/4) [K].
 
         Parameters
         ----------
@@ -159,12 +170,23 @@ class SolarLuminosity:
             항성으로부터의 거리 [AU].
         albedo : float
             본드 알베도 (0~1). 기본 0 (이상 흑체).
+        emissivity : float or None
+            표면 방출율 ε (0~1). None이면 인스턴스 기본값 사용.
+        redistribution : float or None
+            열 재분배 계수 f. None이면 인스턴스 기본값 사용.
+            4.0 = 빠른 자전(전구면 방출).
+            1.0 = 조석 고정(서브스텔라 점만 방출).
         """
+        eps = emissivity if emissivity is not None else self.emissivity
+        f = redistribution if redistribution is not None else self.redistribution
         F = self.irradiance_si(distance_au)
         if F < EPS_ZERO:
             return 0.0
         absorbed = F * (1.0 - albedo)
-        return (absorbed / (4.0 * STEFAN_BOLTZMANN)) ** 0.25
+        denom = f * eps * STEFAN_BOLTZMANN
+        if denom < EPS_ZERO:
+            return 0.0
+        return (absorbed / denom) ** 0.25
 
     def state_at(
         self,
@@ -172,6 +194,8 @@ class SolarLuminosity:
         star_pos: np.ndarray,
         body_name: str = "",
         albedo: float = 0.0,
+        emissivity: Optional[float] = None,
+        redistribution: Optional[float] = None,
     ) -> IrradianceState:
         """임의 위치에서의 복사 전체 상태.
 
@@ -185,6 +209,10 @@ class SolarLuminosity:
             관측 천체 이름 (라벨용).
         albedo : float
             본드 알베도.
+        emissivity : float or None
+            표면 방출율. None이면 인스턴스 기본값.
+        redistribution : float or None
+            열 재분배 계수. None이면 인스턴스 기본값.
         """
         r_vec = position - star_pos
         r = np.linalg.norm(r_vec)
@@ -196,9 +224,10 @@ class SolarLuminosity:
             luminosity=self.luminosity,
             irradiance=self.irradiance(r),
             irradiance_si=self.irradiance_si(r),
-            radiation_pressure=self.radiation_pressure_normalized(r),
             radiation_pressure_si=self.radiation_pressure_si(r),
-            equilibrium_temp_k=self.equilibrium_temperature(r, albedo),
+            equilibrium_temp_k=self.equilibrium_temperature(
+                r, albedo, emissivity, redistribution,
+            ),
             direction=direction,
         )
 
@@ -207,6 +236,8 @@ class SolarLuminosity:
         planet_positions: Dict[str, np.ndarray],
         star_pos: np.ndarray,
         albedos: Optional[Dict[str, float]] = None,
+        emissivities: Optional[Dict[str, float]] = None,
+        redistributions: Optional[Dict[str, float]] = None,
     ) -> Dict[str, IrradianceState]:
         """전체 태양계를 한번에 조명.
 
@@ -217,12 +248,25 @@ class SolarLuminosity:
         star_pos : ndarray
             항성 위치.
         albedos : dict or None
-            {행성명: 알베도}. None이면 전부 0 (이상 흑체).
+            {행성명: 알베도}. None이면 전부 0.
+        emissivities : dict or None
+            {행성명: 방출율}. None이면 인스턴스 기본값.
+        redistributions : dict or None
+            {행성명: 열 재분배 계수}. None이면 인스턴스 기본값.
         """
         if albedos is None:
             albedos = {}
+        if emissivities is None:
+            emissivities = {}
+        if redistributions is None:
+            redistributions = {}
         result = {}
         for name, pos in planet_positions.items():
             a = albedos.get(name, 0.0)
-            result[name] = self.state_at(pos, star_pos, body_name=name, albedo=a)
+            e = emissivities.get(name, None)
+            f = redistributions.get(name, None)
+            result[name] = self.state_at(
+                pos, star_pos, body_name=name,
+                albedo=a, emissivity=e, redistribution=f,
+            )
         return result
