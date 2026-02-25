@@ -30,6 +30,7 @@ from .tidal import (
     CentralBody,
     OrbitalMoon,
     TidalField,
+    OceanSimulator,
 )
 
 __all__ = [
@@ -50,6 +51,7 @@ __all__ = [
     "CentralBody",
     "OrbitalMoon",
     "TidalField",
+    "OceanSimulator",
 ]
 
 __version__ = "0.7.0"
