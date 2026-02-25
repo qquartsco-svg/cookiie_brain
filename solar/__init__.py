@@ -1,5 +1,5 @@
-"""solar/ — 전체 태양계 N-body 진화 엔진 + 관성 기억
-======================================================
+"""solar/ — 전체 태양계 N-body 진화 엔진 + 관성 기억 + 전자기장
+=============================================================
 
 구조 (기어 분리 — 상호 참조 금지):
 
@@ -12,14 +12,18 @@
   data/ (데이터 층):
     solar_system_data.py → PlanetData, PLANETS, build_solar_system()
 
+  em/ (전자기 층):
+    magnetic_dipole.py   → MagneticDipole, DipoleFieldPoint
+
   cognitive/ (인지 층):
     ring_attractor.py    → RingAttractorEngine, RingState
     spin_ring_coupling.py→ SpinRingCoupling, CouplingState
 
 의존 방향:
   data/ → core/ ← cognitive/
+                ← em/
   core/는 상위를 import하지 않음
-  cognitive/는 data/를 import하지 않음
+  em/과 cognitive/는 서로 참조하지 않음
 """
 
 # ── core (물리) ───────────────────────────────────
@@ -39,6 +43,12 @@ from .data import (
     MOON_DATA,
     PlanetData,
     build_solar_system,
+)
+
+# ── em (전자기) ───────────────────────────────────
+from .em import (
+    MagneticDipole,
+    DipoleFieldPoint,
 )
 
 # ── cognitive (인지/기억) ─────────────────────────
@@ -63,6 +73,9 @@ __all__ = [
     "MOON_DATA",
     "PlanetData",
     "build_solar_system",
+    # em
+    "MagneticDipole",
+    "DipoleFieldPoint",
     # cognitive
     "RingAttractorEngine",
     "RingState",
@@ -70,4 +83,4 @@ __all__ = [
     "CouplingState",
 ]
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
