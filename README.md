@@ -1,9 +1,9 @@
 # Cookiie Brain
 
-**상태 동역학 기반 뇌 모델링 통합 엔진**
+**상태 공간 장(Field) 동역학 통합 엔진**
 
 ```
-Version : 0.6.0
+Version : 0.7.1
 License : PHAM-OPEN v2.0
 Python  : 3.8+
 Author  : GNJz (Qquarts)
@@ -11,93 +11,57 @@ Author  : GNJz (Qquarts)
 
 ---
 
-## 폴더 구조 안내 (v0.4.0 변경)
-
-v0.4.0부터 Phase(줄기)와 Layer(분석 도구)의 역할 차이를 폴더로 명확히 분리했습니다.
-
-| v0.3.0 (이전) | v0.4.0 (현재) | 설명 |
-|---------------|---------------|------|
-| `Phase_A/` | `trunk/Phase_A/` | 자전 모듈 |
-| `Phase_B/` | `trunk/Phase_B/` | 공전 모듈 |
-| `Phase_C/` | `trunk/Phase_C/` | 요동 모듈 |
-| `Layer_1/` | `analysis/Layer_1/` | 통계역학 |
-| `Layer_2/` | `analysis/Layer_2/` | 다체/장론 |
-| `Layer_3/` | `analysis/Layer_3/` | 게이지/기하학 |
-| `Layer_4/` | `analysis/Layer_4/` | 비평형 일 정리 |
-| `Layer_5/` | `analysis/Layer_5/` | 확률역학 |
-| `Layer_6/` | `analysis/Layer_6/` | 정보 기하학 |
-
-**import 경로 변경 요약:**
-```python
-# 이전 (v0.3.0)
-from Phase_B.multi_well_potential import MultiWellPotential
-from Layer_1 import kramers_rate
-
-# 현재 (v0.4.0)
-from trunk.Phase_B.multi_well_potential import MultiWellPotential
-from analysis.Layer_1 import kramers_rate
-```
-
-**왜 분리했는가?**
-- `trunk/` — 운동방정식의 구성요소 (Phase A/B/C). `PotentialFieldEngine`에 직접 투입되는 코드.
-- `analysis/` — trunk 위에 쌓이는 분석 도구 (Layer 1~6). trunk의 결과를 받아 물리량을 측정/해석.
-
-두 개는 역할이 다르므로, 같은 계층에 두면 혼란을 줄 수 있다.
-
----
-
 ## 이 프로젝트가 하는 일
 
-공이 산과 골짜기가 있는 지형 위에서 굴러가는 장면을 떠올려 보세요.
+태양계를 떠올려 보세요.
+태양이 장(場)을 만들고, 행성이 그 안에서 궤도를 돌고, 달이 조석 리듬을 만듭니다.
 
-- **골짜기(우물)** = 기억. 경험이 쌓이면 지형에 골짜기가 파인다.
-  깊은 골짜기일수록 강한 기억. 공은 가까운 골짜기로 자연스럽게 끌려간다.
-- **공의 움직임** = 상태. 공은 골짜기로 끌려가면서 기억을 떠올린다.
-  여러 골짜기 사이에서 공이 어디로 향하느냐가 곧 "지금 무엇을 떠올리는가"이다.
-- **자전** = 리듬. 공이 골짜기 바닥에 멈추지 않고 회전하면, 위상(타이밍)이 생긴다.
-  수면 중에도 뇌는 멈추지 않는다. 리듬이 있어야 다음 상태로 넘어갈 수 있다.
+이 엔진은 **같은 수학적 구조**를 상태 공간 위에서 구현합니다.
 
-이 엔진은 이 과정을 물리 수식으로 구현합니다.
+- **태양 (1/r 중심장)** = 장기기억. 모든 상태를 묶는 장거리 인력.
+- **지구 (Gaussian 우물)** = 개별 기억. 국소적 끌림, 상태를 가두는 매질.
+- **달 (조석력)** = 리듬. 주기적 교란이 우물 안에 유속/대류/와도를 만든다.
+- **공 (상태 벡터)** = 현재 상태. 세 스케일의 힘을 동시에 받으며 움직인다.
+
+**핵심 통찰 — 동역학적 동형(Dynamical Isomorphism):**
+```
+천체에 대입하면 → 항법 알고리즘
+인지에 대입하면 → 사고 전이 모델
+제어에 대입하면 → 안정 궤도 제어
+```
+"태양계 = 뇌"가 아니라, **같은 동역학 구조를 공유한다.**
+
 정답을 주는 시스템이 아니라, 각자의 해답을 찾아갈 수 있는 **구조**를 만드는 것이 목적입니다.
-
-**기술적으로는:**
-Hopfield 에너지 지형 위에서 상태 벡터의 동역학을 시뮬레이션합니다.
-경험(episodes)으로부터 에너지 우물(W, b)을 형성하고,
-상태가 퍼텐셜 필드 위에서 수렴·회전·전이하는 과정을
-수치 적분(symplectic Euler, Strang splitting)으로 추적합니다.
-Phase A~C로 줄기(trunk)를 완성하고, Layer 1~6으로 분석 도구를 쌓고,
-v0.6.0에서 **HippoMemoryEngine(태양/운영층)**을 통합하여
-V(x) → V(x,t) 전환 — 지형이 스스로 변하는 살아있는 시스템이 되었습니다.
 
 ---
 
 ## What This Project Does
 
-Imagine a ball rolling across a landscape of hills and valleys.
+Think of the solar system.
+The Sun creates a field, planets orbit within it, and the Moon drives tidal rhythms.
 
-- **Valleys (wells)** = memories. As experiences accumulate, valleys form in the terrain.
-  Deeper valleys represent stronger memories. The ball naturally rolls toward the nearest one.
-- **The ball's motion** = state. As the ball is pulled into a valley, it "recalls" that memory.
-  Which valley the ball moves toward is essentially "what is being recalled right now."
-- **Spin** = rhythm. If the ball doesn't just stop at the bottom but keeps rotating, phase (timing) emerges.
-  The brain never truly stops — even in sleep. Rhythm is what enables transitions between states.
+This engine implements the **same mathematical structure** on a state space.
 
-This engine implements these dynamics with physics equations.
-It is not a system that gives answers, but a **structure** that lets each user find their own.
+- **Sun (1/r central field)** = long-term memory. Binds all states with long-range gravity.
+- **Earth (Gaussian well)** = individual memory. Local attractor trapping the state.
+- **Moon (tidal force)** = rhythm. Periodic perturbation generating flow and vorticity inside wells.
+- **Ball (state vector)** = current state. Subject to all three scales of force simultaneously.
 
-**Technically:**
-State-vector dynamics on a multi-well energy landscape.
-The full equation of motion is a Langevin equation with Coriolis rotation:
+**Key insight — Dynamical Isomorphism:**
+The same equation structure applies to celestial navigation, cognitive dynamics, and control theory.
+It is not that "the solar system = the brain," but that they **share the same dynamical structure.**
+
+**Full equation of motion (v0.7.1):**
 
 ```
-m ẍ = -∇V(x,t) + ωJv - γv + I(x,v,t) + σξ(t)
+m ẍ = -∇V_sun(x)       Tier 1: central gravity (1/r, long-range)
+    + -∇V_wells(x,t)    Tier 2: well attraction (Gaussian, dynamic)
+    + -∇V_moon(x,t)     Tier 3: tidal force (periodic perturbation)
+    + ωJv                Phase A: Coriolis rotation
+    - γv                 damping
+    + I(x,v,t)           Hippo energy injection
+    + σξ(t)              Phase C: thermal fluctuation
 ```
-
-- **Phase A (Spin):** Coriolis term ωJv — energy-conserving rotation
-- **Phase B (Orbit):** Gaussian multi-well potential — circulation between memories
-- **Phase C (Fluctuation):** Langevin noise σξ(t) — stochastic transitions
-- **FDT:** σ² = 2γT/m — temperature-based noise, Boltzmann steady state guaranteed
-- **HippoMemory (Sun):** V(x) → V(x,t) — dynamic terrain that creates, strengthens, and decays wells
 
 Full concept (English): [docs/FULL_CONCEPT_AND_STATUS_EN.md](docs/FULL_CONCEPT_AND_STATUS_EN.md)
 
@@ -106,12 +70,18 @@ Full concept (English): [docs/FULL_CONCEPT_AND_STATUS_EN.md](docs/FULL_CONCEPT_A
 ## 핵심 수식
 
 ```
-골짜기의 깊이 (퍼텐셜):   V(x,t) = -Σ A_i(t)·exp(-‖x-c_i‖²/(2σ²))
-공을 끌어당기는 힘:        g(x) = -∇V(x,t)
-전체 운동 방정식:          m ẍ = -∇V(x,t) + ωJv - γv + I(x,v,t) + σξ(t)
-총 에너지:                 E = (1/2)||v||² + V(x,t)
-기억 강화:                 A_i += η · proximity(x, c_i) · dt
-기억 망각:                 A_i *= exp(-λ · dt)
+Tier 1 (태양):  V_sun(r)    = -G·M / (r + ε)               장거리 구속
+Tier 2 (지구):  V_wells(x,t) = -Σ A_i(t)·exp(-‖x-c_i‖²/(2σ²))  국소 끌림
+Tier 3 (달):    V_moon(x,t) = -G_m·M_m / (‖x-x_moon(t)‖ + ε)   주기적 교란
+조석 텐서:      T_ij = ∂²V_moon / ∂x_i∂x_j                      조석 구조
+
+전체 운동 방정식:
+  m ẍ = -∇V_sun - ∇V_wells - ∇V_moon + ωJv - γv + I(x,v,t) + σξ(t)
+
+에너지 밸런스:    E = ½‖v‖² + V_sun + V_wells + V_moon
+기억 강화:        A_i += η · proximity(x, c_i) · dt
+기억 망각:        A_i *= exp(-λ · dt)
+FDT:             σ² = 2γT/m
 ```
 
 수학적 기초 · 구현 상세: [PotentialFieldEngine CONCEPT](https://github.com/qquartsco-svg/PotentialField_Engine/blob/main/docs/CONCEPT.md)
@@ -123,17 +93,23 @@ Full concept (English): [docs/FULL_CONCEPT_AND_STATUS_EN.md](docs/FULL_CONCEPT_A
 ```
 WellFormationEngine           episodes → W, b (Hopfield 가중치)
        ↓
-PotentialFieldEngine          V(x,t), g(x) → 상태 업데이트 (적분)
-       │  ├ 기본: symplectic Euler
-       │  └ 자전 모드 (Phase_A): Strang splitting + exact rotation
-       │                         omega_coriolis → ωJv 내부 처리
+┌── 3계층 중력 합성 (v0.7.0~) ────────────────────────────────┐
+│  Tier 1: CentralBody         V_sun(r) = -GM/(r+ε)           │
+│  Tier 2: GaussianWell        V_wells(x,t)                   │
+│  Tier 3: OrbitalMoon         V_moon(x,t) 타원공전+조석       │
+│           └ TidalField        → injection_func               │
+└──────────────────────────────────────────────────────────────┘
+       ↓
+PotentialFieldEngine          V_total, g(x) → 상태 업데이트 (적분)
+       │  ├ Strang splitting + exact rotation (Phase A)
+       │  └ O-U exact 반스텝 (Phase C 요동)
        ↓
 HippoMemoryEngine (v0.6.0)   기억 생애주기 + 에너지 배분 (태양)
        │  ├ MemoryStore:      우물 생성 · 강화 · 감쇠 · 소멸
        │  ├ EnergyBudgeter:   I(x,v,t) = 탐색 + 정착 + 리콜
-       │  └ pot_changed → PFE 리빌드 (V(x) → V(x,t) 동적 갱신)
+       │  └ pot_changed → PFE 리빌드
        ↓
-CerebellumEngine (선택)       운동 보정
+OceanSimulator (v0.7.1)      바다 내 다중 tracer (대류/유속/와도)
        ↓
 BrainAnalyzer (v0.5.0)       Layer 1+5+6 통합 분석 → 피드백
 ```
@@ -440,6 +416,55 @@ python examples/integrated_pipeline_verification.py  # 7항목 ALL PASS
 
 ---
 
+## 3계층 중력 동역학 (v0.7.0~v0.7.1)
+
+HippoMemoryEngine(태양)이 우물을 만들었지만, 감쇠 때문에 상태점이 우물 바닥에 **가라앉았습니다.**
+태양계에서 행성이 태양에 떨어지지 않는 이유: **1/r 중력 + 각운동량 보존 + 조석 리듬.**
+
+### 3계층 구조
+
+| Tier | 비유 | 수식 | 역할 |
+|------|------|------|------|
+| Tier 1 | 태양 | V = -GM/(r+ε) | 장거리 구속 (1/r, 느리게 감소) |
+| Tier 2 | 지구/바다 | V = -A exp(-\|\|x-c\|\|²/2σ²) | 국소 끌림 (기존 우물) |
+| Tier 3 | 달 | V = -G_m M_m/(\|\|x-x_moon(t)\|\|+ε) | 주기적 교란 (조석 흐름) |
+
+### v0.7.1 달의 물리
+
+- **타원 공전**: Kepler 방정식으로 이심률 있는 궤도
+- **자전**: 달의 자체 회전 (또는 tidal locking)
+- **사중극**: 비구형 질량 분포 효과
+- **조석 텐서**: T_ij = ∂²V/∂x_i∂x_j — 조석력의 공간 구조
+
+### OceanSimulator — 바다 시뮬레이션
+
+우물 안에 다중 tracer 입자를 놓고 모든 힘(우물+조석+코리올리+감쇠+노이즈)을 합성하여
+**대류, 난류, 유속 패턴**을 관찰합니다.
+
+```python
+from trunk.Phase_A.tidal import CentralBody, OrbitalMoon, TidalField, OceanSimulator
+
+sun = CentralBody(position=np.array([0.0, 0.0]), mass=10.0)
+moon = OrbitalMoon(host_center=np.array([5.0, 0.0]),
+                   orbit_radius=1.5, orbit_frequency=2.0,
+                   mass=0.3, eccentricity=0.2)
+tidal = TidalField(central=sun, moons=[moon])
+
+ocean = OceanSimulator(well_center=np.array([5.0, 0.0]),
+                       well_amplitude=3.0, well_sigma=1.0,
+                       tidal_field=tidal, n_tracers=20)
+result = ocean.simulate(total_time=50.0, dt=0.01)
+```
+
+검증 실행:
+```bash
+python examples/tidal_orbit_verification.py   # 17항목 ALL PASS
+```
+
+상세: [docs/TIDAL_DYNAMICS_CONCEPT.md](docs/TIDAL_DYNAMICS_CONCEPT.md)
+
+---
+
 ## BrainAnalyzer — 통합 분석 (v0.5.0)
 
 trunk 궤적을 Layer 1 + 5 + 6에 자동으로 통과시켜 한 장의 리포트를 생성합니다.
@@ -506,59 +531,52 @@ engine.reset()                         # 선택
 
 ```
 CookiieBrain/
-├── cookiie_brain_engine.py     # 통합 엔진 v0.6.0 (오케스트레이션)
+├── cookiie_brain_engine.py     # 통합 오케스트레이션 엔진 (v0.6.0)
 ├── README.md
 ├── QUICK_START.md
 │
 ├── trunk/                      # ── 줄기 (운동방정식 구성요소) ──
-│   ├── Phase_A/                #   자전 (ωJv 코리올리 회전)
-│   │   ├── rotational_field.py
-│   │   └── moon.py
+│   ├── Phase_A/                #   자전 + 중력 동역학
+│   │   ├── rotational_field.py #     ωJv 코리올리 회전
+│   │   ├── moon.py             #     (레거시)
+│   │   └── tidal.py            #     ★ 3계층 중력 [v0.7.0~v0.7.1]
+│   │       ├── CentralBody     #       Tier 1: 태양 (1/r)
+│   │       ├── OrbitalMoon     #       Tier 3: 달 (타원+자전+조석텐서)
+│   │       ├── TidalField      #       세 층 합성
+│   │       └── OceanSimulator  #       바다 시뮬레이터
 │   ├── Phase_B/                #   공전 (가우시안 다중 우물)
 │   │   ├── multi_well_potential.py
 │   │   └── well_to_gaussian.py
 │   └── Phase_C/                #   요동 (Langevin noise, FDT)
 │
-├── hippo/                      # ── 운영층 (태양/장기기억) ── [v0.6.0 신규]
-│   ├── README.md               #   모듈 설명서
+├── hippo/                      # ── 운영층 (태양/장기기억) [v0.6.0] ──
 │   ├── memory_store.py         #   우물 생애주기 (생성·강화·감쇠·소멸)
 │   ├── energy_budgeter.py      #   I(x,v,t) 자동 제어 (탐색/정착/리콜)
-│   └── hippo_memory_engine.py  #   통합 엔진 + HippoConfig
+│   ├── hippo_memory_engine.py  #   통합 엔진 + HippoConfig
+│   └── README.md               #   모듈 설명서
 │
 ├── analysis/                   # ── 분석 도구 (trunk 위에 쌓임) ──
-│   ├── Layer_1/                #   통계역학 (Kramers, 전이, 엔트로피)
-│   ├── Layer_2/                #   다체/장론 (N-body 상호작용)
-│   ├── Layer_3/                #   게이지/기하학 (위치 의존 B(x))
-│   ├── Layer_4/                #   비평형 일 정리 (Jarzynski, Crooks)
-│   ├── Layer_5/                #   확률역학 (Fokker-Planck, Nelson)
-│   ├── Layer_6/                #   정보 기하학 (Fisher 계량, 곡률)
+│   ├── Layer_1~6/              #   통계역학 ~ 정보 기하학
 │   └── brain_analyzer.py       #   Layer 1+5+6 통합 분석 파이프라인
 │
-├── examples/                   # 실행 가능한 검증 스크립트 (14개)
-│   ├── phase_a_minimal_verification.py        # 자전 검증 (ALL PASS)
-│   ├── phase_b_orbit_verification.py          # 공전 검증 (ALL PASS)
-│   ├── bridge_verification.py                 # 브릿지 검증 (ALL PASS)
-│   ├── dissipation_injection_verification.py  # 에너지 주입/소산 (ALL PASS)
-│   ├── fluctuation_verification.py            # 요동 검증 (ALL PASS)
-│   ├── fdt_verification.py                    # FDT 등분배 (ALL PASS)
-│   ├── layer1_verification.py                 # Layer 1 통계역학 (ALL PASS)
-│   ├── layer2_verification.py                 # Layer 2 다체/장론 (ALL PASS)
-│   ├── layer3_verification.py                 # Layer 3 게이지/기하학 (ALL PASS)
-│   ├── layer4_verification.py                 # Layer 4 비평형 일 정리 (ALL PASS)
-│   ├── layer5_verification.py                 # Layer 5 확률역학 (ALL PASS)
-│   ├── layer6_verification.py                 # Layer 6 정보 기하학 (ALL PASS)
-│   ├── hippo_memory_verification.py           # HippoMemory 7항목 (ALL PASS)
-│   └── integrated_pipeline_verification.py    # 통합 파이프라인 7항목 (ALL PASS)
+├── examples/                   # 실행 가능한 검증 스크립트 (16개)
+│   ├── phase_a/b 검증           # 자전·공전 (ALL PASS)
+│   ├── bridge/dissipation 검증  # 브릿지·에너지 (ALL PASS)
+│   ├── fluctuation/fdt 검증     # 요동·FDT (ALL PASS)
+│   ├── layer1~6 검증            # Layer 1~6 각 5항목 (ALL PASS)
+│   ├── hippo_memory 검증        # HippoMemory 7항목 (ALL PASS)
+│   ├── integrated_pipeline 검증 # 통합 파이프라인 7항목 (ALL PASS)
+│   └── tidal_orbit 검증         # ★ 3계층 중력 17항목 (ALL PASS)
 │
-├── blockchain/                 # PHAM 블록체인 서명
-│   ├── pham_sign_v4.py         #   서명 도구
-│   └── pham_chain_*.json       #   파일별 체인 로그 (30+개)
+├── blockchain/                 # PHAM 블록체인 서명 (35+개 체인)
 │
-└── docs/                       # 참고 문서
+└── docs/
     ├── FULL_CONCEPT_AND_STATUS.md     # 전체 개념 · 현재 상태 (한국어)
     ├── FULL_CONCEPT_AND_STATUS_EN.md  # Full concept (English)
-    ├── HIPPO_MEMORY_CONCEPT.md        # HippoMemory 설계 문서 (솔라시스템 비유)
-    └── WORK_LOG.md                    # 시간순 작업 기록
+    ├── HIPPO_MEMORY_CONCEPT.md        # HippoMemory 설계 문서
+    ├── TIDAL_DYNAMICS_CONCEPT.md      # ★ 3계층 중력 설계 문서 [v0.7.0]
+    ├── WORK_LOG.md                    # 시간순 작업 기록
+    └── archive/                       # 과거 작업 문서 아카이브
 ```
 
 ---
@@ -582,30 +600,33 @@ CookiieBrain/
 |------|------|------|
 | 정적 퍼텐셜 (우물 생성 + 수렴) | 완료 | v0.1.0 |
 | 자전 (코리올리 회전, 에너지 보존) | 완료 | v0.2.0 |
-| 공전 (다중 우물 순환 궤도, 3-우물 검증) | 완료 | v0.2.0 |
+| 공전 (다중 우물 순환 궤도) | 완료 | v0.2.0 |
 | WellFormation → Gaussian 브릿지 | 완료 | v0.2.0 |
 | 에너지 주입/소산 (-γv + I) | 완료 | v0.3.0 |
-| 요동 (Langevin noise, σξ(t)) | 완료 | v0.3.0 |
-| FDT (σ²=2γT/m, Boltzmann 등분배) | 완료 | v0.3.0 |
-| Layer 1: 통계역학 정식화 | 완료 | v0.3.0 |
-| Layer 2: 다체/장론 | 완료 | v0.3.0 |
-| Layer 3: 게이지/기하학 | 완료 | v0.3.0 |
-| Layer 4: 비평형 일 정리 | 완료 | v0.4.0 |
-| Layer 5: 확률역학 | 완료 | v0.4.0 |
-| Layer 6: 정보 기하학 | 완료 | v0.4.0 |
-| **BrainAnalyzer: Layer 1+5+6 통합 분석** | **완료** | **v0.5.0** |
-| **HippoMemoryEngine: 태양/운영층 통합** | **완료** | **v0.6.0** |
-| **V(x) → V(x,t) 동적 지형 전환** | **완료** | **v0.6.0** |
+| 요동 + FDT (σ²=2γT/m) | 완료 | v0.3.0 |
+| Layer 1~3 (통계역학, 다체, 게이지) | 완료 | v0.3.0 |
+| Layer 4~6 (비평형, 확률역학, 정보기하) | 완료 | v0.4.0 |
+| BrainAnalyzer (Layer 1+5+6 통합) | 완료 | v0.5.0 |
+| HippoMemoryEngine (태양/운영층) | 완료 | v0.6.0 |
+| **3계층 중력 (태양+달+조석)** | **완료** | **v0.7.0** |
+| **달 타원공전+자전+조석텐서+OceanSimulator** | **완료** | **v0.7.1** |
 
-> 고전 구조가 먼저, 확률은 마지막에 얹는다.
-> 구조가 있어야 요동의 의미가 생긴다.
-> 줄기가 닫힌 뒤, 토양(Layer 1)부터 쌓는다.
-> Layer 6에서 매개변수 공간에 기하학이 생긴다.
-> **태양이 떠야 행성이 돈다 — V(x) → V(x,t).**
+```
+v0.1  정적 퍼텐셜
+v0.2  자전 + 공전 + 브릿지
+v0.3  에너지 + 요동 + FDT + Layer 1~3
+v0.4  폴더 정리 + Layer 4~6
+v0.5  BrainAnalyzer (통합 분석)
+v0.6  HippoMemoryEngine (태양 = V(x)→V(x,t))
+v0.7  3계층 중력 (태양·지구·달 = 장·끌림·리듬)
+```
+
+> **태양이 장을 만들고, 지구가 기억을 담고, 달이 리듬을 만든다.**
+> 같은 동역학이 항법이 되고, 인지가 되고, 제어가 된다.
 
 단계 설명: [trunk/Phase_A/STAGES_SPIN_ORBIT_FLUCTUATION.md](trunk/Phase_A/STAGES_SPIN_ORBIT_FLUCTUATION.md)
 
 ---
 
-*GNJz (Qquarts) · Cookiie Brain v0.6.0*
+*GNJz (Qquarts) · Cookiie Brain v0.7.1*
 *"Code is Free. Success is Shared."*

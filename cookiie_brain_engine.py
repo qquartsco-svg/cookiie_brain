@@ -2,21 +2,15 @@
 
 모든 개별 엔진들을 연결하는 통합 시스템.
 
-핵심 기능:
-- 개별 엔진 초기화 및 연결
-- 엔진 간 데이터 흐름 자동 관리
-- 상태 자동 동기화
-- 전체 시스템으로 작동
-
 통합 엔진:
 1. WellFormationEngine → W, b 생성 (Hopfield 에너지)
 2. PotentialFieldEngine → 에너지 지형 → 퍼텐셜 필드 변환
-3. HippoMemoryEngine → 장기 기억 시스템
-4. CerebellumEngine → 운동 조율 및 학습
-5. 기타 엔진들...
+3. TidalField → 3계층 중력: 태양(1/r) + 달(조석) [v0.7.0~v0.7.1]
+4. HippoMemoryEngine → 장기 기억 시스템
+5. CerebellumEngine → 운동 조율 및 학습
 
 Author: GNJz (Qquarts)
-Version: 0.6.0
+Version: 0.7.1
 """
 
 from __future__ import annotations
@@ -115,7 +109,17 @@ except ImportError:
     HippoMemoryEngine = None
     HippoConfig = None
 
-__version__ = "0.6.0"
+# TidalField (3계층 중력: 태양+달+조석) import
+try:
+    from solar import CentralBody, OrbitalMoon, TidalField
+    TIDAL_AVAILABLE = True
+except ImportError:
+    TIDAL_AVAILABLE = False
+    CentralBody = None
+    OrbitalMoon = None
+    TidalField = None
+
+__version__ = "0.7.1"
 
 # BrainAnalyzer import
 try:
@@ -127,23 +131,20 @@ except ImportError:
 
 
 class CookiieBrainEngine(SelfOrganizingEngine):
-    """Cookiie Brain 통합 엔진
-    
-    엔진 오케스트레이션 레이어: 개별 엔진들을 연결하는 통합 시스템.
+    """Cookiie Brain 통합 엔진 (v0.7.1)
     
     엔진 연결 순서:
     1. WellFormationEngine → W, b 생성 (Hopfield 에너지)
     2. PotentialFieldEngine → 퍼텐셜 필드 변환
-    3. HippoMemoryEngine → 장기 기억 시스템 (선택적)
-    4. CerebellumEngine → 운동 조율 및 학습 (선택적)
+       └── TidalField injection: 태양(1/r) + 달(조석) 힘이 매 스텝 합산
+    3. HippoMemoryEngine → 기억 생애주기 + 에너지 배분
+    4. CerebellumEngine → 운동 조율 (선택적)
     
-    설계 원칙:
-    - 불변성 유지: state를 직접 수정하지 않고 copy-and-return (deep=True)
-    - 엔진 간 자동 연결: 데이터 흐름 자동 관리
-    - 상태 자동 동기화: GlobalState가 전체 시스템에서 공유
-    - 모듈화: 각 엔진은 독립적으로 작동 가능
-    - Well 변경 감지: Well 결과 변경 시 potential 함수 및 엔진 재생성
-    - 에러 격리: error_isolation=True 시 엔진 실패해도 계속 진행
+    3계층 중력 (enable_tidal=True):
+      Tier 1: CentralBody  → V_sun = -GM/(r+ε)  장거리 구속
+      Tier 2: GaussianWell  → V_wells (기존 PFE)  국소 끌림
+      Tier 3: OrbitalMoon  → V_moon(x,t)         주기적 조석력
+      TidalField가 Tier 1+3을 합성하여 PFE injection_func에 주입.
     """
     
     def __init__(
@@ -151,9 +152,11 @@ class CookiieBrainEngine(SelfOrganizingEngine):
         enable_well_formation: bool = True,
         enable_potential_field: bool = True,
         enable_hippo_memory: bool = False,
+        enable_tidal: bool = False,
         enable_cerebellum: bool = False,
         well_formation_config: Optional[Dict[str, Any]] = None,
         potential_field_config: Optional[Dict[str, Any]] = None,
+        tidal_config: Optional[Dict[str, Any]] = None,
         cerebellum_config: Optional[Dict[str, Any]] = None,
         hippo_memory_config: Optional[Dict[str, Any]] = None,
         well_to_gaussian_config: Optional[Dict[str, Any]] = None,
@@ -166,9 +169,11 @@ class CookiieBrainEngine(SelfOrganizingEngine):
             enable_well_formation: WellFormationEngine 활성화 여부
             enable_potential_field: PotentialFieldEngine 활성화 여부
             enable_hippo_memory: HippoMemoryEngine 활성화 여부
+            enable_tidal: TidalField 3계층 중력 활성화 여부
             enable_cerebellum: CerebellumEngine 활성화 여부
             well_formation_config: WellFormationEngine 설정
             potential_field_config: PotentialFieldEngine + 물리 파라미터 설정
+            tidal_config: 3계층 중력 설정 (central, moons)
             cerebellum_config: CerebellumEngine 설정
             hippo_memory_config: HippoMemoryEngine 설정 (eta, decay_rate 등)
             well_to_gaussian_config: WellToGaussian 변환 설정
@@ -178,6 +183,7 @@ class CookiieBrainEngine(SelfOrganizingEngine):
         self.enable_well_formation = enable_well_formation
         self.enable_potential_field = enable_potential_field
         self.enable_hippo_memory = enable_hippo_memory
+        self.enable_tidal = enable_tidal
         self.enable_cerebellum = enable_cerebellum
         self.error_isolation = error_isolation
         
@@ -284,6 +290,23 @@ class CookiieBrainEngine(SelfOrganizingEngine):
             wtg_cfg = WellToGaussianConfig(**(well_to_gaussian_config or {}))
             self.well_registry = WellRegistry(config=wtg_cfg)
         
+        # TidalField 초기화 (3계층 중력: 태양+달+조석)
+        self.tidal_field: Optional[TidalField] = None
+        if enable_tidal:
+            if not TIDAL_AVAILABLE:
+                if self.logger:
+                    self.logger.warning("TidalField import 실패. 비활성화.")
+                self.enable_tidal = False
+            else:
+                self.tidal_field = self._build_tidal_field(tidal_config or {})
+                if self.logger:
+                    info = self.tidal_field.info()
+                    self.logger.info(
+                        f"TidalField 초기화 완료: "
+                        f"central={'있음' if info['has_central'] else '없음'}, "
+                        f"moons={info['n_moons']}개"
+                    )
+
         # 내부 상태
         self.current_well_result: Optional[WellFormationResult] = None
         self.current_potential_func: Optional[Callable] = None
@@ -382,13 +405,14 @@ class CookiieBrainEngine(SelfOrganizingEngine):
                                 strength=float(self.phase_a_strength),
                             )
                             rotational_func = create_rotational_field(pole, use_simple_form=True)
+                    combined_injection = self._build_combined_injection()
                     self.potential_field_engine = PotentialFieldEngine(
                         potential_func=self.current_potential_func,
                         field_func=self.current_field_func,
                         rotational_func=rotational_func,
                         omega_coriolis=omega_coriolis,
                         gamma=self.gamma,
-                        injection_func=self.injection_func,
+                        injection_func=combined_injection,
                         noise_sigma=self.noise_sigma,
                         temperature=self.temperature,
                         mass=self.mass,
@@ -397,6 +421,19 @@ class CookiieBrainEngine(SelfOrganizingEngine):
                 
                 # PotentialFieldEngine 업데이트
                 new_state = self.potential_field_engine.update(new_state)
+            
+            # 2.5. TidalField 상태 기록
+            if self.enable_tidal and self.tidal_field is not None:
+                sv = new_state.state_vector
+                n_dim = len(sv) // 2
+                x = sv[:n_dim]
+                pf_ext = new_state.get_extension("potential_field", {})
+                t = pf_ext.get("time", 0.0)
+                new_state.set_extension("tidal", {
+                    "info": self.tidal_field.info(),
+                    "tidal_potential": self.tidal_field.potential(x, t),
+                    "time": t,
+                })
             
             # 3. HippoMemoryEngine 실행
             if self.enable_hippo_memory and self.hippo_memory_engine:
@@ -556,6 +593,83 @@ class CookiieBrainEngine(SelfOrganizingEngine):
 
         return result
 
+    # ──────────────────────────────────────────────────────────
+    #  3계층 중력 (TidalField) 구성
+    # ──────────────────────────────────────────────────────────
+
+    def _build_tidal_field(self, cfg: Dict[str, Any]) -> "TidalField":
+        """tidal_config로부터 CentralBody + OrbitalMoon + TidalField 생성.
+
+        tidal_config 예시::
+
+            {
+                "central": {"position": [0,0], "mass": 10.0, "G": 1.0},
+                "moons": [
+                    {"host_center": [5,0], "semi_major_axis": 1.5,
+                     "orbit_frequency": 2.0, "mass": 0.3, "eccentricity": 0.2},
+                ],
+            }
+
+        central이 없으면 태양 없이 달만 운용.
+        moons가 없으면 태양만 운용.
+        """
+        central = None
+        central_cfg = cfg.get("central")
+        if central_cfg is not None:
+            pos = np.asarray(central_cfg.get("position", [0.0, 0.0]), dtype=float)
+            central = CentralBody(
+                position=pos,
+                mass=central_cfg.get("mass", 10.0),
+                G=central_cfg.get("G", 1.0),
+                softening=central_cfg.get("softening", 1e-4),
+            )
+
+        moons = []
+        for m_cfg in cfg.get("moons", []):
+            hc = np.asarray(m_cfg.get("host_center", [0.0, 0.0]), dtype=float)
+            moon = OrbitalMoon(
+                host_center=hc,
+                semi_major_axis=m_cfg.get("semi_major_axis", m_cfg.get("orbit_radius", 1.5)),
+                eccentricity=m_cfg.get("eccentricity", 0.0),
+                orbit_frequency=m_cfg.get("orbit_frequency", 2.0),
+                mass=m_cfg.get("mass", 0.3),
+                G=m_cfg.get("G", 1.0),
+                softening=m_cfg.get("softening", 1e-4),
+                initial_phase=m_cfg.get("initial_phase", 0.0),
+                periapsis_angle=m_cfg.get("periapsis_angle", 0.0),
+                spin_frequency=m_cfg.get("spin_frequency", 0.0),
+                tidal_locking=m_cfg.get("tidal_locking", True),
+                quadrupole_moment=m_cfg.get("quadrupole_moment", 0.0),
+            )
+            moons.append(moon)
+
+        return TidalField(central=central, moons=moons)
+
+    def _build_combined_injection(self) -> Optional[Callable]:
+        """사용자 injection_func + TidalField 힘을 합성한 injection 함수 반환.
+
+        둘 다 없으면 None.
+        """
+        user_inj = self.injection_func
+        tidal_inj = None
+        if self.enable_tidal and self.tidal_field is not None:
+            tidal_inj = self.tidal_field.create_injection_func()
+
+        if user_inj is None and tidal_inj is None:
+            return None
+        if user_inj is not None and tidal_inj is None:
+            return user_inj
+        if user_inj is None and tidal_inj is not None:
+            return tidal_inj
+
+        def combined(x: np.ndarray, v: np.ndarray, t: float) -> np.ndarray:
+            return user_inj(x, v, t) + tidal_inj(x, v, t)
+        return combined
+
+    # ──────────────────────────────────────────────────────────
+    #  WellFormation
+    # ──────────────────────────────────────────────────────────
+
     def _run_well_formation(self, state: GlobalState) -> Optional[WellFormationResult]:
         """WellFormationEngine 실행
         
@@ -647,6 +761,7 @@ class CookiieBrainEngine(SelfOrganizingEngine):
             "enable_well_formation": self.enable_well_formation,
             "enable_potential_field": self.enable_potential_field,
             "enable_hippo_memory": self.enable_hippo_memory,
+            "enable_tidal": self.enable_tidal,
             "enable_cerebellum": self.enable_cerebellum,
             "current_well_result": self.current_well_result is not None,
             "current_potential_func": self.current_potential_func is not None,
@@ -654,6 +769,8 @@ class CookiieBrainEngine(SelfOrganizingEngine):
         }
         if self.well_registry is not None:
             state_dict["well_registry"] = self.well_registry.info()
+        if self.tidal_field is not None:
+            state_dict["tidal"] = self.tidal_field.info()
         return state_dict
     
     def reset(self):

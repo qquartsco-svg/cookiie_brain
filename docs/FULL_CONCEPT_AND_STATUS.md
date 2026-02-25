@@ -3,14 +3,15 @@
 > 이 문서는 프로젝트의 물리적 개념, 구현 상태, 검증 결과, 다음 방향을
 > 하나로 정리한 것이다. 새로 합류하는 사람이 이 문서 하나로 전체를 파악할 수 있어야 한다.
 
-**마지막 업데이트: 2026-02-25 (HippoMemoryEngine 구현 반영)**
+**마지막 업데이트: 2026-02-25 (v0.7.1 — 3계층 중력 동역학 반영)**
 
 ---
 
 ## 0. 한 문장 요약
 
-**공이 산과 골짜기가 있는 지형 위에서 굴러가는 시스템을 만들고 있다.**
-골짜기 = 기억, 공 = 현재 상태, 공의 궤적 = 사고의 흐름.
+**상태 공간 위의 장(field) 동역학 엔진을 만들고 있다.**
+태양이 장을 만들고, 지구(우물)가 상태를 가두고, 달이 리듬을 만든다.
+천체에 대입하면 항법, 인지에 대입하면 뇌, 행동에 대입하면 제어 — 구조는 하나다.
 
 ---
 
@@ -31,18 +32,26 @@
 | 외부 주입 (I) | 새 자극, 각성, 외부 입력 |
 | 요동 (ξ) | 예측 불가능한 변동, 창의적 전환 |
 
-### 전체 운동 방정식 (현재)
+### 전체 운동 방정식 (v0.7.1)
 
 ```
-m ẍ = -∇V(x) + ωJv - γv + I(x,v,t) + σξ(t)
+m ẍ = -∇V_sun(x)       Tier 1: 중심 중력 (1/r, 장거리)
+    + -∇V_wells(x,t)    Tier 2: 우물 끌림 (Gaussian, 동적)
+    + -∇V_moon(x,t)     Tier 3: 달 조석력 (주기적 교란)
+    + ωJv                Phase A: 코리올리 자전
+    - γv                 감쇠
+    + I(x,v,t)           Hippo 에너지 주입
+    + σξ(t)              Phase C: 열적 요동
 ```
 
 | 항 | 이름 | 역할 | 에너지 영향 |
 |---|---|---|---|
-| `-∇V(x)` | 퍼텐셜 gradient | 골짜기로 끌어당김 (보존력) | 보존 |
+| `-∇V_sun(x)` | 중심 퍼텐셜 (태양) | 장거리 중력, 시스템 전체 구속 | 보존 |
+| `-∇V_wells(x,t)` | 우물 gradient (지구) | 국소 끌림, 기억 상태 가둠 | 보존 |
+| `-∇V_moon(x,t)` | 달 조석력 | 주기적 교란 → 타원 유속 → 인지 리듬 | 시간 의존 |
 | `ωJv` | 코리올리 회전 | 속도 방향만 꺾음 (자전/공전 방향) | 보존 (v·Jv=0) |
 | `-γv` | 감쇠 | 속도에 비례해 에너지를 빼앗음 | **소산** |
-| `I(x,v,t)` | 외부 주입 | 외부에서 에너지를 넣어줌 | **주입** |
+| `I(x,v,t)` | 외부 주입 (Hippo) | 탐색/정착/리콜 자동 합성 | **주입** |
 | `σξ(t)` | 확률적 요동 | 매 순간 랜덤 방향으로 밀어줌 | **확률적** |
 
 **요동-소산 정리 (FDT):**
@@ -253,7 +262,7 @@ D(dt/2) → S(dt/2) → K(dt/2) → R(dt) → K(dt/2) → S(dt/2) → D(dt/2)
 
 ---
 
-## 3. 현재 시스템 — 전체 파이프라인
+## 3. 현재 시스템 — 전체 파이프라인 (v0.7.1)
 
 ```
 경험(episodes)
@@ -262,77 +271,119 @@ WellFormationEngine          Hebbian 학습 → W, b
     ↓
 WellRegistry                 W, b → GaussianWell 변환, 누적
     ↓ (wells ≥ 3)
-MultiWellPotential           V(x) = -Σ A exp(-||x-c||²/2σ²)
+MultiWellPotential           V_wells(x,t) = -Σ A_i(t) exp(-||x-c||²/2σ²)
+    ↓
+┌── 3계층 중력 합성 (v0.7.0~) ──────────────────────────────┐
+│                                                            │
+│  Tier 1: CentralBody          V_sun(r) = -GM/(r+ε)        │
+│  Tier 2: GaussianWell         V_wells(x,t) (기존)         │
+│  Tier 3: OrbitalMoon          V_moon(x,t) 타원공전+조석    │
+│           └ TidalField         세 층 합성 → F_total        │
+│                                                            │
+└────────────────────────────────────────────────────────────┘
     ↓
 PotentialFieldEngine
-    ├── -∇V(x)               퍼텐셜 gradient (골짜기 인력)
-    ├── ωJv                   코리올리 회전 (자전/공전 방향)
-    ├── -γv                   감쇠 (에너지 소산)
-    ├── I(x,v,t)              외부 주입 (에너지 공급)
-    └── σξ(t)                 확률적 요동 (Langevin noise)
+    ├── -∇V_sun(x)             중심 중력 (1/r, 장거리)
+    ├── -∇V_wells(x,t)         우물 끌림 (Gaussian, 동적)
+    ├── -∇V_moon(x,t)          달 조석력 (주기적 교란)
+    ├── ωJv                     코리올리 회전
+    ├── -γv                     감쇠
+    ├── I(x,v,t)                Hippo 에너지 주입
+    └── σξ(t)                   확률적 요동
     ↓
-상태 벡터 (x, v) 업데이트
+HippoMemoryEngine              V(x,t) 동적 갱신 (생성/강화/감쇠/소멸)
     ↓
-Extensions에 기록
-    ├── potential_field: V, E, g, time, gamma, noise_sigma, noise_mode, temperature, mass, ...
-    ├── well_formation: W, b
-    └── well_registry: n_wells, ready_for_orbit, wells info
+OceanSimulator (v0.7.1)        바다 내 다중 tracer (대류/난류/유속)
+    ↓
+BrainAnalyzer                   Layer 1+5+6 통합 분석
 ```
 
 ---
 
 ## 4. 구현 상태 요약
 
-| 단계 | 상태 | 핵심 수식 | 검증 |
-|---|---|---|---|
-| 정적 퍼텐셜 | ✔ | V = -½x'Wx - b'x | — |
-| 자전 (Phase A) | ✔ | ẍ = g(x) + ωJv | ALL PASS (에너지 <0.01%) |
-| 공전 (Phase B) | ✔ | V = -ΣA exp(...) + ωJv | ALL PASS (8순환, 88%) |
-| WellFormation 브릿지 | ✔ | W,b → center/A/σ | ALL PASS (5항목) |
-| 에너지 주입/소산 | ✔ | -γv + I(x,v,t) | ALL PASS (상관 0.999995) |
-| 요동 (Phase C) | ✔ | +σξ(t), σ²=2γT/m (FDT) | ALL PASS (v1: 4항목, v2: 5항목) |
-| **Layer 1: 통계역학** | ✔ | Kramers rate, 전이행렬, dS/dt | ALL PASS (5항목) |
+| 단계 | 상태 | 핵심 수식 | 검증 | 버전 |
+|---|---|---|---|---|
+| 정적 퍼텐셜 | ✔ | V = -½x'Wx - b'x | — | v0.1.0 |
+| 자전 (Phase A) | ✔ | ẍ = g(x) + ωJv | ALL PASS (에너지 <0.01%) | v0.2.0 |
+| 공전 (Phase B) | ✔ | V = -ΣA exp(...) + ωJv | ALL PASS (8순환, 88%) | v0.2.0 |
+| WellFormation 브릿지 | ✔ | W,b → center/A/σ | ALL PASS (5항목) | v0.2.0 |
+| 에너지 주입/소산 | ✔ | -γv + I(x,v,t) | ALL PASS (상관 0.999995) | v0.3.0 |
+| 요동 (Phase C) | ✔ | +σξ(t), σ²=2γT/m (FDT) | ALL PASS (v1: 4, v2: 5) | v0.3.0 |
+| Layer 1: 통계역학 | ✔ | Kramers rate, 전이행렬, dS/dt | ALL PASS (5항목) | v0.3.0 |
+| Layer 2: 다체/장론 | ✔ | N-body, F_ij=-F_ji | ALL PASS (5항목) | v0.3.0 |
+| Layer 3: 게이지/기하학 | ✔ | B(x)·J·v, 선속, E×B | ALL PASS (5항목) | v0.3.0 |
+| Layer 4: 비평형 일 정리 | ✔ | Jarzynski, Crooks, ΔF | ALL PASS (5항목) | v0.4.0 |
+| Layer 5: 확률역학 | ✔ | FP, Nelson, J=bρ-D∇ρ | ALL PASS (5항목) | v0.4.0 |
+| Layer 6: 정보 기하학 | ✔ | Fisher g_μν, K, 측지선 | ALL PASS (5항목) | v0.4.0 |
+| BrainAnalyzer 통합 분석 | ✔ | L1+L5+L6 자동 리포트 | ALL PASS | v0.5.0 |
+| HippoMemoryEngine 운영층 | ✔ | V(x)→V(x,t), I 자동 | ALL PASS (7항목) | v0.6.0 |
+| **3계층 중력 (태양+달)** | **✔** | **V_sun(1/r) + V_moon(tidal)** | **ALL PASS (17항목)** | **v0.7.0** |
+| **달 타원공전+자전+조석텐서** | **✔** | **Kepler + T_ij + 사중극** | **ALL PASS (17항목)** | **v0.7.1** |
+| **OceanSimulator (바다)** | **✔** | **다중 tracer, 와도, 유속** | **ALL PASS** | **v0.7.1** |
 
 ---
 
-## 5. 파일 구조 (현재)
+## 5. 파일 구조 (v0.7.1)
 
 ```
 CookiieBrain/
-├── cookiie_brain_engine.py          # 통합 엔진 (오케스트레이션)
-│                                      WellFormation → Registry → PFE 자동 연결
-│                                      gamma, injection_func config 전달
-├── README.md                        # 프로젝트 소개
+├── cookiie_brain_engine.py          # 통합 오케스트레이션 엔진 (v0.6.0)
+├── README.md
+├── QUICK_START.md
+│
 ├── trunk/                           # ── 줄기 (운동방정식 구성요소) ──
-│   ├── Phase_A/                     #   자전 (ωJv 코리올리 회전)
-│   │   ├── rotational_field.py
-│   │   ├── moon.py
-│   │   └── docs/
+│   ├── Phase_A/                     #   자전 + 중력 동역학
+│   │   ├── rotational_field.py      #     ωJv 코리올리 회전
+│   │   ├── moon.py                  #     (레거시, tidal.py로 대체)
+│   │   └── tidal.py                 #     ★ 3계층 중력 [v0.7.0~v0.7.1]
+│   │       ├── CentralBody          #       Tier 1: 태양 (1/r 중심 퍼텐셜)
+│   │       ├── OrbitalMoon          #       Tier 3: 달 (타원공전+자전+조석텐서)
+│   │       ├── TidalField           #       세 층 합성 (중심장+조석장)
+│   │       └── OceanSimulator       #       바다 시뮬레이터 (다중 tracer)
 │   ├── Phase_B/                     #   공전 (가우시안 다중 우물)
 │   │   ├── multi_well_potential.py
 │   │   └── well_to_gaussian.py
 │   └── Phase_C/                     #   요동 (Langevin noise, FDT)
-│       ├── README.md / README_EN.md
-│       └── (구현은 PFE에 내장)
+│
+├── hippo/                           # ── 운영층 (태양/장기기억) [v0.6.0] ──
+│   ├── memory_store.py              #   우물 생애주기 (생성·강화·감쇠·소멸)
+│   ├── energy_budgeter.py           #   I(x,v,t) 자동 제어 (탐색/정착/리콜)
+│   ├── hippo_memory_engine.py       #   통합 엔진 + HippoConfig
+│   └── README.md                    #   모듈 설명서
+│
 ├── analysis/                        # ── 분석 도구 (trunk 위에 쌓임) ──
 │   ├── Layer_1/                     #   통계역학 (Kramers, 전이, 엔트로피)
 │   ├── Layer_2/                     #   다체/장론 (N-body 상호작용)
 │   ├── Layer_3/                     #   게이지/기하학 (위치 의존 B(x))
 │   ├── Layer_4/                     #   비평형 일 정리 (Jarzynski, Crooks)
 │   ├── Layer_5/                     #   확률역학 (Fokker-Planck, Nelson)
-│   └── Layer_6/                     #   정보 기하학 (Fisher 계량, 곡률)
-├── examples/
+│   ├── Layer_6/                     #   정보 기하학 (Fisher 계량, 곡률)
+│   └── brain_analyzer.py            #   Layer 1+5+6 통합 분석 파이프라인
+│
+├── examples/                        # 실행 가능한 검증 스크립트 (16개)
 │   ├── phase_a_minimal_verification.py       # 자전 검증
 │   ├── phase_b_orbit_verification.py         # 공전 검증 (3-우물)
 │   ├── bridge_verification.py                # 브릿지 검증
 │   ├── dissipation_injection_verification.py # 에너지 주입/소산 검증
 │   ├── fluctuation_verification.py           # 요동 검증
-│   ├── fdt_verification.py                  # FDT 검증
-│   └── layer1_verification.py               # Layer 1 통계역학 검증
+│   ├── fdt_verification.py                   # FDT 등분배 검증
+│   ├── layer1~6_verification.py              # Layer 1~6 각각 5항목
+│   ├── hippo_memory_verification.py          # HippoMemory 7항목
+│   ├── integrated_pipeline_verification.py   # 통합 파이프라인 7항목
+│   └── tidal_orbit_verification.py           # ★ 3계층 중력 17항목 [v0.7.1]
+│
+├── blockchain/                      # PHAM 블록체인 서명
+│   ├── pham_sign_v4.py              #   서명 도구
+│   └── pham_chain_*.json            #   파일별 체인 로그 (35+개)
+│
 └── docs/
-    ├── FULL_CONCEPT_AND_STATUS.md    # ← 이 문서 (한국어)
-    ├── FULL_CONCEPT_AND_STATUS_EN.md # Full concept (English)
-    └── WORK_LOG.md                   # 시간순 작업 기록
+    ├── FULL_CONCEPT_AND_STATUS.md       # ← 이 문서 (한국어)
+    ├── FULL_CONCEPT_AND_STATUS_EN.md    # Full concept (English)
+    ├── HIPPO_MEMORY_CONCEPT.md          # HippoMemory 설계 문서
+    ├── TIDAL_DYNAMICS_CONCEPT.md        # ★ 3계층 중력 설계 문서 [v0.7.0]
+    ├── WORK_LOG.md                      # 시간순 작업 기록
+    └── archive/                         # 과거 작업 문서 아카이브
 
 (별도 레포)
 PotentialFieldEngine/
@@ -861,7 +912,154 @@ python examples/hippo_memory_verification.py → ALL PASS (7/7)
 
 ---
 
-## 8. 설계 원칙
+## 7-1. 3계층 중력 동역학 — 태양·지구·달 [v0.7.0~v0.7.1]
+
+### 왜 필요한가
+
+v0.6.0까지의 문제:
+- Gaussian 우물은 **국소적** — 조금만 벗어나면 힘이 0에 수렴
+- 감쇠가 있으면 상태점이 우물 바닥에 **가라앉음** (죽은 기억)
+- 장거리 구속력이 없어 공전이 **불안정**
+
+해결: 실제 천체역학처럼 **세 스케일의 중력을 합성**한다.
+
+### 3계층 구조
+
+```
+Tier 1 (태양)  ─ 장거리 ─  V_sun(r) = -GM/(r+ε)
+                            전체 시스템을 묶는 중심 인력
+                            
+Tier 2 (지구)  ─ 중거리 ─  V_wells(x,t) = -Σ A_i exp(...)
+                            국소 끌림, 기억 상태를 가둠
+                            
+Tier 3 (달)    ─ 근거리 ─  V_moon(x,t) = -G_m M_m/(‖x-x_moon(t)‖+ε)
+                            주기적 교란 → 조석 흐름 → 인지 리듬
+```
+
+### 세 관점 매핑
+
+| 수학 항 | 천체역학 | 인지역학 | 코드 모듈 |
+|---------|---------|---------|----------|
+| `V_sun(r)` | 태양 중력 | 장기기억 중심 인력 | `CentralBody` |
+| `V_wells(x,t)` | 행성 (국소 중력) | 개별 기억 (attractor) | `MemoryStore` |
+| `V_moon(x,t)` | 달 조석력 | 외부 리듬/주기적 자극 | `OrbitalMoon` |
+| `ωJv` | 코리올리 (각운동량) | 위상 리듬 (자전) | Phase A |
+| `-γv` | 조석 마찰 | 주의 감쇠 | PFE 감쇠 |
+| `I(x,v,t)` | 추진력 (항법) | 탐색/정착/리콜 | `EnergyBudgeter` |
+| `σξ(t)` | 미소 교란 | 연상 전이 | Phase C |
+
+### 동역학적 동형 (Dynamical Isomorphism)
+
+핵심 통찰: **"태양계 = 뇌"가 아니라, 같은 동역학 구조를 공유한다.**
+
+```
+천체에 대입하면 → 항법 알고리즘
+인지에 대입하면 → 사고 전이 모델
+제어에 대입하면 → 안정 궤도 제어
+```
+
+수학적으로 모두:
+```
+m ẍ = -∇V + 회전항 - γv + I + σξ
+```
+
+이것은 비유(metaphor)가 아니라, **장-상호작용 동역학의 수학적 동형**이다.
+
+### 구성 요소
+
+| 클래스 | 역할 | 버전 |
+|--------|------|------|
+| `CentralBody` | 1/r 중심 퍼텐셜. 태양. 장거리 구속 | v0.7.0 |
+| `OrbitalMoon` | 원형/타원 공전, 자전, 사중극, 조석텐서 | v0.7.0~7.1 |
+| `TidalField` | 중심장+조석장 합성. injection_func 제공 | v0.7.0~7.1 |
+| `OceanSimulator` | 바다 내 다중 tracer 시뮬레이션 (대류/유속/와도) | v0.7.1 |
+
+### v0.7.1 확장 — 달의 물리
+
+| 기능 | 수식 | 의미 |
+|------|------|------|
+| 타원 공전 | r(θ) = a(1-e²)/(1+e·cos(θ-ω_p)), Kepler 방정식 | 비원형 궤도 |
+| 자전 | θ_spin = ω_spin · t (또는 tidal locking) | 달의 자체 회전 |
+| 사중극 | V += Q · P₂(cos θ') / r³ | 비구형 질량 분포 효과 |
+| 조석 텐서 | T_ij = ∂²V/∂x_i∂x_j | 조석력의 공간 구조 (신축/압축) |
+
+### OceanSimulator — 바다 시뮬레이션
+
+우물(지구) 안에 여러 tracer 입자를 놓고, 모든 힘을 합성하여 유체 패턴을 관찰한다.
+
+```
+각 tracer에 작용하는 힘:
+  F = -∇V_well          우물 끌림
+    + F_tidal(x,t)      달 조석력 (+ 중심장)
+    + ω·J·v             코리올리
+    - γ·v               감쇠
+    + σ·ξ               노이즈
+```
+
+출력:
+- `positions`, `velocities` — tracer 궤적
+- `mean_vorticity` — 평균 와도 (회전 패턴)
+- `mean_speed` — 평균 유속 (대류 강도)
+- `tidal_strength` — 조석력 세기
+
+### 극한 일관성
+
+| 극한 | 기대 | 보장 |
+|------|------|------|
+| G_sun=0, moon 없음 | v0.6.0과 동일 (순수 Gaussian 우물) | 구조적 |
+| 원형 궤도 (e=0) | v0.7.0 원형 달과 동일 | 구조적 |
+| Q=0 | 점질량 달과 동일 | 구조적 |
+| ω_spin=0 | 자전 없는 달 | 구조적 |
+
+### 검증 결과
+
+```
+python examples/tidal_orbit_verification.py → ALL PASS (17/17)
+```
+
+| # | 실험 | 결과 |
+|---|------|------|
+| 1 | 순수 원형 공전 (1/r, 에너지 보존) | PASS |
+| 2 | 타원 공전 (Kepler, 이심률 검증) | PASS |
+| 3 | 달 자전 + 사중극 효과 | PASS |
+| 4 | 조석 텐서 (대칭, 무흔적) | PASS |
+| 5 | 우물 내 조석 유도 타원 흐름 | PASS |
+| 6 | OceanSimulator 다중 tracer (대류/와도/유속) | PASS |
+| 7 | 전체 합성 (태양+우물+달+코리올리) | PASS |
+
+---
+
+## 8. 전체 진행 흐름 (버전별)
+
+```
+v0.1.0  정적 퍼텐셜 (Hopfield → 단일 우물)
+  │
+v0.2.0  자전(Phase A) + 공전(Phase B) + 브릿지
+  │      "공이 골짜기를 돌고, 골짜기 사이를 순환한다"
+  │
+v0.3.0  에너지 주입/소산 + 요동(Phase C) + FDT + Layer 1~3
+  │      "에너지가 들고 나며, 확률적 전이가 가능하다"
+  │
+v0.4.0  폴더 구조 분리 (trunk/ + analysis/) + Layer 4~6
+  │      "분석 도구 완성 — 측정할 수 있는 모든 것이 갖춰졌다"
+  │
+v0.5.0  BrainAnalyzer (Layer 1+5+6 통합 분석)
+  │      "시뮬레이션 → 자동 리포트"
+  │
+v0.6.0  HippoMemoryEngine (태양/운영층)
+  │      "V(x) → V(x,t) — 지형이 살아 움직인다"
+  │      "기억이 스스로 생기고, 강해지고, 잊혀진다"
+  │
+v0.7.0  3계층 중력 (CentralBody + OrbitalMoon + TidalField)
+  │      "태양이 장을 만들고, 달이 리듬을 만든다"
+  │
+v0.7.1  달 타원공전 + 자전 + 조석텐서 + OceanSimulator
+         "바다가 움직인다 — 대류, 난류, 유속 패턴"
+```
+
+---
+
+## 9. 설계 원칙
 
 | 원칙 | 설명 |
 |---|---|
@@ -871,10 +1069,11 @@ python examples/hippo_memory_verification.py → ALL PASS (7/7)
 | 검증 필수 | 모든 물리 변경에 대해 수치 검증 스크립트 작성 |
 | 구조 먼저, 확률 나중 | "고전 구조 확장 → 그 위에 확률적 층 추가" |
 | 엔진은 상태를 perturb할 뿐 | 정답을 주는 시스템이 아닌, 구조를 제공하는 시스템 |
+| 동역학적 동형 | 같은 수학 구조가 천체·인지·제어에 동시에 적용된다 |
 
 ---
 
-## 8. 핵심 용어 정리
+## 10. 핵심 용어 정리
 
 | 용어 | 정의 |
 |---|---|
@@ -894,8 +1093,15 @@ python examples/hippo_memory_verification.py → ALL PASS (7/7)
 | EnergyBudgeter | I(x,v,t) 자동 제어. 탐색/정착/리콜 세 모드 합성 |
 | 강화 (reinforcement) | 우물 방문 시 amplitude 증가. η·proximity·dt |
 | 망각 (forgetting) | 자연 감쇠. A *= exp(-λ·dt) |
+| CentralBody | Tier 1. 태양. 1/r 중심 퍼텐셜. 장거리 구속 |
+| OrbitalMoon | Tier 3. 달. 타원 공전, 자전, 사중극, 조석력 생성 |
+| TidalField | 중심장 + 조석장 합성. PFE injection_func 제공 |
+| 조석 텐서 (tidal tensor) | T_ij = ∂²V/∂x_i∂x_j. 조석력의 공간 구조 |
+| OceanSimulator | 우물 안 다중 tracer 시뮬레이션. 대류/유속/와도 측정 |
+| 동역학적 동형 | 같은 수학 구조가 천체·인지·제어에 동시 적용되는 원리 |
 
 ---
 
-*GNJz (Qquarts) · CookiieBrain*
+*GNJz (Qquarts) · CookiieBrain v0.7.1*
 *"정답을 제시하기보다, 각자의 해답을 찾아갈 수 있는 방향 제시가 더 큰 목적이다."*
+*"태양이 장을 만들고, 지구가 기억을 담고, 달이 리듬을 만든다."*
