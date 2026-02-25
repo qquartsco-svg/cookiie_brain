@@ -3,7 +3,7 @@
 **상태 공간 장(Field) 동역학 통합 엔진**
 
 ```
-Version : 1.2.2
+Version : 1.3.0
 License : PHAM-OPEN v2.0
 Python  : 3.8+
 Author  : GNJz (Qquarts)
@@ -69,6 +69,9 @@ m ẍ = -∇V_sun(x)       Tier 1: central gravity (1/r, long-range)
   B(r) = B₀·(R/r)³·[3(m̂·r̂)r̂ - m̂] → magnetic dipole
   P_sw(r) = P₀·(r₀/r)²            → solar wind
   r_mp = R·(k·B₀²/P_sw)^(1/6)     → magnetopause
+  L = M^α                          → mass-luminosity
+  F(r) = L/(4πr²)                  → irradiance
+  T_eq = [F(1-A)/(4σ)]^¼           → equilibrium temp
 ```
 
 Full concept (English): [docs/FULL_CONCEPT_AND_STATUS_EN.md](docs/FULL_CONCEPT_AND_STATUS_EN.md)
@@ -473,13 +476,13 @@ python examples/tidal_orbit_verification.py   # 17항목 ALL PASS
 
 ---
 
-## 3D 진화 엔진 — solar/ (v1.2.2)
+## 3D 진화 엔진 — solar/ (v1.3.0)
 
-**점 객체 탄생 → 전체 태양계 N-body + 자기권 방어막까지.**
+**점 객체 탄생 → 전체 태양계 N-body + 자기권 방어막 → 빛이 있으라.**
 
 하나의 점에서 시작해, 중력 방정식만으로 자전·공전·세차·조석·해류가 자연 발생.
-그 위에 자기쌍극자·태양풍·자기권 전자기 레이어와 인지 관성 기억(Ring Attractor)을
-기어 분리 구조로 적층.
+그 위에 자기쌍극자·태양풍·자기권·태양 광도 전자기 레이어와 인지 관성 기억(Ring Attractor)을
+기어 분리 구조로 적층. 빛이 켜지고 형태와 온도가 존재하기 시작한다.
 
 ### 주요 검증 결과
 
@@ -492,6 +495,9 @@ python examples/tidal_orbit_verification.py   # 17항목 ALL PASS
 | 태양풍 1/r² 감쇠 | 5행성 오차 0.00% | v1.2.0 |
 | 마그네토포즈 | 7.58 R_E (실측 ~10 R_E) | v1.2.0 |
 | 차폐율 | 0.78 | v1.2.0 |
+| 태양 광도 L = M^4.0 | 1.0000 L☉ (오차 0.00) | v1.3.0 |
+| 지구 평형 온도 | 254 K (NASA 255 K, **0.4%**) | v1.3.0 |
+| 복사 역제곱 법칙 | 8행성 0.000% | v1.3.0 |
 | Ring Attractor 위상 추적 | 평균 0.12° 오차 | v0.9.0 |
 
 ### 기어 분리 구조 (레이어 아키텍처)
@@ -499,7 +505,8 @@ python examples/tidal_orbit_verification.py   # 17항목 ALL PASS
 ```
 인지 층 — RingAttractorEngine (관성 기억, φ ∈ S¹)
     │ spin_axis → Ring 위상 매핑 (관측자 모드)
-전자기 층 — em/ (자기쌍극자 + 태양풍 + 자기권)
+전자기 층 — em/ (광도 + 자기쌍극자 + 태양풍 + 자기권)
+    │ L = M^α → F ∝ 1/r² → T_eq (빛이 있으라)
     │ spin_axis, pos 읽기 (관측자 모드, 물리 수정 없음)
 물리 층 — EvolutionEngine (10-body 중력 + 스핀-궤도 토크)
     │ build_solar_system()
@@ -528,6 +535,7 @@ for _ in range(500_000):
 ### 검증
 
 ```bash
+python examples/let_there_be_light_demo.py   # 빛이 있으라 — 태양 광도 (~2초)
 python examples/full_solar_system_demo.py    # 10-body 100년 (~8분)
 python examples/planet_evolution_demo.py     # 3체 세차 (~13초)
 python examples/em_layer_demo.py             # EM 전자기 통합
@@ -535,6 +543,7 @@ python examples/spin_ring_coupling_demo.py   # Ring Attractor 커플링
 ```
 
 검증 로그:
+- [LET_THERE_BE_LIGHT_LOG.txt](docs/LET_THERE_BE_LIGHT_LOG.txt) — 빛이 있으라 ALL PASS
 - [FULL_SOLAR_SYSTEM_LOG.txt](docs/FULL_SOLAR_SYSTEM_LOG.txt) — 10-body 100년
 - [EM_LAYER_LOG.txt](docs/EM_LAYER_LOG.txt) — 전자기 레이어 ALL PASS
 - [PRECESSION_VERIFICATION_LOG.txt](docs/PRECESSION_VERIFICATION_LOG.txt) — 3체 세차
@@ -614,7 +623,7 @@ CookiieBrain/
 ├── ARCHITECTURE.md             # 5-Layer 아키텍처 명세
 ├── QUICK_START.md
 │
-├── solar/                      # ── L2 Field: 중력장 + 3D 진화 (v1.2.2) ──
+├── solar/                      # ── L2 Field: 중력장 + 3D 진화 (v1.3.0) ──
 │   ├── core/                   #   물리 코어 (N-body+토크+해양)
 │   │   ├── evolution_engine.py #   ★ EvolutionEngine
 │   │   ├── central_body.py     #   CentralBody (태양: 1/r)
@@ -623,6 +632,7 @@ CookiieBrain/
 │   ├── data/                   #   NASA/JPL 실측 상수 (frozen)
 │   │   └── solar_system_data.py#   8행성+태양+달 + build_solar_system()
 │   ├── em/                     #   전자기 레이어 (관측자 모드)
+│   │   ├── solar_luminosity.py #   ★ 빛이 있으라 L = M^α, F ∝ 1/r²
 │   │   ├── magnetic_dipole.py  #   자기쌍극자 B ∝ 1/r³
 │   │   ├── solar_wind.py       #   태양풍 P ∝ 1/r²
 │   │   ├── magnetosphere.py    #   자기권 (dipole vs P_sw 균형)
@@ -647,7 +657,8 @@ CookiieBrain/
 │   ├── brain_analyzer.py       #   Layer 1+5+6 통합 분석
 │   └── ocean_simulator.py      #   바다 시뮬레이터
 │
-├── examples/                   # 실행 가능한 검증 스크립트 (31개)
+├── examples/                   # 실행 가능한 검증 스크립트 (32개)
+│   ├── let_there_be_light_demo.py  # ★ 빛이 있으라 — 태양 광도 (v1.3.0)
 │   ├── full_solar_system_demo.py   # ★ 10-body 100년 N-body (v1.0.0)
 │   ├── em_layer_demo.py            # ★ 전자기 통합 검증 (v1.2.0)
 │   ├── magnetic_dipole_demo.py     # 자기쌍극자 단독 검증 (v1.1.0)
@@ -662,7 +673,8 @@ CookiieBrain/
 │
 └── docs/
     ├── COGNITIVE_SOLAR_SYSTEM.md    # ★ 인지 태양계 설계
-    ├── VERSION_LOG.md              # ★ solar/ 버전 히스토리 (v0.8.0~v1.2.2)
+    ├── VERSION_LOG.md              # ★ solar/ 버전 히스토리 (v0.8.0~v1.3.0)
+    ├── LET_THERE_BE_LIGHT_LOG.txt  # 빛이 있으라 ALL PASS 출력
     ├── FULL_SOLAR_SYSTEM_LOG.txt   # 10-body 100년 검증 출력
     ├── EM_LAYER_LOG.txt            # 전자기 레이어 ALL PASS 출력
     ├── MAGNETIC_DIPOLE_LOG.txt     # 자기쌍극자 검증 출력
@@ -713,6 +725,7 @@ CookiieBrain/
 | 자기쌍극자장 (B ∝ 1/r³, 세차 연동) | 완료 | v1.1.0 |
 | **태양풍 + 자기권 (전자기 레이어 완비)** | **완료** | **v1.2.0** |
 | EM 개념 문서화 + EPS 중앙 관리 | 완료 | v1.2.2 |
+| **빛이 있으라 — 태양 광도·조도·온도** | **완료** | **v1.3.0** |
 
 ```
 v0.1  정적 퍼텐셜
@@ -727,13 +740,15 @@ v0.9  Ring Attractor — 관성 기억 (인지 기어 결합)
 v1.0  ★ 전체 태양계 10-body — NASA 실측 데이터 (3.9% 오차)
 v1.1  자기쌍극자장 — B ∝ 1/r³, 세차 연동
 v1.2  ★ 태양풍 + 자기권 — 전자기 레이어 완비 (ALL PASS)
+v1.3  ★ 빛이 있으라 — 태양 광도 L = M^α, 지구 254 K (ALL PASS)
 ```
 
 > **점 하나에서 시작해, 중력 방정식만으로 자전·공전·세차·조석·해류가 자연 발생한다.**
-> 그 위에 자기쌍극자·태양풍·자기권을 기어 분리 구조로 얹었다.
+> 그 위에 자기쌍극자·태양풍·자기권·태양 광도를 기어 분리 구조로 얹었다.
+> 빛이 켜지고, 형태와 온도가 존재하기 시작한다.
 > 10-body 태양계가 실제 우주와 3.9% 오차로 일치한다.
 
 ---
 
-*GNJz (Qquarts) · Cookiie Brain v1.2.2*
+*GNJz (Qquarts) · Cookiie Brain v1.3.0*
 *"Code is Free. Success is Shared."*

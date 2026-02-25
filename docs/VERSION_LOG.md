@@ -1,5 +1,33 @@
 # solar/ 버전 로그 / Version Log
 
+## v1.3.0 — 빛이 있으라 / Let There Be Light (Solar Luminosity)
+
+**날짜**: 2026-02-25
+**작업**: 태양 광도·복사 조도·평형 온도 레이어 + 전체 체인 검증
+
+| 파일 | 설명 |
+|------|------|
+| `solar/em/solar_luminosity.py` | 질량-광도 관계 L∝M^α, 복사 조도 F=L/(4πr²), 복사압, 평형 온도 |
+| `solar/em/__init__.py` | SolarLuminosity, IrradianceState 공개 |
+| `solar/__init__.py` | 패키지 공개 API 업데이트 + __version__ = "1.3.0" |
+| `examples/let_there_be_light_demo.py` | Phase 5 검증 — 빛이 있으라 |
+| `docs/LET_THERE_BE_LIGHT_LOG.txt` | Phase 5 검증 출력 로그 |
+| `solar/README.md` | Phase 5 개념 문서 추가 |
+
+검증 (ALL PASS):
+- 질량-광도: L(1.0 M☉) = 1.0000 L☉ (오차 0.00)
+- 역제곱 법칙: F ∝ 1/r² — 8행성 전부 0.000%
+- 지구 평형 온도: 254.0 K (이론 255 K, 오차 0.4%)
+- 복사압-태양풍 연동: 비율 1.0000 (5행성)
+- 기어 분리: dE/E = 4.49e-10 (core 무결)
+
+의미:
+  중력장이 공간을 지배하고, 행성이 궤도를 돌고,
+  자기장이 방어막을 세운 그 위에 — 마침내 빛이 켜졌다.
+  형태가 생기고, 그림자가 생기고, 존재의 의미가 시작되었다.
+
+---
+
 ## v1.2.2 — EM 레이어 개념 문서화
 
 **날짜**: 2026-02-25

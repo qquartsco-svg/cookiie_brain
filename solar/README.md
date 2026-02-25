@@ -1,11 +1,11 @@
-# solar/ — 전체 태양계 N-body + 자기권 + 관성 기억 (v1.2.2)
+# solar/ — 전체 태양계 N-body + 자기권 + 광도 + 관성 기억 (v1.3.0)
 
 NASA/JPL 실측 데이터 기반 10-body 심플렉틱 엔진.
-자기쌍극자 + 태양풍 + 자기권 전자기 레이어 완비.
-세차운동하는 자전축에 연동되는 자기권 방어막 시뮬레이션.
+자기쌍극자 + 태양풍 + 자기권 + 태양 광도 전자기 레이어 완비.
+빛이 있으라 — 중력장 위에 빛이 켜지고, 형태와 온도가 존재하기 시작한다.
 
 > *10-body symplectic engine with magnetic dipole, solar wind,
-> and magnetosphere. Gear-separated: core/ ← data/ ← em/ ← cognitive/*
+> magnetosphere, and solar luminosity. Gear-separated: core/ ← data/ ← em/ ← cognitive/*
 
 ---
 
@@ -146,7 +146,18 @@ NASA/JPL 실측 데이터 기반 10-body 심플렉틱 엔진.
 | Uranus | 19.1065 | 19.2184 | 0.58% |
 | Neptune | 29.8597 | 30.1104 | 0.83% |
 
+### v1.3.0 — 빛이 있으라 / Let There Be Light
+
+| 항목 | 결과 |
+|------|------|
+| 질량-광도 L(1.0 M☉) | 1.0000 L☉ (오차 0.00) |
+| 역제곱 법칙 F ∝ 1/r² | 8행성 0.000% |
+| 지구 평형 온도 (A=0.306) | 254 K (NASA 255 K, 0.4%) |
+| 복사압-태양풍 비율 | 1.0000 (5행성) |
+| core 에너지 보존 | dE/E = 4.49×10⁻¹⁰ |
+
 전체 시뮬레이션 출력:
+- [LET_THERE_BE_LIGHT_LOG.txt](../docs/LET_THERE_BE_LIGHT_LOG.txt) (v1.3.0, 빛이 있으라)
 - [FULL_SOLAR_SYSTEM_LOG.txt](../docs/FULL_SOLAR_SYSTEM_LOG.txt) (v1.0.0, 10-body)
 - [PRECESSION_VERIFICATION_LOG.txt](../docs/PRECESSION_VERIFICATION_LOG.txt) (v0.8.0, 3-body)
 
@@ -387,27 +398,80 @@ B²/(2μ₀) = P_sw
   출력: MagnetosphereState (경계, 차폐, 침투, 에너지)
 ```
 
-#### 3개 Phase 체인 (기어 연결)
+#### Phase 체인 (기어 연결)
 
 ```
 core/ EvolutionEngine
   │
   │ spin_axis(t), pos(t)  [읽기 전용]
   │
-  ▼
-Phase 2: MagneticDipole ──→ B₀, 자기축 방향
-  │                              │
-  │         Phase 3: SolarWind ──→ P_sw, IMF, 풍향
-  │              │                     │
-  └──────────────┴─────────────────────┘
-                 │
-                 ▼
-          Phase 4: Magnetosphere
-                 │
-                 ▼
-          r_mp, 차폐율, 침투율, 에너지 유입
-          (→ 향후 해양/대기 레이어의 입력이 됨)
+  ├──→ Phase 5: SolarLuminosity ──→ L, F(r), T_eq
+  │         │                            │
+  │         │ radiation_pressure         │ irradiance
+  │         ▼                            │
+  ├──→ Phase 3: SolarWind ──→ P_sw, IMF │
+  │         │                            │
+  ├──→ Phase 2: MagneticDipole ──→ B₀   │
+  │         │                            │
+  │         ▼                            ▼
+  │    Phase 4: Magnetosphere    환경 효과 (온도/기후)
+  │         │
+  │         ▼
+  │    r_mp, 차폐율, 침투율
+  │    (→ 해양/대기 레이어)
+  │
+  └──→ cognitive/ (Ring Attractor, 관성 기억)
 ```
+
+#### Phase 5: 태양 광도 — 빛이 있으라 / Solar Luminosity
+
+> "중력장이 공간을 지배하고, 행성이 궤도를 돌고,
+>  자기장이 방어막을 세운 그 위에 — 마침내 빛이 켜진다."
+
+**물리 개념:**
+
+태양(주계열 항성)은 질량에 의해 결정되는 광도(luminosity)로 전자기파 에너지를 방출한다.
+이 에너지는 역제곱 법칙에 따라 공간으로 퍼져나가며,
+각 행성 위치에서의 복사 조도(irradiance)와 평형 온도를 결정한다.
+
+**지배 방정식:**
+
+| 물리량 | 수식 | 의미 |
+|--------|------|------|
+| 광도 | L/L☉ = (M/M☉)^α | 질량-광도 관계 (주계열, α≈4.0) |
+| 복사 조도 | F(r) = L/(4πr²) | 역제곱 감쇠 (1 AU = 1361 W/m²) |
+| 복사압 | P_rad = F/c | 광자 운동량 전달 |
+| 평형 온도 | T_eq = [F(1-A)/(4σ)]^¼ | 흡수-방출 균형 (A: 알베도) |
+
+**검증 결과 (v1.3.0):**
+
+| 항목 | 결과 |
+|------|------|
+| L(1.0 M☉) | 1.0000 L☉ (오차 0.00) |
+| F ∝ 1/r² | 8행성 전부 0.000% |
+| T_eq(Earth) | 254 K (NASA 255 K, 0.4%) |
+| 복사압-태양풍 비율 | 1.0000 (5행성) |
+| core 에너지 보존 | dE/E = 4.49e-10 |
+
+**코드 흐름:**
+
+```
+SolarLuminosity(mass_solar=1.0)
+    │
+    ├── luminosity = M^α = 1.0 L☉
+    │
+    ├── irradiance(r)              → F = L/(4πr²) [F☉ 단위]
+    ├── irradiance_si(r)           → F [W/m²]
+    ├── radiation_pressure_si(r)   → P = F/c [Pa]
+    ├── equilibrium_temperature(r) → T = [F(1-A)/(4σ)]^¼ [K]
+    │
+    ├── state_at(pos, star_pos)    → IrradianceState (1개 천체)
+    └── illuminate_system(...)     → Dict[name, IrradianceState] (전체)
+```
+
+**관측자 모드:**
+광도 레이어는 core/의 궤도·세차에 힘을 되먹이지 않는다.
+빛은 존재를 드러내지만, 궤도를 바꾸지는 않는다.
 
 **1/r³ vs 1/r² — 왜 감쇠 법칙이 다른가:**
 
@@ -443,7 +507,7 @@ Phase 2: MagneticDipole ──→ B₀, 자기축 방향
 
 ---
 
-## 레이어 구조 / Layer Architecture (v1.2.0)
+## 레이어 구조 / Layer Architecture (v1.3.0)
 
 ```
 ┌──────────────────────────────────────────────┐
@@ -458,6 +522,10 @@ Phase 2: MagneticDipole ──→ B₀, 자기축 방향
 ┌──────────────┴───────────────────────────────┐
 │                                              │
 │  전자기 층 — em/                             │
+│                                              │
+│  solar_luminosity: L = M^α  (빛이 있으라)    │
+│                    F(r) = L/(4πr²)           │
+│                    T_eq, P_rad, 조도          │
 │                                              │
 │  magnetic_dipole:  B(x,t) ∝ 1/r³            │
 │                    자기축 = 자전축 + 11.5°    │
@@ -743,4 +811,4 @@ for _ in range(250_000):
 
 ---
 
-*v1.2.2 · PHAM Signed · GNJz (Qquarts)*
+*v1.3.0 · PHAM Signed · GNJz (Qquarts)*
