@@ -1,50 +1,73 @@
-"""solar/ — L2 Field: 중력장 + 3D 진화 엔진 + 관성 기억
-=======================================================
+"""solar/ — 전체 태양계 N-body 진화 엔진 + 관성 기억
+======================================================
 
-태양(1/r) + 달(조석) → 상태 공간에 작용하는 힘을 정의한다.
-우물(지구)은 trunk/Phase_B에서 정의.
+구조 (기어 분리 — 상호 참조 금지):
 
-구조:
-  core (물리 층):
-    central_body.py      → CentralBody       (태양: 1/r 장거리 중력)
-    orbital_moon.py      → OrbitalMoon       (달: 공전+자전+조석력)
-    tidal_field.py       → TidalField        (합성기: 태양+달 힘 합산)
-    evolution_engine.py  → EvolutionEngine   (3D N-body + 세차 + 해양)
+  core/ (물리 층):
+    evolution_engine.py  → EvolutionEngine, Body3D, SurfaceOcean
+    central_body.py      → CentralBody
+    orbital_moon.py      → OrbitalMoon
+    tidal_field.py       → TidalField
 
-  data (데이터 층):
-    solar_system_data.py → 8행성 NASA 실측 상수 + 빌더
+  data/ (데이터 층):
+    solar_system_data.py → PlanetData, PLANETS, build_solar_system()
 
-  cognitive (인지 층):
-    ring_attractor.py    → RingAttractorEngine (관성 기억: 위상 보존)
-    spin_ring_coupling.py→ SpinRingCoupling  (물리↔인지 필드 연결)
+  cognitive/ (인지 층):
+    ring_attractor.py    → RingAttractorEngine, RingState
+    spin_ring_coupling.py→ SpinRingCoupling, CouplingState
 
-의존 방향: data → core ← cognitive (상호 참조 금지)
+의존 방향:
+  data/ → core/ ← cognitive/
+  core/는 상위를 import하지 않음
+  cognitive/는 data/를 import하지 않음
 """
 
-from .central_body import CentralBody
-from .orbital_moon import OrbitalMoon
-from .tidal_field import TidalField
-from .evolution_engine import EvolutionEngine, Body3D, SurfaceOcean
-from .ring_attractor import RingAttractorEngine, RingState
-from .spin_ring_coupling import SpinRingCoupling, CouplingState
-from .data import PLANETS, SUN_DATA, MOON_DATA, PlanetData, build_solar_system
+# ── core (물리) ───────────────────────────────────
+from .core import (
+    EvolutionEngine,
+    Body3D,
+    SurfaceOcean,
+    CentralBody,
+    OrbitalMoon,
+    TidalField,
+)
+
+# ── data (NASA 실측) ──────────────────────────────
+from .data import (
+    PLANETS,
+    SUN_DATA,
+    MOON_DATA,
+    PlanetData,
+    build_solar_system,
+)
+
+# ── cognitive (인지/기억) ─────────────────────────
+from .cognitive import (
+    RingAttractorEngine,
+    RingState,
+    SpinRingCoupling,
+    CouplingState,
+)
 
 __all__ = [
+    # core
     "CentralBody",
     "OrbitalMoon",
     "TidalField",
     "EvolutionEngine",
     "Body3D",
     "SurfaceOcean",
-    "RingAttractorEngine",
-    "RingState",
-    "SpinRingCoupling",
-    "CouplingState",
+    # data
     "PLANETS",
     "SUN_DATA",
     "MOON_DATA",
     "PlanetData",
     "build_solar_system",
+    # cognitive
+    "RingAttractorEngine",
+    "RingState",
+    "SpinRingCoupling",
+    "CouplingState",
 ]
 
 __version__ = "1.0.0"

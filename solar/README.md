@@ -76,9 +76,22 @@ NASA/JPL 실측 데이터 기반 10-body(태양+8행성+달) 심플렉틱 엔진
         적도:   약한 코리올리 → 직선 흐름
 ```
 
-**위 전 과정에서 세차운동을 직접 코딩한 코드는 없다.**
-중력(F = GMm/r²)과 토크(τ = r × F)만 넣었고,
-J2 편평체 위에서 작동시키면 세차가 수학적 필연으로 발생한다.
+**정확한 의미 구분 (과장 방지):**
+
+1. **세차 운동 자체는 하드코딩이 아니다.**
+   세차 각도·주기·방향을 "정답으로 넣어둔" 것이 아니라,
+   중력(F = GMm/r²)과 토크(τ = r × F)의 수치 적분 결과로
+   자전축이 실제로 움직여서 역행 세차와 ~25,000년 주기가 나온다.
+
+2. **다만, 세차가 가능한 상태(초기조건)는 이벤트로 구성한다.**
+   달 생성, 자전 부여, J2 편평도 설정은 `giant_impact()` 데모 시나리오가
+   사건으로 주는 구조(Phase 2)이다. "완전한 자연발생"이 아니라,
+   **조건 설정 → 물리적 진행**의 2단계 구조.
+
+3. **Ring Attractor는 세차의 원인이 아니다.**
+   세차를 만드는 것은 태양·달의 중력 토크(EvolutionEngine).
+   Ring Attractor는 세차로 생기는 방향 변화를
+   인지 상태공간(관성 기억)으로 **매핑하는 레이어**다.
 
 ---
 
@@ -159,31 +172,46 @@ NumPy만 필요.
 
 ## 아키텍처 / Architecture
 
-### 파일 구조 (v1.0.0)
+### 파일 구조 (v1.0.0 — 기어 분리)
 
 ```
 solar/
-├── README.md              ← 지금 보고 있는 파일
-├── __init__.py            ← 공개 API + 버전 관리
+├── __init__.py              ← 공개 API + 의존 방향 규칙
+├── README.md                ← 지금 보고 있는 파일
 │
-├── evolution_engine.py    ← 3D N-body + 스핀-궤도 + 표면 해양 (물리 층)
-├── central_body.py        ← 태양 (1/r 중력 우물)
-├── orbital_moon.py        ← 달 (타원 공전 + 조석)
-├── tidal_field.py         ← 힘 합성기 (태양 + 달)
-│
-├── data/                  ← 데이터 층 (NASA/JPL 실측 상수)
+├── core/                    ← 물리 코어 (절대 상위를 import하지 않음)
 │   ├── __init__.py
-│   └── solar_system_data.py  ← 8행성+태양+달 질량/궤도/스핀 상수 + 빌더
+│   ├── evolution_engine.py  ← 3D N-body + 스핀-궤도 토크 + 표면 해양
+│   ├── central_body.py      ← 태양 (1/r 중력 우물)
+│   ├── orbital_moon.py      ← 달 (타원 공전 + 조석)
+│   └── tidal_field.py       ← 힘 합성기 (태양 + 달)
 │
-├── ring_attractor.py      ← 관성 기억 엔진 (인지 층)
-├── spin_ring_coupling.py  ← 물리↔인지 필드 연결 (커플링 층)
+├── data/                    ← 데이터 층 (NASA/JPL 실측 상수)
+│   ├── __init__.py
+│   └── solar_system_data.py ← 8행성+태양+달 질량/궤도/스핀 + 빌더
 │
-├── tidal.py               ← 하위 호환 re-export
-└── ocean_simulator.py     ← 하위 호환 re-export → analysis/
+├── cognitive/               ← 인지 레이어 (core/만 참조)
+│   ├── __init__.py
+│   ├── ring_attractor.py    ← 관성 기억 엔진 (Mexican-hat bump)
+│   └── spin_ring_coupling.py← 물리↔인지 필드 연결
+│
+├── evolution_engine.py      ← backward-compat shim → core/
+├── central_body.py          ← backward-compat shim → core/
+├── orbital_moon.py          ← backward-compat shim → core/
+├── tidal_field.py           ← backward-compat shim → core/
+├── ring_attractor.py        ← backward-compat shim → cognitive/
+├── spin_ring_coupling.py    ← backward-compat shim → cognitive/
+├── tidal.py                 ← 하위 호환 re-export
+└── ocean_simulator.py       ← 하위 호환 re-export → analysis/
 ```
 
-**의존 방향**: `data/` → `core(evolution_engine)` ← `cognitive(ring_attractor)`
-상호 참조 금지. 각 레이어는 독립 기어.
+**의존 방향 규칙 (엄격)**:
+```
+data/ → core/ ← cognitive/
+```
+- `core/`는 상위 레이어(cognitive/, em/)를 **절대** import하지 않음
+- `cognitive/`는 `data/`를 직접 참조하지 않음
+- 상호 참조 금지 — 각 레이어는 독립 기어
 
 ### 주요 클래스
 
@@ -379,10 +407,12 @@ for _ in range(250_000):
 
 | 파일 | 경로 | 설명 |
 |------|------|------|
-| 물리 엔진 | [`solar/evolution_engine.py`](evolution_engine.py) | Body3D, SurfaceOcean, EvolutionEngine |
+| 물리 엔진 | [`solar/core/evolution_engine.py`](core/evolution_engine.py) | Body3D, SurfaceOcean, EvolutionEngine |
+| 중력 우물 | [`solar/core/central_body.py`](core/central_body.py) | CentralBody (태양 1/r) |
+| 달 궤도 | [`solar/core/orbital_moon.py`](core/orbital_moon.py) | OrbitalMoon (타원 공전 + 조석) |
 | NASA 데이터 | [`solar/data/solar_system_data.py`](data/solar_system_data.py) | 8행성+태양+달 실측 상수 + 빌더 |
-| 관성 기억 엔진 | [`solar/ring_attractor.py`](ring_attractor.py) | RingAttractorEngine (Mexican-hat bump) |
-| 커플링 레이어 | [`solar/spin_ring_coupling.py`](spin_ring_coupling.py) | SpinRingCoupling (물리↔인지 필드 연결) |
+| 관성 기억 엔진 | [`solar/cognitive/ring_attractor.py`](cognitive/ring_attractor.py) | RingAttractorEngine (Mexican-hat bump) |
+| 커플링 레이어 | [`solar/cognitive/spin_ring_coupling.py`](cognitive/spin_ring_coupling.py) | SpinRingCoupling (물리↔인지 필드 연결) |
 | 태양계 데모 | [`examples/full_solar_system_demo.py`](../examples/full_solar_system_demo.py) | 10-body 전체 태양계 검증 |
 | 세차 데모 | [`examples/planet_evolution_demo.py`](../examples/planet_evolution_demo.py) | 6단계 전과정 실행 |
 | 커플링 데모 | [`examples/spin_ring_coupling_demo.py`](../examples/spin_ring_coupling_demo.py) | 물리↔인지 통합 검증 |
