@@ -3,7 +3,7 @@
 **상태 공간 장(Field) 동역학 통합 엔진**
 
 ```
-Version : 1.3.0
+Version : 1.3.1
 License : PHAM-OPEN v2.0
 Python  : 3.8+
 Author  : GNJz (Qquarts)
@@ -726,6 +726,7 @@ CookiieBrain/
 | **태양풍 + 자기권 (전자기 레이어 완비)** | **완료** | **v1.2.0** |
 | EM 개념 문서화 + EPS 중앙 관리 | 완료 | v1.2.2 |
 | **빛이 있으라 — 태양 광도·조도·온도** | **완료** | **v1.3.0** |
+| 복사-플라즈마 독립 분리 + 명명 수정 | 완료 | v1.3.1 |
 
 ```
 v0.1  정적 퍼텐셜
@@ -750,5 +751,5 @@ v1.3  ★ 빛이 있으라 — 태양 광도 L = M^α, 지구 254 K (ALL PASS)
 
 ---
 
-*GNJz (Qquarts) · Cookiie Brain v1.3.0*
+*GNJz (Qquarts) · Cookiie Brain v1.3.1*
 *"Code is Free. Success is Shared."*
