@@ -3,7 +3,7 @@
 **상태 공간 장(Field) 동역학 통합 엔진**
 
 ```
-Version : 0.8.0
+Version : 1.2.2
 License : PHAM-OPEN v2.0
 Python  : 3.8+
 Author  : GNJz (Qquarts)
@@ -63,9 +63,12 @@ m ẍ = -∇V_sun(x)       Tier 1: central gravity (1/r, long-range)
     + I(x,v,t)           Hippo energy injection
     + σξ(t)              Phase C: thermal fluctuation
 
-3D N-body (v0.8.0):
+3D N-body (v1.2.2):
   F_i = Σ_{j≠i} G·m_j·(r_j - r_i) / |r_j - r_i|³
   τ = (3GM/r³)(C-A)(ŝ·r̂)(r̂×ŝ)   → precession
+  B(r) = B₀·(R/r)³·[3(m̂·r̂)r̂ - m̂] → magnetic dipole
+  P_sw(r) = P₀·(r₀/r)²            → solar wind
+  r_mp = R·(k·B₀²/P_sw)^(1/6)     → magnetopause
 ```
 
 Full concept (English): [docs/FULL_CONCEPT_AND_STATUS_EN.md](docs/FULL_CONCEPT_AND_STATUS_EN.md)
@@ -470,58 +473,73 @@ python examples/tidal_orbit_verification.py   # 17항목 ALL PASS
 
 ---
 
-## 3D 진화 엔진 — EvolutionEngine (v0.8.0)
+## 3D 진화 엔진 — solar/ (v1.2.2)
 
-**점 객체 탄생 → 세차운동하는 행성까지의 전체 진화를 시뮬레이션합니다.**
+**점 객체 탄생 → 전체 태양계 N-body + 자기권 방어막까지.**
 
-하나의 점에서 시작해서, 중력 방정식만으로 자전·공전·세차·조석·해류가 자연 발생하는 것을 증명했습니다.
+하나의 점에서 시작해, 중력 방정식만으로 자전·공전·세차·조석·해류가 자연 발생.
+그 위에 자기쌍극자·태양풍·자기권 전자기 레이어와 인지 관성 기억(Ring Attractor)을
+기어 분리 구조로 적층.
 
-### 시뮬레이션 검증 결과
+### 주요 검증 결과
 
-| Phase | 내용 | 결과 |
-|-------|------|------|
-| 0. 탄생 | 태양 중력장에 점 객체 | 에너지 오차 2.06e-15 |
-| 1. 바다 | 12개 우물 형성 | 균일 깊이, 원형 |
-| 2. 충돌 | Giant Impact → 달 + 자전 + 기울기 | 2294.9 rad/yr, 23.44° |
-| 3. 조석 | 달 조석력 → 우물 타원 변형 | 깊이 0.44~0.65 |
-| 4. 세차 | 자전축 역행 회전 | **24,575yr (실제 25,772yr, 오차 4.6%)** |
-| 5. 해류 | 코리올리 + 조석 → 해류 패턴 | 12/12 활성 |
+| 항목 | 결과 | 버전 |
+|------|------|------|
+| 10-body 태양계 100년 안정 | 전 행성 궤도 편차 < 1% | v1.0.0 |
+| 세차 주기 | 24,763yr (NASA 25,772yr, **3.9% 오차**) | v1.0.0 |
+| 에너지 보존 | dE/E = 3.20×10⁻¹⁰ | v1.0.0 |
+| 자기쌍극자 1/r³ 감쇠 | 오차 0.00% | v1.1.0 |
+| 태양풍 1/r² 감쇠 | 5행성 오차 0.00% | v1.2.0 |
+| 마그네토포즈 | 7.58 R_E (실측 ~10 R_E) | v1.2.0 |
+| 차폐율 | 0.78 | v1.2.0 |
+| Ring Attractor 위상 추적 | 평균 0.12° 오차 | v0.9.0 |
+
+### 기어 분리 구조 (레이어 아키텍처)
+
+```
+인지 층 — RingAttractorEngine (관성 기억, φ ∈ S¹)
+    │ spin_axis → Ring 위상 매핑 (관측자 모드)
+전자기 층 — em/ (자기쌍극자 + 태양풍 + 자기권)
+    │ spin_axis, pos 읽기 (관측자 모드, 물리 수정 없음)
+물리 층 — EvolutionEngine (10-body 중력 + 스핀-궤도 토크)
+    │ build_solar_system()
+데이터 층 — data/ (NASA/JPL 실측 상수, frozen)
+```
+
+의존 규칙: `data/ → core/ ← em/`, `core/ ← cognitive/`, 상호 참조 금지.
 
 ### 사용
 
 ```python
-from solar import EvolutionEngine, Body3D
-import numpy as np
+from solar import EvolutionEngine, Body3D, build_solar_system
 
 engine = EvolutionEngine()
-sun = Body3D("Sun", mass=1.0, pos=np.zeros(3), vel=np.zeros(3))
-earth = Body3D("Earth", mass=3e-6, pos=np.array([1.,0.,0.]),
-               vel=np.array([0., 2*np.pi, 0.]), radius=4.26e-5)
-engine.add_body(sun)
-engine.add_body(earth)
+for d in build_solar_system():
+    if "_moon_config" in d:
+        cfg = d["_moon_config"]
+        engine.giant_impact(cfg["target"], **{k: v for k, v in cfg.items() if k != "target"})
+    else:
+        engine.add_body(Body3D(**d))
 
-for _ in range(10000):
-    engine.step(0.001)
+for _ in range(500_000):
+    engine.step(0.0002, ocean=False)
 ```
 
-### 검증 방법
-
-**1. 결과 로그 (실행 없이 바로 확인):**
-
-[docs/PRECESSION_VERIFICATION_LOG.txt](docs/PRECESSION_VERIFICATION_LOG.txt) — 시뮬레이션 전체 출력이 기록되어 있습니다.
-
-**2. 직접 재현:**
+### 검증
 
 ```bash
-git clone https://github.com/qquartsco-svg/cookiie_brain.git
-cd cookiie_brain
-python examples/planet_evolution_demo.py
+python examples/full_solar_system_demo.py    # 10-body 100년 (~8분)
+python examples/planet_evolution_demo.py     # 3체 세차 (~13초)
+python examples/em_layer_demo.py             # EM 전자기 통합
+python examples/spin_ring_coupling_demo.py   # Ring Attractor 커플링
 ```
 
-NumPy만 있으면 실행 가능합니다. 약 13초 소요.
-동일한 결과 (세차 주기 ~24,575yr, 역행, 오차 4.6%)가 재현됩니다.
+검증 로그:
+- [FULL_SOLAR_SYSTEM_LOG.txt](docs/FULL_SOLAR_SYSTEM_LOG.txt) — 10-body 100년
+- [EM_LAYER_LOG.txt](docs/EM_LAYER_LOG.txt) — 전자기 레이어 ALL PASS
+- [PRECESSION_VERIFICATION_LOG.txt](docs/PRECESSION_VERIFICATION_LOG.txt) — 3체 세차
 
-상세: [docs/COGNITIVE_SOLAR_SYSTEM.md](docs/COGNITIVE_SOLAR_SYSTEM.md)
+상세: [solar/README.md](solar/README.md) · [docs/COGNITIVE_SOLAR_SYSTEM.md](docs/COGNITIVE_SOLAR_SYSTEM.md)
 
 ---
 
@@ -596,11 +614,23 @@ CookiieBrain/
 ├── ARCHITECTURE.md             # 5-Layer 아키텍처 명세
 ├── QUICK_START.md
 │
-├── solar/                      # ── L2 Field: 중력장 + 3D 진화 (v0.8.0) ──
-│   ├── central_body.py         #   CentralBody (태양: 1/r)
-│   ├── orbital_moon.py         #   OrbitalMoon (달: 타원공전+조석)
-│   ├── tidal_field.py          #   TidalField (합성기)
-│   └── evolution_engine.py     #   ★ EvolutionEngine (3D N-body+세차+해양)
+├── solar/                      # ── L2 Field: 중력장 + 3D 진화 (v1.2.2) ──
+│   ├── core/                   #   물리 코어 (N-body+토크+해양)
+│   │   ├── evolution_engine.py #   ★ EvolutionEngine
+│   │   ├── central_body.py     #   CentralBody (태양: 1/r)
+│   │   ├── orbital_moon.py     #   OrbitalMoon (달: 타원공전+조석)
+│   │   └── tidal_field.py      #   TidalField (합성기)
+│   ├── data/                   #   NASA/JPL 실측 상수 (frozen)
+│   │   └── solar_system_data.py#   8행성+태양+달 + build_solar_system()
+│   ├── em/                     #   전자기 레이어 (관측자 모드)
+│   │   ├── magnetic_dipole.py  #   자기쌍극자 B ∝ 1/r³
+│   │   ├── solar_wind.py       #   태양풍 P ∝ 1/r²
+│   │   ├── magnetosphere.py    #   자기권 (dipole vs P_sw 균형)
+│   │   └── _constants.py       #   EPS 중앙 관리
+│   ├── cognitive/              #   인지 레이어 (관측자 모드)
+│   │   ├── ring_attractor.py   #   관성 기억 (Mexican-hat bump)
+│   │   └── spin_ring_coupling.py#  물리↔인지 필드 연결
+│   └── README.md               #   ★ 상세 문서 (물리 개념 + 검증)
 │
 ├── trunk/                      # ── L1 Dynamics: 운동방정식 구성요소 ──
 │   ├── Phase_A/                #   자전 (코리올리 회전)
@@ -617,20 +647,27 @@ CookiieBrain/
 │   ├── brain_analyzer.py       #   Layer 1+5+6 통합 분석
 │   └── ocean_simulator.py      #   바다 시뮬레이터
 │
-├── examples/                   # 실행 가능한 검증 스크립트 (25+개)
-│   ├── planet_evolution_demo.py    # ★ 탄생→세차운동 6Phase (v0.8.0)
+├── examples/                   # 실행 가능한 검증 스크립트 (31개)
+│   ├── full_solar_system_demo.py   # ★ 10-body 100년 N-body (v1.0.0)
+│   ├── em_layer_demo.py            # ★ 전자기 통합 검증 (v1.2.0)
+│   ├── magnetic_dipole_demo.py     # 자기쌍극자 단독 검증 (v1.1.0)
+│   ├── spin_ring_coupling_demo.py  # Ring Attractor 커플링 (v0.9.0)
+│   ├── planet_evolution_demo.py    # 탄생→세차운동 6Phase (v0.8.0)
 │   ├── real_solar_system_verification.py  # 실제 태양계 비율 20/20
 │   ├── lagrange_point_verification.py     # 라그랑주 L1~L5 20/20
-│   ├── hippo_injection_force_verification.py  # hippo 힘 합성 12/12
-│   ├── dynamic_host_center_verification.py    # 달 동적 추적 15/15
-│   ├── tidal_orbit_verification.py   # 3계층 중력 17/17
-│   ├── layer1~6_verification.py      # Layer 1~6 각 5항목
-│   └── ...                    # phase_a/b, fdt, hippo 등
+│   ├── layer1~6_verification.py    # Layer 1~6 각 5항목
+│   └── ...                    # hippo, tidal, fdt, phase_a/b 등
 │
-├── blockchain/                 # PHAM 블록체인 서명 (45+개 체인)
+├── blockchain/                 # PHAM 블록체인 서명 (53개 체인)
 │
 └── docs/
-    ├── COGNITIVE_SOLAR_SYSTEM.md    # ★ 인지 태양계 설계 (v0.8.0)
+    ├── COGNITIVE_SOLAR_SYSTEM.md    # ★ 인지 태양계 설계
+    ├── VERSION_LOG.md              # ★ solar/ 버전 히스토리 (v0.8.0~v1.2.2)
+    ├── FULL_SOLAR_SYSTEM_LOG.txt   # 10-body 100년 검증 출력
+    ├── EM_LAYER_LOG.txt            # 전자기 레이어 ALL PASS 출력
+    ├── MAGNETIC_DIPOLE_LOG.txt     # 자기쌍극자 검증 출력
+    ├── PRECESSION_VERIFICATION_LOG.txt  # 3체 세차 검증 출력
+    ├── SPIN_RING_COUPLING_LOG.txt  # Ring Attractor 커플링 출력
     ├── FULL_CONCEPT_AND_STATUS.md  # 전체 개념 (한국어)
     ├── FULL_CONCEPT_AND_STATUS_EN.md  # Full concept (English)
     ├── HIPPO_MEMORY_CONCEPT.md     # HippoMemory 설계
@@ -671,6 +708,11 @@ CookiieBrain/
 | 달 타원공전+자전+조석텐서+OceanSimulator | 완료 | v0.7.1 |
 | hippo 힘 합성 + 달 동적 추적 + 아키텍처 정리 | 완료 | v0.7.2 |
 | **3D EvolutionEngine — 점 객체→세차운동** | **완료** | **v0.8.0** |
+| Ring Attractor 관성 기억 결합 | 완료 | v0.9.0 |
+| **전체 태양계 10-body N-body + 기어 분리** | **완료** | **v1.0.0** |
+| 자기쌍극자장 (B ∝ 1/r³, 세차 연동) | 완료 | v1.1.0 |
+| **태양풍 + 자기권 (전자기 레이어 완비)** | **완료** | **v1.2.0** |
+| EM 개념 문서화 + EPS 중앙 관리 | 완료 | v1.2.2 |
 
 ```
 v0.1  정적 퍼텐셜
@@ -680,13 +722,18 @@ v0.4  폴더 정리 + Layer 4~6
 v0.5  BrainAnalyzer (통합 분석)
 v0.6  HippoMemoryEngine (태양 = V(x)→V(x,t))
 v0.7  3계층 중력 (태양·지구·달 = 장·끌림·리듬)
-v0.8  ★ 3D EvolutionEngine — 세차운동 실증 (실제 지구 4.6% 오차)
+v0.8  3D EvolutionEngine — 세차운동 실증 (4.6% 오차)
+v0.9  Ring Attractor — 관성 기억 (인지 기어 결합)
+v1.0  ★ 전체 태양계 10-body — NASA 실측 데이터 (3.9% 오차)
+v1.1  자기쌍극자장 — B ∝ 1/r³, 세차 연동
+v1.2  ★ 태양풍 + 자기권 — 전자기 레이어 완비 (ALL PASS)
 ```
 
 > **점 하나에서 시작해, 중력 방정식만으로 자전·공전·세차·조석·해류가 자연 발생한다.**
-> 그 결과가 실제 우주와 4.6% 오차로 일치한다.
+> 그 위에 자기쌍극자·태양풍·자기권을 기어 분리 구조로 얹었다.
+> 10-body 태양계가 실제 우주와 3.9% 오차로 일치한다.
 
 ---
 
-*GNJz (Qquarts) · Cookiie Brain v0.8.0*
+*GNJz (Qquarts) · Cookiie Brain v1.2.2*
 *"Code is Free. Success is Shared."*
