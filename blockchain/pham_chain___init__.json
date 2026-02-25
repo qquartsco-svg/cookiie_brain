@@ -1,0 +1,85 @@
+[
+  {
+    "index": 0,
+    "timestamp": 1771986665.578218,
+    "data": {
+      "name": "GENESIS"
+    },
+    "hash": "0"
+  },
+  {
+    "index": 1,
+    "timestamp": 1771986665.578219,
+    "data": {
+      "title": "__init__.py",
+      "author": "unknown",
+      "timestamp": "2026-02-25 13:31:05",
+      "hash": "b424ac45eaf8173b87b961af159fbf409139da9e75d8357646a20db722e89251",
+      "cid": "CID-unavailable",
+      "description": "",
+      "score": 0.9841,
+      "label": "A_HIGH",
+      "signals": {
+        "byte": 1.0,
+        "text": 1.0,
+        "ast": 0.9523809523809523,
+        "exec": 0.0
+      },
+      "exec_output": "",
+      "raw_bytes": "222222536f6c617220e280942033eab384ecb8b520eca491eba0a520eb8f99ec97aded959920ebaaa8eb93880a0aed839cec96912843656e7472616c426f647929202b20eb8bac284f72626974616c4d6f6f6e29202b20ed95a9ec84b128546964616c4669656c6429202b20ebb094eb8ba4284f6365616e53696d756c61746f72290a0aec8381ed839c20eab3b5eab084ec9d9820eab1b0eb8c80eca788eb9f8920ecbd94ec96b42e0a436f6f6b696965427261696e456e67696e65ec9d9820656e61626c655f746964616c3d54727565eba19c20ed999cec84b1ed9994ed9598eba9b40aeba7a420757064617465282920ec8aa4ed859deba788eb8ba420ed839cec96912beb8bac20ed9e98ec9db420ec8381ed839c20ebb2a1ed84b0ec979020ec9e91ec9aa9ed959ceb8ba42e0a0a56657273696f6e3a20302e372e310a2222220a0a66726f6d202e746964616c20696d706f72742043656e7472616c426f64792c204f72626974616c4d6f6f6e2c20546964616c4669656c642c204f6365616e53696d756c61746f720a0a5f5f616c6c5f5f203d205b0a202020202243656e7472616c426f6479222c0a20202020224f72626974616c4d6f6f6e222c0a2020202022546964616c4669656c64222c0a20202020224f6365616e53696d756c61746f72222c0a5d0a0a5f5f76657273696f6e5f5f203d2022302e372e31220a",
+      "raw_text": "\"\"\"Solar — 3계층 중력 동역학 모듈\n\n태양(CentralBody) + 달(OrbitalMoon) + 합성(TidalField) + 바다(OceanSimulator)\n\n상태 공간의 거대질량 코어.\nCookiieBrainEngine의 enable_tidal=True로 활성화하면\n매 update() 스텝마다 태양+달 힘이 상태 벡터에 작용한다.\n\nVersion: 0.7.1\n\"\"\"\n\nfrom .tidal import CentralBody, OrbitalMoon, TidalField, OceanSimulator\n\n__all__ = [\n    \"CentralBody\",\n    \"OrbitalMoon\",\n    \"TidalField\",\n    \"OceanSimulator\",\n]\n\n__version__ = \"0.7.1\"\n"
+    },
+    "previous_hash": "0",
+    "hash": "b1ca74f0c6a95805b2e3dbf11061ea03288cbf4274877d5dcb261e8c300ae0a3"
+  },
+  {
+    "index": 2,
+    "timestamp": 1771987336.083549,
+    "data": {
+      "title": "__init__.py",
+      "author": "GNJz",
+      "timestamp": "2026-02-25 13:42:16",
+      "hash": "53932e3a7980991b5a9af7a30ab50400179d6f066195bf317e2d9f43a5666f15",
+      "cid": "CID-unavailable",
+      "description": "solar/ L2 Field 전용 — OceanSimulator 제거, 3클래스만 export",
+      "score": 0.5462,
+      "label": "B_MEDIUM",
+      "signals": {
+        "byte": 1.0,
+        "text": 0.6901709401709402,
+        "ast": 0.0,
+        "exec": 0.0
+      },
+      "exec_output": "",
+      "raw_bytes": "222222736f6c61722f20e28094204c32204669656c643a2033eab384ecb8b520eca491eba0a5ec9ea50a0aed839cec969128312f7229202b20eb8bac28eca1b0ec849d2920e2869220ec8381ed839c20eab3b5eab084ec979020ec9e91ec9aa9ed9598eb8a9420ed9e98ec9d8420eca095ec9d98ed959ceb8ba42e0aec9ab0ebacbc28eca780eab5ac29ec9d80207472756e6b2f50686173655f42ec9790ec849c20eca095ec9d982e0a0aed8c8cec9dbc3a0a202063656e7472616c5f626f64792e70792020e286922043656e7472616c426f647920202028ed839cec96913a20312f7220ec9ea5eab1b0eba6ac20eca491eba0a5290a20206f72626974616c5f6d6f6f6e2e70792020e28692204f72626974616c4d6f6f6e20202028eb8bac3a20eab3b5eca0842bec9e90eca0842beca1b0ec849deba0a5290a2020746964616c5f6669656c642e7079202020e2869220546964616c4669656c642020202028ed95a9ec84b1eab8b03a20ed839cec96912beb8bac20ed9e9820ed95a9ec82b0290a0a4f6365616e53696d756c61746f72eb8a94204c3428416e616c7973697329eba19c20ec9db4eb8f993a20616e616c797369732f6f6365616e5f73696d756c61746f722e70790a2222220a0a66726f6d202e63656e7472616c5f626f647920696d706f72742043656e7472616c426f64790a66726f6d202e6f72626974616c5f6d6f6f6e20696d706f7274204f72626974616c4d6f6f6e0a66726f6d202e746964616c5f6669656c6420696d706f727420546964616c4669656c640a0a5f5f616c6c5f5f203d205b0a202020202243656e7472616c426f6479222c0a20202020224f72626974616c4d6f6f6e222c0a2020202022546964616c4669656c64222c0a5d0a0a5f5f76657273696f6e5f5f203d2022302e372e32220a",
+      "raw_text": "\"\"\"solar/ — L2 Field: 3계층 중력장\n\n태양(1/r) + 달(조석) → 상태 공간에 작용하는 힘을 정의한다.\n우물(지구)은 trunk/Phase_B에서 정의.\n\n파일:\n  central_body.py  → CentralBody   (태양: 1/r 장거리 중력)\n  orbital_moon.py  → OrbitalMoon   (달: 공전+자전+조석력)\n  tidal_field.py   → TidalField    (합성기: 태양+달 힘 합산)\n\nOceanSimulator는 L4(Analysis)로 이동: analysis/ocean_simulator.py\n\"\"\"\n\nfrom .central_body import CentralBody\nfrom .orbital_moon import OrbitalMoon\nfrom .tidal_field import TidalField\n\n__all__ = [\n    \"CentralBody\",\n    \"OrbitalMoon\",\n    \"TidalField\",\n]\n\n__version__ = \"0.7.2\"\n"
+    },
+    "previous_hash": "b1ca74f0c6a95805b2e3dbf11061ea03288cbf4274877d5dcb261e8c300ae0a3",
+    "hash": "5b7cb65e311221bf7d3ab5f6498832ced3fe265b8c4c06c52770e3d07a21901e"
+  },
+  {
+    "index": 3,
+    "timestamp": 1771987337.763029,
+    "data": {
+      "title": "__init__.py",
+      "author": "GNJz",
+      "timestamp": "2026-02-25 13:42:17",
+      "hash": "e0339e829a77b685b13367c3da4969a41f4ac36d0f34240473839aa09ef4a5e4",
+      "cid": "CID-unavailable",
+      "description": "Phase_A 자전 전용 — tidal re-export 제거",
+      "score": 0.7723,
+      "label": "B_MEDIUM",
+      "signals": {
+        "byte": 1.0,
+        "text": 0.9145427286356822,
+        "ast": 0.4166666666666667,
+        "exec": 0.0
+      },
+      "exec_output": "",
+      "raw_bytes": "222222506861736520413a20ec9e90eca0842028526f746174696f6e616c204669656c64290a0acf894a7620ecbd94eba6acec98aceba6ac20ed9a8ceca08420e2809420ec868deb8f84ec979020ec8898eca781ec9db820ed9e98ec9cbceba19c20ec9790eb8488eca78020ebb3b4eca1b4ed9598eba9b4ec849c20ebb0a9ed96a5ec9d8420eababeeb8a94eb8ba42e0aec9db4eab283eba78c20ed959ceb8ba42e20ed839cec96912feb8bac2feca1b0ec849dec9d8020736f6c61722f20ebaaa8eb938820eb8bb4eb8bb92e0a2222220a0a66726f6d202e726f746174696f6e616c5f6669656c6420696d706f727420280a202020206372656174655f736b65775f73796d6d65747269635f6d61747269782c0a20202020506f6c652c0a202020206372656174655f6d696e696d616c5f726f746174696f6e616c5f6669656c642c0a202020206372656174655f726f746174696f6e616c5f6669656c642c0a202020206372656174655f636f6d62696e65645f6669656c642c0a20202020636f6d707574655f6375726c5f32642c0a202020207665726966795f726f746174696f6e616c5f636f6d706f6e656e742c0a290a0a66726f6d202e6d6f6f6e20696d706f727420280a202020204d6f6f6e2c0a202020206372656174655f6d6f6f6e5f677261766974795f6669656c642c0a202020206372656174655f6669656c645f776974685f6d6f6f6e2c0a20202020616e616c797a655f6d6f6f6e5f6566666563742c0a290a0a5f5f616c6c5f5f203d205b0a20202020226372656174655f736b65775f73796d6d65747269635f6d6174726978222c0a2020202022506f6c65222c0a20202020226372656174655f6d696e696d616c5f726f746174696f6e616c5f6669656c64222c0a20202020226372656174655f726f746174696f6e616c5f6669656c64222c0a20202020226372656174655f636f6d62696e65645f6669656c64222c0a2020202022636f6d707574655f6375726c5f3264222c0a20202020227665726966795f726f746174696f6e616c5f636f6d706f6e656e74222c0a20202020224d6f6f6e222c0a20202020226372656174655f6d6f6f6e5f677261766974795f6669656c64222c0a20202020226372656174655f6669656c645f776974685f6d6f6f6e222c0a2020202022616e616c797a655f6d6f6f6e5f656666656374222c0a5d0a0a5f5f76657273696f6e5f5f203d2022302e372e31220a",
+      "raw_text": "\"\"\"Phase A: 자전 (Rotational Field)\n\nωJv 코리올리 회전 — 속도에 수직인 힘으로 에너지 보존하면서 방향을 꺾는다.\n이것만 한다. 태양/달/조석은 solar/ 모듈 담당.\n\"\"\"\n\nfrom .rotational_field import (\n    create_skew_symmetric_matrix,\n    Pole,\n    create_minimal_rotational_field,\n    create_rotational_field,\n    create_combined_field,\n    compute_curl_2d,\n    verify_rotational_component,\n)\n\nfrom .moon import (\n    Moon,\n    create_moon_gravity_field,\n    create_field_with_moon,\n    analyze_moon_effect,\n)\n\n__all__ = [\n    \"create_skew_symmetric_matrix\",\n    \"Pole\",\n    \"create_minimal_rotational_field\",\n    \"create_rotational_field\",\n    \"create_combined_field\",\n    \"compute_curl_2d\",\n    \"verify_rotational_component\",\n    \"Moon\",\n    \"create_moon_gravity_field\",\n    \"create_field_with_moon\",\n    \"analyze_moon_effect\",\n]\n\n__version__ = \"0.7.1\"\n"
+    },
+    "previous_hash": "5b7cb65e311221bf7d3ab5f6498832ced3fe265b8c4c06c52770e3d07a21901e",
+    "hash": "8979fcf9d031f765ec9018916fee2848bda583bd7437a95208d5e6ff9672ae15"
+  }
+]

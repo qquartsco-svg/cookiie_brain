@@ -1,7 +1,10 @@
-"""하위 호환 re-export — 기존 solar.tidal / trunk.Phase_A.tidal import 유지용"""
+"""하위 호환 re-export.
+
+새 코드에서는 'from solar import CentralBody, ...'를 사용하세요.
+OceanSimulator는 analysis/ocean_simulator.py로 이동됨.
+"""
 from .central_body import CentralBody
 from .orbital_moon import OrbitalMoon
 from .tidal_field import TidalField
-from .ocean_simulator import OceanSimulator
 
-__all__ = ["CentralBody", "OrbitalMoon", "TidalField", "OceanSimulator"]
+__all__ = ["CentralBody", "OrbitalMoon", "TidalField"]

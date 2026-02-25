@@ -19,7 +19,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import numpy as np
-from trunk.Phase_A.tidal import CentralBody, OrbitalMoon, TidalField, OceanSimulator
+from solar import CentralBody, OrbitalMoon, TidalField
+from analysis.ocean_simulator import OceanSimulator
 from trunk.Phase_A.rotational_field import create_skew_symmetric_matrix
 
 PASS = "\033[92mPASS\033[0m"

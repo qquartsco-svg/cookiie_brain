@@ -1,4 +1,15 @@
-"""하위 호환 re-export — 실제 구현은 solar/tidal.py로 이동"""
-from solar.tidal import CentralBody, OrbitalMoon, TidalField, OceanSimulator
+"""DEPRECATED — solar/ 모듈로 이동됨.
 
-__all__ = ["CentralBody", "OrbitalMoon", "TidalField", "OceanSimulator"]
+새 코드에서는 solar/를 직접 import하세요:
+  from solar import CentralBody, OrbitalMoon, TidalField
+  from analysis.ocean_simulator import OceanSimulator
+"""
+import warnings as _w
+_w.warn(
+    "trunk.Phase_A.tidal은 deprecated. 'from solar import ...'를 사용하세요.",
+    DeprecationWarning,
+    stacklevel=2,
+)
+from solar.tidal import CentralBody, OrbitalMoon, TidalField  # noqa
+
+__all__ = ["CentralBody", "OrbitalMoon", "TidalField"]
