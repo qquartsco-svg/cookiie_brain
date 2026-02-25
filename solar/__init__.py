@@ -49,6 +49,10 @@ from .data import (
 from .em import (
     MagneticDipole,
     DipoleFieldPoint,
+    SolarWind,
+    SolarWindState,
+    Magnetosphere,
+    MagnetosphereState,
 )
 
 # ── cognitive (인지/기억) ─────────────────────────
@@ -76,6 +80,10 @@ __all__ = [
     # em
     "MagneticDipole",
     "DipoleFieldPoint",
+    "SolarWind",
+    "SolarWindState",
+    "Magnetosphere",
+    "MagnetosphereState",
     # cognitive
     "RingAttractorEngine",
     "RingState",
@@ -83,4 +91,4 @@ __all__ = [
     "CouplingState",
 ]
 
-__version__ = "1.1.0"
+__version__ = "1.2.0"

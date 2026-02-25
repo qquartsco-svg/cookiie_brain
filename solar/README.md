@@ -1,12 +1,11 @@
-# solar/ — 전체 태양계 N-body 진화 엔진 + 자기쌍극자 + 관성 기억 (v1.1.0)
+# solar/ — 전체 태양계 N-body + 자기권 + 관성 기억 (v1.2.0)
 
-NASA/JPL 실측 데이터 기반 10-body(태양+8행성+달) 심플렉틱 엔진.
-첫 원리(first principles)로부터 지구 자전축 세차운동을 재현한다.
-세차운동하는 자전축에 연동되는 자기쌍극자장(B필드) 레이어 포함.
+NASA/JPL 실측 데이터 기반 10-body 심플렉틱 엔진.
+자기쌍극자 + 태양풍 + 자기권 전자기 레이어 완비.
+세차운동하는 자전축에 연동되는 자기권 방어막 시뮬레이션.
 
-> *A NASA-data-driven 10-body symplectic engine with spin-orbit coupling,
-> magnetic dipole field, and cognitive memory layer.
-> Gear-separated architecture: core/ ← em/ ← cognitive/*
+> *10-body symplectic engine with magnetic dipole, solar wind,
+> and magnetosphere. Gear-separated: core/ ← data/ ← em/ ← cognitive/*
 
 ---
 
@@ -192,7 +191,9 @@ solar/
 │
 ├── em/                      ← 전자기 레이어 (core/만 참조)
 │   ├── __init__.py
-│   └── magnetic_dipole.py   ← 자기쌍극자장 B(x,t) [Phase 2 완료]
+│   ├── magnetic_dipole.py   ← 자기쌍극자장 B(x,t) [Phase 2]
+│   ├── solar_wind.py        ← 태양풍 동압+복사압 1/r² [Phase 3]
+│   └── magnetosphere.py     ← 자기권 경계 dipole vs P_sw [Phase 4]
 │
 ├── cognitive/               ← 인지 레이어 (core/만 참조)
 │   ├── __init__.py
@@ -230,6 +231,10 @@ data/ → core/ ← cognitive/
 | `build_solar_system()` | 데이터 | NASA 데이터 → Body3D 변환 팩토리 |
 | `MagneticDipole` | 전자기 | 자기쌍극자장: spin_axis 연동, B ∝ 1/r³ |
 | `DipoleFieldPoint` | 전자기 | 관측 지점의 B 벡터 + 자기 위도 + L-shell |
+| `SolarWind` | 전자기 | 태양풍: 동압·복사압·IMF, P ∝ 1/r² |
+| `SolarWindState` | 전자기 | 관측 지점의 태양풍 상태 (압력, 플럭스, 방향) |
+| `Magnetosphere` | 전자기 | 자기권: dipole vs P_sw 균형, 마그네토포즈, 차폐 |
+| `MagnetosphereState` | 전자기 | 자기권 경계·차폐·쿠스프·에너지 유입 |
 | `RingAttractorEngine` | 인지 | 관성 기억: Mexican-hat bump attractor, 위상 보존 |
 | `SpinRingCoupling` | 커플링 | 물리↔인지 필드 연결, 자전축 방위각 → Ring 위상 투영 |
 
@@ -265,7 +270,7 @@ Phase 5 — 해류:  코리올리 + 조석 압력 → 표면 유동 패턴
 
 ---
 
-## 레이어 구조 / Layer Architecture (v1.1.0)
+## 레이어 구조 / Layer Architecture (v1.2.0)
 
 ```
 ┌──────────────────────────────────────────────┐
@@ -279,13 +284,22 @@ Phase 5 — 해류:  코리올리 + 조석 압력 → 표면 유동 패턴
                │ 인지 → 물리: 없음 (관측자 모드)
 ┌──────────────┴───────────────────────────────┐
 │                                              │
-│  전자기 층 — MagneticDipole                  │
-│  자전축 연동 쌍극자장 B(x,t)                 │
-│  B ∝ 1/r³, 자기축 기울기 11.5°              │
+│  전자기 층 — em/                             │
+│                                              │
+│  magnetic_dipole:  B(x,t) ∝ 1/r³            │
+│                    자기축 = 자전축 + 11.5°    │
+│                                              │
+│  solar_wind:       P_sw ∝ 1/r²              │
+│                    동압 + 복사압 + IMF        │
+│                                              │
+│  magnetosphere:    dipole vs P_sw 균형       │
+│                    r_mp ≈ 7.6 R_E (지구)     │
+│                    차폐 + 쿠스프 + 자기꼬리   │
+│                                              │
 │  core/ 읽기 전용 — 물리 수정 없음            │
 │                                              │
 └──────────────┬───────────────────────────────┘
-               │ spin_axis 읽기 (관측자 모드)
+               │ spin_axis, pos 읽기 (관측자 모드)
 ┌──────────────┴───────────────────────────────┐
 │  물리 층 — EvolutionEngine                   │
 │  10-body 중력 + 스핀-궤도 토크 + 해양 역학   │
@@ -321,6 +335,11 @@ data/ → core/ ← cognitive/
 | 표면 자기장 정확도 | 적도/극/중위도 오차 0.00% — PASS (v1.1.0) |
 | 1/r³ 감쇠 법칙 | 오차 0.00% — PASS (v1.1.0) |
 | 세차-자기장 연동 | 자기축 기울기 11.50° 보존 — PASS (v1.1.0) |
+| 태양풍 1/r² 법칙 | 5행성 오차 0.00% — PASS (v1.2.0) |
+| 마그네토포즈 | 7.58 R_E (5-20 범위) — PASS (v1.2.0) |
+| BS/MP 비율 | 1.30 — PASS (v1.2.0) |
+| 차폐 지표 | 0.78 (>0.7) — PASS (v1.2.0) |
+| 세차-자기권 연동 | 동기 확인 — PASS (v1.2.0) |
 
 물리 엔진은 건드리지 않는다. 데이터, 전자기, 인지 모두 별도 레이어로 동작한다.
 기어가 직접 맞물리지 않고, 필드장 안에서 상태가 동기화된다.
@@ -353,8 +372,8 @@ data/ → core/ ← cognitive/
 |------|------|------|
 | ~~다행성 (수성~해왕성)~~ | ~~완전 태양계 N-body~~ | **v1.0.0 완료** |
 | ~~자기쌍극자장~~ | ~~자전축 연동 자기장 표현~~ | **v1.1.0 완료** |
-| 태양풍 / 복사압 | 1/r² 입자·광자 흐름 | Phase 3 예정 |
-| 자기권 | dipole vs P_sw 균형 | Phase 4 예정 |
+| ~~태양풍 / 복사압~~ | ~~1/r² 입자·광자 흐름~~ | **v1.2.0 완료** |
+| ~~자기권~~ | ~~dipole vs P_sw 균형~~ | **v1.2.0 완료** |
 | J4, J6 중력 고조파 | 세차 정밀도 향상 | 미정 |
 | 장동 (달 교점 퇴행) | 세차 위 18.6년 진동 | 미정 |
 | 조석 소산 | Gyr 스케일 달 후퇴 + 지구 자전 감속 | 미정 |
@@ -435,12 +454,16 @@ for _ in range(250_000):
 | 달 궤도 | [`solar/core/orbital_moon.py`](core/orbital_moon.py) | OrbitalMoon (타원 공전 + 조석) |
 | NASA 데이터 | [`solar/data/solar_system_data.py`](data/solar_system_data.py) | 8행성+태양+달 실측 상수 + 빌더 |
 | 자기쌍극자 | [`solar/em/magnetic_dipole.py`](em/magnetic_dipole.py) | MagneticDipole (B ∝ 1/r³, 11.5° 기울기) |
+| 태양풍 | [`solar/em/solar_wind.py`](em/solar_wind.py) | SolarWind (P ∝ 1/r², 동압+복사압+IMF) |
+| 자기권 | [`solar/em/magnetosphere.py`](em/magnetosphere.py) | Magnetosphere (Chapman-Ferraro, 차폐, 쿠스프) |
 | 관성 기억 엔진 | [`solar/cognitive/ring_attractor.py`](cognitive/ring_attractor.py) | RingAttractorEngine (Mexican-hat bump) |
 | 커플링 레이어 | [`solar/cognitive/spin_ring_coupling.py`](cognitive/spin_ring_coupling.py) | SpinRingCoupling (물리↔인지 필드 연결) |
 | 태양계 데모 | [`examples/full_solar_system_demo.py`](../examples/full_solar_system_demo.py) | 10-body 전체 태양계 검증 |
 | 세차 데모 | [`examples/planet_evolution_demo.py`](../examples/planet_evolution_demo.py) | 6단계 전과정 실행 |
 | 커플링 데모 | [`examples/spin_ring_coupling_demo.py`](../examples/spin_ring_coupling_demo.py) | 물리↔인지 통합 검증 |
-| 자기쌍극자 데모 | [`examples/magnetic_dipole_demo.py`](../examples/magnetic_dipole_demo.py) | 자기장 정확도+감쇠+연동 검증 |
+| 자기쌍극자 데모 | [`examples/magnetic_dipole_demo.py`](../examples/magnetic_dipole_demo.py) | Phase 2 단독 검증 |
+| EM 통합 데모 | [`examples/em_layer_demo.py`](../examples/em_layer_demo.py) | Phase 2+3+4 통합 검증 |
+| EM 통합 로그 | [`docs/EM_LAYER_LOG.txt`](../docs/EM_LAYER_LOG.txt) | Phase 2+3+4 ALL PASS 출력 |
 | 자기장 로그 | [`docs/MAGNETIC_DIPOLE_LOG.txt`](../docs/MAGNETIC_DIPOLE_LOG.txt) | Phase 2 검증 출력 |
 | 태양계 로그 | [`docs/FULL_SOLAR_SYSTEM_LOG.txt`](../docs/FULL_SOLAR_SYSTEM_LOG.txt) | 10-body 100년 검증 출력 |
 | 세차 로그 | [`docs/PRECESSION_VERIFICATION_LOG.txt`](../docs/PRECESSION_VERIFICATION_LOG.txt) | 3-body 세차 출력 |
@@ -495,4 +518,4 @@ for _ in range(250_000):
 
 ---
 
-*v1.1.0 · PHAM Signed · GNJz (Qquarts)*
+*v1.2.0 · PHAM Signed · GNJz (Qquarts)*
