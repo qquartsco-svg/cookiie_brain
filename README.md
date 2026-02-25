@@ -504,10 +504,22 @@ for _ in range(10000):
     engine.step(0.001)
 ```
 
-검증 실행:
+### 검증 방법
+
+**1. 결과 로그 (실행 없이 바로 확인):**
+
+[docs/PRECESSION_VERIFICATION_LOG.txt](docs/PRECESSION_VERIFICATION_LOG.txt) — 시뮬레이션 전체 출력이 기록되어 있습니다.
+
+**2. 직접 재현:**
+
 ```bash
-python examples/planet_evolution_demo.py   # 6 Phase 전과정
+git clone https://github.com/qquartsco-svg/cookiie_brain.git
+cd cookiie_brain
+python examples/planet_evolution_demo.py
 ```
+
+NumPy만 있으면 실행 가능합니다. 약 13초 소요.
+동일한 결과 (세차 주기 ~24,575yr, 역행, 오차 4.6%)가 재현됩니다.
 
 상세: [docs/COGNITIVE_SOLAR_SYSTEM.md](docs/COGNITIVE_SOLAR_SYSTEM.md)
 
