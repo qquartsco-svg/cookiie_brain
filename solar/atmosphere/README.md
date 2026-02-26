@@ -83,7 +83,8 @@ atmosphere/           T_surface, P_surface, water_phase
         └── surface_heat_flux()  ← Phase 6b: SurfaceOcean 연동 준비
 ```
 
-**규칙**: `atmosphere/`는 `core/`와 `em/`을 **읽기만** 한다. 수정하지 않는다.
+**규칙**: `atmosphere/`는 `core/`와 `em/`을 **읽기만** 한다. 수정하지 않는다.  
+알베도 \(A\)는 column 생성 시 인자로 받으며, Phase 7(셋째날) 연동 시 호출자가 `surface/`의 `effective_albedo()`를 넘긴다.
 
 ---
 

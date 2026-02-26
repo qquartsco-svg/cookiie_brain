@@ -93,7 +93,8 @@
 | **참고 문서** | `solar/README.md`, `docs/EMERGENCE_TRAJECTORY.md`, `docs/VERSION_LOG.md`, 루트 `README.md` |
 | **검증** | `examples/surface_day3_demo.py` |
 
-**설정 파일(JSON/YAML 등)** 은 없고, **코드 기본값 + API 인자**로만 셋째날 환경이 구성됨.
+**설정 파일(JSON/YAML 등)** 은 없고, **코드 기본값 + API 인자**로만 셋째날 환경이 구성됨.  
+**상세 설명**(환경설정 범위 A~E, 수식, 검증, 다음 기어): `solar/surface/README.md`.
 
 ---
 
