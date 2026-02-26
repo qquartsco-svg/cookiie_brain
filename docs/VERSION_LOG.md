@@ -1,5 +1,57 @@
 # solar/ 버전 로그 / Version Log
 
+## v1.9.0 — 셋째날: 행성 항상성 Gaia Attractor (Phase 7d)
+
+**날짜**: 2026-02-27 (session 4)
+**작업**: 사체 분해 CO₂ 방출 + 토양 환류 + 대기↔생물권 양방향 루프 — Gaia Attractor
+
+| 파일 | 설명 |
+|------|------|
+| `solar/biosphere/column.py` | Gaia Attractor 루프 3개 추가 (루프A·루프B·루프C) |
+| `solar/biosphere/_constants.py` | ETA_LITTER, ETA_WOOD_DECAY 파라미터 추가 |
+| `examples/gaia_attractor_sim.py` | 신규 — 항상성 검증 시뮬레이션 (ALL PASS) |
+
+Gaia Attractor 루프 3개:
+```
+[루프 A] 사체 분해 → CO₂ 대기 방출
+  litter(잎·싹·줄기) × (1-ETA_LITTER=0.92) → delta_CO2 (+방출)
+  wood(나무·열매)   × (1-ETA_WOOD_DECAY=0.88) → delta_CO2 (+방출)
+
+[루프 B] 사체 일부 → organic_layer 환류
+  litter × ETA_LITTER(8%)    → organic_layer +=  (토양 갱신)
+  wood   × ETA_WOOD_DECAY(12%) → organic_layer += (느린 분해·고품질 humus)
+
+[루프 C] 대기 CO₂/O₂/T → 생물권 env 실시간 반영 (양방향 루프)
+  env["CO2"] → GPP 계산에 즉시 반영  (CO₂↑ → GPP↑ → O₂↑ → CO₂↓ 음성피드백)
+  env["O2"]  → f_O2 게이트 → 목본·결실 억제/허용 (초기 지구 → 현재 지구 전환)
+```
+
+파라미터 (관측 기반):
+| 파라미터 | 값 | 근거 |
+|----------|-----|------|
+| ETA_LITTER | 0.08 | 잎·줄기 사체 → humus 8% (열대 낙엽 분해 관측) |
+| ETA_WOOD_DECAY | 0.12 | 고사목 → humus 12% (느린 분해, 고품질 humus) |
+
+검증 결과 (gaia_attractor_sim.py — ALL PASS):
+```
+루프 A: 사체 분해 CO₂ > 0 ✓  (4.25 kg C/m²/yr)
+루프 B: organic_layer 유지 ✓  (0.77 → 229 kg C/m²)
+루프 C: O₂ 생성 시작 ✓       (21.6 → 35.0%)
+루프 C: 고CO₂ → GPP↑ ✓
+S4 태초 지구 → O₂ 생성 ✓     (0.67 → 35.0%)
+S3 저O₂ → 목본 억제 ✓        (f_O2 게이트)
+```
+
+셋째날 완성 흐름:
+```
+[돌땅] →(2739yr)→ 원시토양 →(1yr)→ 싹 →(4yr)→ 줄기 → 나무 → ★열매 → 씨 ↺
+  ↑                                                              ↓
+  └── 루프B: 사체→토양 ←── 루프A: 사체→CO₂ ←── 루프C: CO₂↔대기 ──┘
+                                항상성 Gaia Attractor
+```
+
+---
+
 ## v1.8.0 — 셋째날: 식물 생애주기 Phase Gate ODE (Phase 7c)
 
 **날짜**: 2026-02-26 (session 3)

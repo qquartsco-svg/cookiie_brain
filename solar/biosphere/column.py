@@ -1,4 +1,4 @@
-"""BiosphereColumn — pioneer + photosynthetic + Phase Gate 생애주기 (Phase 7b/7c).
+"""BiosphereColumn — pioneer + photosynthetic + Phase Gate 생애주기 (Phase 7b/7c/7d).
 
 설계 철학 (세차운동·토양 ODE와 동일):
   "물리 법칙/관측값을 율(d/dt)로 정의하면, 장주기 패턴이 자연스럽게 나온다"
@@ -15,6 +15,18 @@
     → B_wood   → B_fruit (열매) [O₂ + 성숙 조건]
     → B_fruit  → B_seed (씨)    [순환 닫힘]
 
+Gaia Attractor 루프 (Phase 7d — 행성 항상성):
+  [루프 A] 사체 분해 → CO₂ 대기 방출
+    사망한 biomass(잎·줄기·나무) × (1-ETA_LITTER) → delta_CO2 (탄소 순환 닫힘)
+
+  [루프 B] 사체 일부 → organic_layer 환류
+    사망한 biomass × ETA_LITTER → organic_layer (토양 갱신/유지)
+
+  [루프 C] 대기 CO₂/O₂/T → 생물권 env 실시간 반영
+    env["CO2"], env["O2"] → GPP, f_O2 계산에 즉시 사용 (양방향 루프)
+    → 높은 CO₂에서 GPP↑ → O₂ 방출↑ → CO₂ 낮아짐 (음성 피드백 attractor)
+    → 낮은 O₂에서 f_O2↓ → 목본·결실 억제 (초기 지구 재현)
+
 ODE 적분 규약:
   - 모든 변화량은 d*/dt [단위/yr] 로 정의 (율)
   - dt는 state += d* * dt_yr 에서 딱 한 번만 곱함
@@ -22,7 +34,9 @@ ODE 적분 규약:
 
 Inputs : F_solar_si, T_surface, P_surface, CO2, H2O, O2, water_phase, land_fraction
 Outputs: delta_CO2, delta_O2, transpiration_kg_per_m2_yr, latent_heat_biosphere_W,
-         delta_albedo_land, GPP, Resp, NPP, photo_active
+         delta_albedo_land, GPP, Resp, NPP, photo_active,
+         co2_from_decomp  [Gaia 루프 A: 분해 CO₂]
+         organic_to_soil  [Gaia 루프 B: 토양 환류]
 """
 
 import math
@@ -44,6 +58,8 @@ from ._constants import (
     K_STEM_TO_WOOD, B_STEM_HALF,
     K_FRUIT, B_WOOD_FRUIT_TH,
     K_FRUIT_TO_SEED,
+    # Gaia Attractor (Phase 7d) — 사체 분해 → CO₂ + 토양 환류
+    ETA_LITTER, ETA_WOOD_DECAY,
     # 알베도
     ALBEDO_BARE_LAND, ALBEDO_VEG_MIN, VEG_COVER_SCALE,
     EPS,
@@ -167,8 +183,30 @@ class BiosphereColumn:
         self.mineral_layer   = max(0.0, self.mineral_layer   + d_mineral * dt_yr)
 
         GPP = 0.0; Resp = 0.0; delta_CO2 = 0.0; delta_O2 = 0.0; trans_rate = 0.0
+        co2_from_decomp = 0.0  # [kg C/m²/yr] Gaia 루프 A: 사체 분해 → CO₂
+        organic_to_soil  = 0.0  # [kg C/m²/yr] Gaia 루프 B: 사체 → 토양 환류
+
+        # ── Gaia 루프 A+B: 사체 분해 (biomass 사망률 × 각 pool) ───────────────
+        # 잎·싹·줄기 낙엽 분해
+        litter_rate = (M_LEAF  * self.B_leaf
+                       + M_STEM * self.B_sprout
+                       + M_STEM * self.B_stem)
+        # 고사목(나무·열매) 분해
+        wood_rate   = (M_WOOD  * self.B_wood
+                       + M_FRUIT * self.B_fruit)
+
+        # [루프 A] 분해 → CO₂ 대기 방출 [kg C/m²/yr]
+        co2_from_decomp = (litter_rate * (1.0 - ETA_LITTER)
+                           + wood_rate  * (1.0 - ETA_WOOD_DECAY))
+
+        # [루프 B] 분해 → humus(organic_layer) 환류 [kg C/m²/yr]
+        organic_to_soil = (litter_rate * ETA_LITTER
+                           + wood_rate  * ETA_WOOD_DECAY)
+        self.organic_layer = max(0.0, self.organic_layer + organic_to_soil * dt_yr)
 
         # ── 2. 광합성 활성화 조건 ─────────────────────────────────────────────
+        # [루프 C] CO₂/O₂/T는 env에서 직접 읽힘 → GPP·f_O2 계산에 즉시 반영
+        #   env["CO2"] ↑ → GPP ↑ → delta_O2 ↑ → 대기 CO₂ 감소 (음성 피드백)
         if photo.photo_ready(self.organic_layer, self.pioneer_biomass, water_phase):
 
             GPP  = photo.gpp(F, CO2, T, f_W)
@@ -250,9 +288,19 @@ class BiosphereColumn:
 
             # ── 6. 대기 피드백 플럭스 [단위/yr, 면적당] ───────────────────────
             area_land = max(EPS, self.land_fraction)
-            delta_CO2  = -(GPP - Resp) / area_land
+            # [루프 A 통합] 순 탄소 플럭스 = 광합성 고정 - 호흡 - 분해 CO₂
+            # 부호 규약: delta_CO2 < 0 → 대기 CO₂ 감소 (생물권이 흡수)
+            #            delta_CO2 > 0 → 대기 CO₂ 증가 (생물권이 방출)
+            net_C_flux = (GPP - Resp) - co2_from_decomp  # [kg C/m²/yr, land area]
+            delta_CO2  = -net_C_flux / area_land
             delta_O2   =  (GPP - Resp) * (32.0 / 12.0) / area_land
             trans_rate = photo.transpiration_flux(self.B_leaf, F, f_W)
+
+        # ── 광합성 비활성 시에도 분해 CO₂는 대기로 방출 ──────────────────────
+        # (photo 블록 진입 못한 경우: delta_CO2=0 이지만 분해는 계속)
+        if delta_CO2 == 0.0 and co2_from_decomp > 0.0:
+            area_land = max(EPS, self.land_fraction)
+            delta_CO2 = co2_from_decomp / area_land   # 분해만 있는 경우 양수(방출)
 
         latent_W = photo.latent_heat_W(trans_rate)
 
@@ -274,6 +322,9 @@ class BiosphereColumn:
             "Resp": Resp,
             "NPP":  GPP - Resp,
             "photo_active": GPP > 0,
+            # Gaia Attractor 루프 출력 (Phase 7d)
+            "co2_from_decomp":  co2_from_decomp,   # [kg C/m²/yr] 사체 분해 → CO₂
+            "organic_to_soil":  organic_to_soil,    # [kg C/m²/yr] 사체 → 토양 환류
             # edge AI 요약 출력
             "B_sprout": self.B_sprout,
             "B_stem":   self.B_stem,

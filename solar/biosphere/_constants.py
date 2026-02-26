@@ -112,6 +112,23 @@ A_SEED = A_FRUIT_BASE
 B_THRESHOLD_SEED = 0.2
 K_SEED = 0.1
 
+# —— Gaia Attractor: 사체 분해 → CO₂ 방출 + 토양 환류 ————————————
+# 설계 목표: 죽은 biomass(잎·줄기·나무)가 분해되어
+#   → CO₂ 대기 방출 (탄소 순환 닫힘)
+#   → 일부는 humus로 전환 (토양 갱신)
+# 관측 근거:
+#   - 열대 낙엽 분해: ~1년, 한냉 목본: ~50~200년
+#   - humus 전환율: 사체의 ~5~15%가 안정 humus 됨
+
+# 분해 시 humus 전환 비율 (나머지는 CO₂로 방출)
+ETA_LITTER       = 0.08       # 잎·줄기 낙엽 → humus 8%
+ETA_WOOD_DECAY   = 0.12       # 고사목 → humus 12% (느린 분해, 고품질 humus)
+
+# CO₂ 방출 비율 (1 - ETA_LITTER 등은 암묵적으로 CO₂)
+# 명시적 상수로 관리 (설계 의도 문서화)
+CO2_FROM_LITTER  = 1.0 - ETA_LITTER    # ≈ 0.92 (잎 사체의 92%가 CO₂)
+CO2_FROM_WOOD    = 1.0 - ETA_WOOD_DECAY # ≈ 0.88 (목본 사체의 88%가 CO₂)
+
 # —— O2-dependent (respiration / successional) ———————————————————
 K_O2 = 0.01                   # [mol/mol] O2 half-saturation for f_O2
 O2_THRESHOLD = 0.005          # [mol/mol] ~0.5% O2 for "respiration plants"
