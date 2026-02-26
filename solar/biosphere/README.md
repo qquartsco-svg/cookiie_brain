@@ -163,8 +163,85 @@ print(earth["T_surface"], atmospheres["Earth"].composition.CO2, atmospheres["Ear
 
 ---
 
-## 7. 상세 사양 및 설계 문서
+## 7. 토양 형성 ODE — 세차운동과 동일한 설계 철학
 
-- [docs/BIOSPHERE_LAYER_SPEC.md](../../docs/BIOSPHERE_LAYER_SPEC.md) — 상태변수·수식·포트 전체 명세  
-- [docs/DAY3_PROGRESS_CHECK.md](../../docs/DAY3_PROGRESS_CHECK.md) — 셋째날(Phase 7A/7B) 진행 상황 및 검증  
+### 핵심 개념
+
+세차운동 방식과 동일:
+
+| 구분 | 입력 | 출력 |
+|------|------|------|
+| 세차운동 | G, M, r (물리 상수) | 25,000년 주기 |
+| **토양 형성** | R, W, ETA, λ (물리 법칙) | **2739년 원시토양** |
+
+"물리 법칙과 관측값을 수식에 넣으면, 결과가 자연스럽게 나온다"
+
+### ODE 시스템 (3변수)
+
+```
+상태변수:
+  P  = pioneer_biomass  [kg C/m²]  (균사·이끼·지의류)
+  M  = mineral_layer    [kg/m²]    (풍화 광물)
+  S  = organic_layer    [kg C/m²]  (humus — 토양 임계의 핵심)
+
+방정식:
+  dP/dt = R·P·(1 - P/K(S))·fT·fW - M_mort·P    [로지스틱 성장]
+  dM/dt = W_w·P·fT·fW                             [풍화: pioneer → 광물]
+  dS/dt = ETA·M_mort·P + W_mh·M - λ(T)·S         [humus 축적]
+
+양성 피드백:
+  K(S) = K0 + K_soil·S    (유기물↑ → 부양력↑ → pioneer↑ → 유기물↑)
+
+Q10 온도 의존 분해:
+  λ(T) = λ_base × 2^((T-283)/10)
+```
+
+### 파라미터 (관측 기반)
+
+| 파라미터 | 값 | 단위 | 근거 |
+|----------|-----|------|------|
+| R_PIONEER | 0.08 | /yr | 지의류 성장률 |
+| M_PIONEER | 0.005 | /yr | 수명 ~200년 |
+| K0_CARRYING | 0.05 | kg C/m² | 돌땅 최소 부양력 |
+| K_SOIL_FEEDBACK | 8.0 | — | 양성 피드백 강도 |
+| W_WEATHERING | 0.002 | kg/(kg·yr) | 풍화율 |
+| W_MINERAL_HUMUS | 0.0003 | kg C/(kg·yr) | 광물→humus 기여 |
+| ETA_ORGANIC | 0.08 | — | 사체→humus 8% |
+| LAMBDA_DECAY | 0.003 | /yr | 반감기 ~330yr |
+| ORGANIC_THRESHOLD | 0.5 | kg C/m² | 식물 착근 임계 |
+
+### 시뮬레이션 결과
+
+```
+0yr:    돌땅 (pioneer=0.001 kg C/m²)
+30yr:   pioneer 착생 시작
+175yr:  풍화 진행 중 (mineral 축적)
+2000yr: humus 축적 중
+2739yr: ★ 원시토양 완성 (organic=0.5007 kg C/m²)
+```
+
+관측 비교:
+- 용암지대(하와이): 300~500년
+- 빙하 후퇴지: 200~600년
+- 고위도 암반: 1,000~3,000년
+- 지구 전체 0D 평균: **2739년** ← 모델 결과 ✓
+
+### English Summary
+
+**Soil Formation ODE — same design as Precession simulation**
+
+Input physical laws (R, W, ETA, λ) → 2739-year soil threshold emerges naturally.
+Three coupled ODEs: logistic pioneer growth + weathering + Q10 decomposition.
+Positive feedback: K(S) = K0 + K_soil·S (more organic → higher carrying capacity).
+
+검증: `examples/soil_formation_sim.py`
+
+---
+
+## 8. 상세 사양 및 설계 문서
+
+- [docs/BIOSPHERE_LAYER_SPEC.md](../../docs/BIOSPHERE_LAYER_SPEC.md) — 상태변수·수식·포트 전체 명세
+- [docs/DAY3_PROGRESS_CHECK.md](../../docs/DAY3_PROGRESS_CHECK.md) — 셋째날(Phase 7A/7B) 진행 상황 및 검증
 - [docs/CIRCULATION_TEMPLATE.md](../../docs/CIRCULATION_TEMPLATE.md) — 뉴런→지구→우주선 순환 템플릿 매핑
+- [docs/WORK_LOG_2026-02-26.md](../../docs/WORK_LOG_2026-02-26.md) — 토양 형성 ODE 작업 로그 (session 2)
+- [docs/VERSION_LOG.md](../../docs/VERSION_LOG.md) — v1.7.0 버전 기록

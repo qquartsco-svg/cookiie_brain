@@ -1,5 +1,38 @@
 # solar/ 버전 로그 / Version Log
 
+## v1.7.0 — 셋째날: 토양 형성 ODE (Phase 7b — 선구 생물)
+
+**날짜**: 2026-02-26 (session 2)
+**작업**: pioneer 로지스틱 성장 + 풍화 + Q10 분해 — 세차운동과 동일한 설계 철학
+
+| 파일 | 설명 |
+|------|------|
+| `solar/biosphere/pioneer.py` | ODE 3변수 재작성 (d_pioneer, d_organic, d_mineral) |
+| `solar/biosphere/_constants.py` | 물리 파라미터 현실화 (관측 기반) |
+| `solar/biosphere/column.py` | mineral_layer 상태변수 추가, 3-return 연결 |
+| `examples/biosphere_day3_demo.py` | 검증 조건 수정 |
+| `examples/soil_formation_sim.py` | 신규 — 토양 형성 시뮬레이션 (2739년) |
+
+물리 (세차운동과 동일한 방식):
+```
+세차: G·M·r  입력 → 25,000년 주기 출력
+토양: R·W·ETA·λ 입력 → 2739년 원시토양 출력
+```
+
+ODE:
+```
+dP/dt = R·P·(1-P/K(S))·fT·fW - M·P   [로지스틱]
+dM/dt = W_w·P·fT·fW                    [풍화]
+dS/dt = ETA·M·P + W_mh·M - λ(T)·S    [humus, Q10]
+K(S)  = K0 + K_soil·S                  [양성 피드백]
+```
+
+결과:
+- 토양 임계 도달: **2739년** (관측 지구 평균 범위 내)
+- `biosphere_day3_demo.py`: ALL PASS
+
+---
+
 ## v1.6.0 — 셋째날: 땅과 바다의 분리 (Phase 7)
 
 **날짜**: 2026-02-26

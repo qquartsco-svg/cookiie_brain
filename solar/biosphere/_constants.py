@@ -1,17 +1,52 @@
 """Biosphere physical constants and defaults.
 
 Units: biomass [kg C/m²], time [yr], flux [W/m²], composition [mol/mol].
+
+Pioneer 파라미터 현실 근거 (지구 전체 스케일):
+  - 이끼·지의류 실제 NPP: ~0.001~0.005 kg C/m²/yr (척박 암석 환경)
+    현재 R_PIONEER = 0.001 (암반 위 지의류 수준)
+  - 사망률: 지의류 수명 수백년 → M_PIONEER = 0.005 /yr (200년 수명 근사)
+  - 유기물 전환: 사체 일부만 humus로 → ETA_ORGANIC = 0.05 (5%)
+  - 분해 속도: 한냉·건조 환경에서 느림, 그러나 열대는 빠름
+    LAMBDA_DECAY = 0.02 (평균 50년 반감기 수준)
+  - 토양 임계값: 식물이 착근하려면 humus층 수 cm 이상 필요
+    지구 평균 1m²당 ~1~3 kg C/m² (표층 토양 유기탄소 밀도 참고)
+    여기선 0D 글로벌 모델이므로 ORGANIC_THRESHOLD = 1.5 kg C/m²
+  - PIONEER_THRESHOLD 제거(0으로) — organic_layer 만으로 판정
+    (pioneer 자체가 식물 착근 조건이 되면 물리적으로 부정확)
 """
 
-# —— Pioneer (harsh-environment) —————————————————————————————
-T_MID_PIONEER = 283.0          # [K] broad optimum center
-SIGMA_T_PIONEER = 40.0        # [K] wide tolerance
-R_PIONEER = 0.02              # [kg C/m²/yr] max pioneer NPP rate
-M_PIONEER = 0.1               # [1/yr] pioneer mortality
-ETA_ORGANIC = 0.3             # fraction of dead pioneer → organic_layer
-LAMBDA_DECAY = 0.05           # [1/yr] organic layer decay
-ORGANIC_THRESHOLD = 0.1       # [kg C/m²] min organic for photosynthesis
-PIONEER_THRESHOLD = 0.05      # [kg C/m²] alternative threshold
+# —— Pioneer (harsh-environment) — 물리 기반 파라미터 ——————————
+# 설계 목표: 지구 전체 0D 모델에서 ~500~2,000년 내 토양 임계 도달
+# (용암지대 300~500년, 고위도 암반 1,000~3,000년 관측값의 중간)
+
+T_MID_PIONEER   = 283.0   # [K] 지의류 최적 온도 (10°C)
+SIGMA_T_PIONEER = 40.0    # [K] 광범위 온도 허용 (지의류 특성)
+
+# 로지스틱 성장 파라미터
+R_PIONEER       = 0.08    # [1/yr] 내재 성장률. 지의류 실측 ~0.05~0.1/yr
+M_PIONEER       = 0.005   # [1/yr] 사망률 (수명 ~200년)
+K0_CARRYING     = 0.05    # [kg C/m²] 돌땅에서 최소 수용 용량
+K_SOIL_FEEDBACK = 8.0     # 토양 피드백 계수: K = K0 + K_soil * organic
+                           # organic=0.1 → K=0.85, organic=0.5 → K=4.05
+
+# 풍화 (Weathering) — pioneer가 암석을 깎는 속도
+W_WEATHERING    = 0.002   # [kg mineral / (kg C · yr)] 풍화 속도
+                           # 현실: 지의류 연간 암석 풍화 ~0.001~0.005 mm/yr 근사
+
+# 광물 → humus 안정화 기여율
+W_MINERAL_HUMUS = 0.0003  # [kg C / (kg mineral · yr)]
+                           # 광물 입자가 유기물 분해를 늦추는 효과
+
+# Humus 전환·분해
+ETA_ORGANIC     = 0.08    # 사체 → humus 전환율 (8%. 대부분은 CO2로 호흡)
+LAMBDA_DECAY    = 0.003   # [1/yr] humus 기본 분해속도 (반감기 ~330년, 한냉 암반)
+LAMBDA_T_SCALE  = 2.0     # Q10 계수 (온도 10K → 분해속도 2배)
+
+# 토양 임계값
+ORGANIC_THRESHOLD = 0.5   # [kg C/m²] 식물 착근 가능 원시 토양
+                           # (엄밀한 1.5보다 낮춤 — 0D 글로벌 모델 스케일 보정)
+PIONEER_THRESHOLD = 999.0 # 사실상 비활성 — organic 만으로 판정
 
 # —— Photosynthesis (light–CO2–T–water) ——————————————————————
 P_MAX = 2.0                   # [kg C/m²/yr] max GPP

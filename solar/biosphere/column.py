@@ -55,6 +55,7 @@ class BiosphereColumn:
     # Internal state (evolving)
     pioneer_biomass: float = field(default=0.01)
     organic_layer: float = field(default=0.0)
+    mineral_layer: float = field(default=0.0)
     B_leaf: float = field(default=0.0)
     B_root: float = field(default=0.0)
     B_wood: float = field(default=0.0)
@@ -85,15 +86,17 @@ class BiosphereColumn:
         f_W = env.get("soil_moisture", 1.0 if water_phase == "liquid" else 0.2)
 
         # —— Pioneer (always active in harsh conditions) —————————————
-        d_pioneer, d_organic = pioneer.d_pioneer_dt(
+        d_pioneer, d_organic, d_mineral = pioneer.d_pioneer_dt(
             self.pioneer_biomass,
             self.organic_layer,
+            self.mineral_layer,
             T,
             water_phase,
             H2O,
         )
         self.pioneer_biomass = max(0.0, self.pioneer_biomass + d_pioneer * dt_yr)
         self.organic_layer = max(0.0, self.organic_layer + d_organic * dt_yr)
+        self.mineral_layer = max(0.0, self.mineral_layer + d_mineral * dt_yr)
 
         GPP = 0.0
         Resp = 0.0
