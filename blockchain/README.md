@@ -1,0 +1,37 @@
+# blockchain/ — PHAM 블록체인 서명 (층위 분리)
+
+**원칙**: 각 층위·레이어가 섞이지 않도록, **폴더별로** 체인을 둔다.  
+(다윈의 종·속·과처럼 상위/하위 구조가 유기적으로 레이어로 이어지고, 상태공간 안에서 추적 가능해야 함.)
+
+---
+
+## 구조
+
+| 위치 | 용도 |
+|------|------|
+| **이 폴더 (blockchain/)** | solar/ 및 프로젝트 루트 레이어용 PHAM 체인 (pham_chain_*.json) |
+| **cookiie_brain/blockchain/** | cookiie_brain/ 레이어용 체인 + pham_sign_v4.py |
+
+- solar/ 관련 서명 시 **반드시 이 폴더(blockchain/)를 cwd로** 실행 → 체인 파일이 여기 생성됨.  
+- 루트 README 등 루트급 문서는 루트에 두었던 pham_chain_README.json 등 기존 규칙 유지 가능.
+
+---
+
+## 서명 방법 (solar 레이어)
+
+```bash
+# 프로젝트 루트 기준
+cd blockchain
+python3 ../cookiie_brain/blockchain/pham_sign_v4.py ../solar/<파일경로> --author "GNJz" --desc "<설명>"
+```
+
+→ `pham_chain_<파일stem>.json` 이 **blockchain/** 안에 생성됨.
+
+---
+
+## 이번에 추가된 체인 (개념 레이어 + 셋째날)
+
+- pham_chain_LAYERS.json — solar/LAYERS.md (개념 레이어 정의)
+- pham_chain_README.json — solar/README.md (solar 개념 섹션)
+- pham_chain_surface_schema.json — solar/surface/surface_schema.py
+- pham_chain_brain_core_bridge.json — solar/brain_core_bridge.py
