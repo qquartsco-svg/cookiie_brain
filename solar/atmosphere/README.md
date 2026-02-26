@@ -4,8 +4,14 @@
 우물에 물이 고인 상태(SurfaceOcean) 위에, 태양 복사가 가해지면
 대기권이 형성되고 바다와 하늘이 구분된다.
 
+궁창은 "하늘"이라는 개체가 아니라, PT(Pressure–Temperature) 공간에서
+액체가 안정되는 경계 조건이 충족되는 순간이다.
+
 이 레이어는 `em/solar_luminosity`의 조도(F)와 `core/`의 질량·반지름을 읽는다.
 물리 코어를 수정하지 않는 **관측자 모드**로 동작한다.
+
+**모델 스코프**: 0D **단일 대기 컬럼(전지구 평균)**이다.
+대기 순환(해들리셀), 구름/강수, 수증기 피드백(Phase 6b)은 별도 모듈로 처리한다.
 
 ---
 
@@ -83,6 +89,10 @@ atmosphere/           T_surface, P_surface, water_phase
 
 ## 지배 방정식
 
+τ(composition)는 간이 파라메트릭 근사이다. CO₂는 ln, H₂O/CH₄는 √ 형태의
+휴리스틱이며, 물리 기반 라인-바이-라인 복사전달이 아니다. 값은 교정/확장 가능하며,
+후속 버전에서 스펙트럼/밴드 모델로 대체 가능하다.
+
 | 물리량 | 수식 | 모듈 |
 |--------|------|------|
 | 광학 깊이 | τ = τ_base + α_CO₂·ln(1+CO₂/ref) + α_H₂O·√(H₂O/ref) + α_CH₄·√(CH₄/ref) | greenhouse |
@@ -92,6 +102,9 @@ atmosphere/           T_surface, P_surface, water_phase
 | 열 이완 시간 | τ_th = C / (4σT³(1-ε_a/2)) | column |
 | 대기압 | P = M_col · g | column |
 | 물 상태 | T>273.16 K, P>611.73 Pa → liquid | column |
+
+열용량 C ≈ 2.1×10⁸ J/(m²·K)는 해양 혼합층을 포함한 **유효 열용량**이다.
+혼합층 깊이·대륙비율에 따라 달라지는 값으로 취급한다.
 
 ---
 
@@ -106,7 +119,7 @@ AtmosphereColumn(
     albedo=0.306,
     redistribution=4.0,
     composition=AtmosphereComposition(),   # 동적 상태 변수
-    heat_capacity=2.1e8,                   # [J/(m²·K)] ocean-dominated
+    heat_capacity=2.1e8,                   # [J/(m²·K)] 혼합층·대륙비율에 따른 유효값
     T_surface_init=288.0,
 )
 

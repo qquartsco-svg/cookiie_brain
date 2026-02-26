@@ -1,5 +1,49 @@
 # solar/ 버전 로그 / Version Log
 
+## v1.6.0 — 셋째날: 땅과 바다의 분리 (Phase 7)
+
+**날짜**: 2026-02-26
+**작업**: 땅-바다 분리, 유효 알베도 → atmosphere 연동
+
+| 파일 | 설명 |
+|------|------|
+| `solar/surface/` | SurfaceSchema, effective_albedo (땅 비율, A_land, A_ocean) |
+| `solar/surface/surface_schema.py` | A_eff = f_land×A_land + (1-f_land)×A_ocean |
+| `solar/__init__.py` | SurfaceSchema, effective_albedo export |
+| `examples/surface_day3_demo.py` | Phase 7 검증 (4항목 ALL PASS) |
+| `docs/CREATION_DAYS_AND_PHASES.md` | 창세기 관점 날짜-Phase 대응 |
+
+물리:
+- 땅 비율 f_land (지구 ≈ 0.29)
+- 육지/해양 알베도 A_land, A_ocean
+- 유효 알베도 → AtmosphereColumn albedo 입력
+
+검증 (ALL PASS):
+- SurfaceSchema A_eff (지구 f_land=0.29)
+- 전 바다 vs 전 육지 알베도 차이
+- surface → atmosphere 연동, T_eq 영향
+- 땅 비율 증가 시 냉각 (A↑ → T↓)
+
+---
+
+## v1.6.1 — CookiieBrain ↔ BrainCore 연동 (GEAR Phase 1)
+
+**날짜**: 2026-02-26
+**작업**: solar 환경 상태를 GlobalState extension으로 노출
+
+| 파일 | 설명 |
+|------|------|
+| `solar/brain_core_bridge.py` | get_solar_environment_extension, create_default_environment |
+| `examples/brain_core_environment_demo.py` | BrainCore 연동 데모 |
+| `docs/BRAINCORE_INTEGRATION.md` | extension 형식, 사용법 |
+| `docs/MINIMUM_REACTION_MODEL_DESIGN.md` | 자가순환 최소 반응 모델 통합 설계 |
+
+연동:
+- `state.set_extension("solar_environment", data)`
+- data: bodies[Earth].F_solar, T_surface, P_surface, habitable, water_phase
+
+---
+
 ## v1.5.0 — 수순환 / Water Cycle (Phase 6b)
 
 **날짜**: 2026-02-26
