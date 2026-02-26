@@ -1,5 +1,40 @@
 # solar/ 버전 로그 / Version Log
 
+## v1.4.0 — 궁창 / Firmament: 대기권 레이어 (Phase 6a)
+
+**날짜**: 2026-02-25
+**작업**: 온실 효과 + 열적 관성 + 동적 대기 조성 → 표면 온도·압력·물 상태
+
+| 파일 | 설명 |
+|------|------|
+| `solar/atmosphere/__init__.py` | 대기권 패키지 공개 API |
+| `solar/atmosphere/_constants.py` | 대기 물리 상수 (SI) |
+| `solar/atmosphere/greenhouse.py` | τ(composition) → ε_a → T_surface (1-layer 모델) |
+| `solar/atmosphere/column.py` | AtmosphereColumn: 열적 관성 ODE + 동적 조성 |
+| `solar/__init__.py` | atmosphere/ 패키지 등록 + v1.4.0 |
+| `examples/atmosphere_demo.py` | Phase 6a 검증 (8항목 ALL PASS) |
+
+물리 모델:
+- 1-layer 복사 전달: ε_a = 1 - exp(-τ), T_s = [F(1-A)/(f·σ·(1-ε_a/2))]^(1/4)
+- 열적 관성: C · dT/dt = F_absorbed - F_radiated (linearized implicit)
+- 광학 깊이: τ = τ_base + α_CO₂·ln(1+CO₂/ref) + α_H₂O·√(H₂O/ref) + α_CH₄·√(CH₄/ref)
+- 대기 조성은 동적 상태 변수 (고정 상수 아님)
+- 대기압: P = M_col × g
+
+검증 (ALL PASS):
+- 온실 효과: T_eq 254K → T_surface 288K (+34K)
+- 대기 없음: τ=0, ε_a=0 → T_surface = T_eq
+- CO₂ 대수 응답 (포화): 10× CO₂ → 6.9× τ 증가
+- H₂O 주요 기여자: Δτ(H₂O) = 0.643
+- 열적 관성: τ_thermal ≈ 2.0 yr (해양 지배)
+- Cold/hot start 수렴: 200K/400K → 288K (오차 < 0.001K)
+- 대기압: 101,357 Pa (1.000 atm), 액체 물 ✓
+- 화성: P=632 Pa, T=210K, 고체 (비거주)
+- 초기 지구 (70% Sun): T=289K, 거주 가능 (Faint Young Sun 해결)
+- 기어 분리: dE/E = 4.06×10⁻¹² (core 무결)
+
+---
+
 ## v1.3.1 — 복사-플라즈마 독립 분리 (피드백 반영)
 
 **날짜**: 2026-02-25

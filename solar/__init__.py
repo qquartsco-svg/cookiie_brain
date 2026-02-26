@@ -1,5 +1,5 @@
-"""solar/ — 전체 태양계 N-body 진화 엔진 + 관성 기억 + 전자기장 + 광도
-==================================================================
+"""solar/ — 전체 태양계 N-body 진화 엔진 + 관성 기억 + 전자기장 + 광도 + 대기권
+=======================================================================
 
 구조 (기어 분리 — 상호 참조 금지):
 
@@ -18,6 +18,10 @@
     magnetosphere.py     → Magnetosphere, MagnetosphereState
     solar_luminosity.py  → SolarLuminosity, IrradianceState  (빛이 있으라)
 
+  atmosphere/ (대기 층):
+    greenhouse.py        → optical_depth, effective_emissivity, GreenhouseParams
+    column.py            → AtmosphereColumn, AtmosphereState, AtmosphereComposition
+
   cognitive/ (인지 층):
     ring_attractor.py    → RingAttractorEngine, RingState
     spin_ring_coupling.py→ SpinRingCoupling, CouplingState
@@ -25,8 +29,10 @@
 의존 방향:
   data/ → core/ ← cognitive/
                ← em/
+               ← atmosphere/ (em/ 읽기 가능)
   core/는 상위를 import하지 않음
   em/과 cognitive/는 서로 참조하지 않음
+  atmosphere/는 em/을 읽고, core/를 읽는다
 """
 
 # ── core (물리) ───────────────────────────────────
@@ -60,6 +66,14 @@ from .em import (
     IrradianceState,
 )
 
+# ── atmosphere (대기/궁창) ────────────────────────
+from .atmosphere import (
+    AtmosphereColumn,
+    AtmosphereState,
+    AtmosphereComposition,
+    GreenhouseParams,
+)
+
 # ── cognitive (인지/기억) ─────────────────────────
 from .cognitive import (
     RingAttractorEngine,
@@ -91,6 +105,11 @@ __all__ = [
     "MagnetosphereState",
     "SolarLuminosity",
     "IrradianceState",
+    # atmosphere
+    "AtmosphereColumn",
+    "AtmosphereState",
+    "AtmosphereComposition",
+    "GreenhouseParams",
     # cognitive
     "RingAttractorEngine",
     "RingState",
@@ -98,4 +117,4 @@ __all__ = [
     "CouplingState",
 ]
 
-__version__ = "1.3.1"
+__version__ = "1.4.0"
