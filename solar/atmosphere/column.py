@@ -254,13 +254,14 @@ class AtmosphereColumn:
 
     # ── time evolution ────────────────────────────────
 
-    def step(self, F_solar_si: float, dt_yr: float):
+    def step(self, F_solar_si: float, dt_yr: float, extra_latent_heat_Wm2: Optional[float] = None):
         """Advance surface temperature by dt.
 
         Solves:  C · dT_s/dt = F_absorbed - F_radiated - Q_latent
 
         Uses linearized implicit integration for numerical stability.
         When use_water_cycle: adds latent heat and H₂O feedback.
+        Optional extra_latent_heat_Wm2: biosphere/other source [W/m²] added to F_out.
 
         Parameters
         ----------
@@ -269,6 +270,8 @@ class AtmosphereColumn:
             Get from solar_luminosity.irradiance_si(r).
         dt_yr : float
             Time step [years].
+        extra_latent_heat_Wm2 : float
+            Additional latent heat flux [W/m²] (e.g. from biosphere transpiration).
         """
         self._F_solar_si = F_solar_si
         dt_s = dt_yr * YR_S
@@ -301,6 +304,10 @@ class AtmosphereColumn:
             self.composition.H2O = np.clip(
                 self.composition.H2O + dH2O, 1e-6, 0.5,
             )
+
+        # Biosphere or other extra latent heat (e.g. transpiration)
+        if extra_latent_heat_Wm2 is not None:
+            F_out = F_out + float(extra_latent_heat_Wm2)
 
         # Linearized implicit
         dF_dT = 4.0 * SIGMA_SB * self.T_surface ** 3 * denom_factor
