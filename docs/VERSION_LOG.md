@@ -1,5 +1,48 @@
 # solar/ 버전 로그 / Version Log
 
+## v2.0.0 — 셋째날 완성: 위도 밴드 + 복원력 테스트 (Phase 7e)
+
+**날짜**: 2026-02-27 (session 5)
+**작업**: 12밴드 위도 모델 (공간 분포) + Gaia Attractor 복원력 수학적 검증
+
+| 파일 | 설명 |
+|------|------|
+| `solar/biosphere/latitude_bands.py` | **신규** — 12위도 밴드 모델 (ε·φ → viability field) |
+| `solar/biosphere/__init__.py` | LatitudeBands export 추가 |
+| `examples/latitude_bands_sim.py` | **신규** — 위도별 척박/비옥 분포 시뮬레이션 |
+| `examples/gaia_perturbation_test.py` | **신규** — 복원력 테스트 (∂(dCO2/dt)/∂CO2 < 0 수학 검증) |
+
+Phase 7e — 위도 밴드 모델:
+```
+ε(자전축 기울기) + φ(위도) → F(φ), T(φ), W(φ)
+→ viability(φ) = g_T × g_W × g_soil  (연속 게이트)
+→ 척박/비옥 공간 분포 창발
+
+물리 발견:
+  중위도(±52.5°): 토양 형성 1640년 (가장 빠름 — 온대 최적 조건)
+  열대(0°):       Q10 분해 가속 → organic 얇음 (열대우림 현실 일치)
+  극지(±82.5°):   pioneer 성장 느림 → 4080년 (툰드라 현실 일치)
+```
+
+복원력 수학 검증 (∂(dCO2/dt)/∂CO2 = -0.0565 ppm/yr/ppm):
+```
+음의 피드백 attractor ✓
+T2: O₂ -50% 외란 → O₂ 증가 방향 ✓
+T4: 다양한 초기 CO₂ → 같은 방향 수렴 ✓
+ALL PASS
+```
+
+셋째날 완성:
+```
+[돌땅] →(2739yr)→ [원시토양] →(1yr)→ [싹] →(4yr)→ [줄기] → [나무] → [★열매] → [씨] ↺
+         Phase7b          Phase7c 생애주기
+  + Gaia Attractor (Phase7d): 루프A·루프B·루프C
+  + 위도 분포 (Phase7e): ε·φ → viability field → 척박/비옥 창발
+  = 씨앗을 뿌리기만 하면 자라나는 환경 상태가 유지된다
+```
+
+---
+
 ## v1.9.0 — 셋째날: 행성 항상성 Gaia Attractor (Phase 7d)
 
 **날짜**: 2026-02-27 (session 4)
