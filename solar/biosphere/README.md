@@ -238,10 +238,95 @@ Positive feedback: K(S) = K0 + K_soil·S (more organic → higher carrying capac
 
 ---
 
-## 8. 상세 사양 및 설계 문서
+## 8. 식물 생애주기 Phase Gate ODE (Phase 7c — v1.8.0)
+
+### 핵심 개념
+
+토양 ODE와 동일한 설계:
+
+| 구분 | 입력 | 출력 |
+|------|------|------|
+| 토양 형성 | R, W, ETA, λ | 2739년 원시토양 |
+| **식물 생애주기** | K_germ, K_gate, NPP | 씨→싹→줄기→나무→열매 전이 |
+
+"if-else 없이, 연속 ODE로 단계 전이가 자연스럽게 나온다"
+
+### Phase Gate ODE 시스템
+
+```
+상태변수 (Phase 7c):
+  B_seed   [kg C/m²]  씨 (번식·저장 풀)
+  B_sprout [kg C/m²]  싹 (발아 직후 유묘)
+  B_stem   [kg C/m²]  줄기 (초본/관목)
+  B_wood   [kg C/m²]  목본 (나무)
+  B_fruit  [kg C/m²]  열매 (결실)
+
+전이 수식:
+  씨  → 싹:  K_germ × g_soil(S) × g_T(T) × f_W
+              g_soil = S / (S + S_half)          [Michaelis-Menten, 연속]
+              g_T    = 온도 삼각형 함수 (T_min~T_opt~T_max)
+
+  싹  → 줄기: K_spr × sigmoid(B_sp / B_sp_half) × B_sprout
+  줄기→ 나무: K_stw × sigmoid(B_st / B_st_half) × B_stem
+  나무→ 열매: K_fruit × sigmoid(B_wd / B_wd_th) × f_O2 × B_wood
+  열매→ 씨:   K_fts × B_fruit                              [순환 닫힘 ↺]
+
+NPP 분배 (softmax — 탄소 회계 정합):
+  logits = {leaf, root, stem, wood, fruit} = base + Δ(O₂, phase)
+  alloc  = softmax(logits)   →   sum(alloc) = 1 보장
+```
+
+### 파라미터 (관측 기반)
+
+| 파라미터 | 값 | 단위 | 근거 |
+|----------|-----|------|------|
+| K_GERM | 0.5 | /yr | 발아 ~2년 |
+| GERM_T_OPT | 295 | K | 최적 온도 22°C |
+| K_SPROUT_TO_STEM | 0.25 | /yr | 유묘→줄기 ~4년 |
+| K_STEM_TO_WOOD | 0.08 | /yr | 목질화 ~12년 |
+| K_FRUIT | 0.15 | /yr | 첫 결실 ~7년 |
+| B_WOOD_FRUIT_TH | 1.0 | kg C/m² | 성목 결실 임계 |
+| K_FRUIT_TO_SEED | 0.8 | /yr | 1계절 내 씨 성숙 |
+
+### 시뮬레이션 결과
+
+```
+시작: 토양 완성 직후 (organic=0.52 kg C/m², B_seed=0.001)
+  1년:  싹 발아  (B_sprout > 0.001 kg C/m²)
+  4년:  줄기 형성 (B_stem > 0.01 kg C/m²)
+  ~5년: 나무 성장 (B_wood ~3.6 kg C/m² 안정)
+  열매: ★ B_fruit 생산 → B_seed ↺ 순환 안정
+```
+
+### English Summary
+
+**Plant Lifecycle Phase Gate ODE — same design philosophy**
+
+Input: K_germ, K_gate parameters (observation-based)
+Output: seed→sprout→stem→wood→fruit transitions emerge naturally via continuous ODEs.
+No if-else branches — all transitions are Michaelis-Menten or sigmoid gates.
+NPP allocation via softmax ensures carbon mass conservation (sum=1).
+
+검증: `examples/plant_lifecycle_sim.py`
+
+### 셋째날 완성 타임라인
+
+```
+0yr    → [돌땅]       pioneer 착생 시작
+30yr   → [pioneer 성장] 풍화 진행 중
+2739yr → [★원시토양]  organic = 0.5 kg C/m²
++1yr   → [싹 발화]    B_sprout 출현
++4yr   → [줄기 형성]  B_stem 성장
++수십년→ [나무]       B_wood ~3.6 kg C/m²
++결실  → [★열매]      B_fruit → B_seed ↺ 닫힌 루프
+```
+
+---
+
+## 9. 상세 사양 및 설계 문서
 
 - [docs/BIOSPHERE_LAYER_SPEC.md](../../docs/BIOSPHERE_LAYER_SPEC.md) — 상태변수·수식·포트 전체 명세
-- [docs/DAY3_PROGRESS_CHECK.md](../../docs/DAY3_PROGRESS_CHECK.md) — 셋째날(Phase 7A/7B) 진행 상황 및 검증
+- [docs/DAY3_PROGRESS_CHECK.md](../../docs/DAY3_PROGRESS_CHECK.md) — 셋째날(Phase 7A/7B/7C) 진행 상황 및 검증
 - [docs/CIRCULATION_TEMPLATE.md](../../docs/CIRCULATION_TEMPLATE.md) — 뉴런→지구→우주선 순환 템플릿 매핑
-- [docs/WORK_LOG_2026-02-26.md](../../docs/WORK_LOG_2026-02-26.md) — 토양 형성 ODE 작업 로그 (session 2)
-- [docs/VERSION_LOG.md](../../docs/VERSION_LOG.md) — v1.7.0 버전 기록
+- [docs/WORK_LOG_2026-02-26.md](../../docs/WORK_LOG_2026-02-26.md) — 작업 로그 (session 2: 토양 / session 3: 생애주기)
+- [docs/VERSION_LOG.md](../../docs/VERSION_LOG.md) — v1.7.0 토양 / v1.8.0 생애주기

@@ -1,5 +1,59 @@
 # solar/ 버전 로그 / Version Log
 
+## v1.8.0 — 셋째날: 식물 생애주기 Phase Gate ODE (Phase 7c)
+
+**날짜**: 2026-02-26 (session 3)
+**작업**: 씨→싹→줄기→나무→열매 생애주기 — dt 버그 수정 + softmax allocation + Phase Gate ODE
+
+| 파일 | 설명 |
+|------|------|
+| `solar/biosphere/column.py` | Phase Gate ODE 전면 재작성 (dt 이중적용 수정, softmax 정규화) |
+| `solar/biosphere/_constants.py` | Phase Gate 파라미터 추가 (K_germ, K_sprout_to_stem, K_stem_to_wood, K_fruit) |
+| `solar/biosphere/state.py` | B_sprout, B_stem, B_fruit, mineral_layer, succession_phase 추가 |
+| `examples/plant_lifecycle_sim.py` | 신규 — 식물 생애주기 시뮬레이션 |
+
+핵심 수정 3가지:
+```
+1. dt 이중 적용 버그 수정
+   이전: to_seed = K × B × dt  →  B += to_seed × dt  (dt²)
+   수정: d_rate = K × B [율]   →  B += d_rate × dt   (dt¹, 한 번만)
+
+2. softmax allocation (탄소 회계 정합)
+   이전: a_leaf + a_root + a_wood + a_seed ≠ 1 (정규화 없음)
+   수정: alloc = softmax(logits(O₂, phase)) → sum = 1 보장
+
+3. Phase Gate ODE (씨→싹→줄기→나무→열매)
+   B_seed   → K_germ × g_soil(S) × g_T × f_W            → B_sprout
+   B_sprout → K_sprout_to_stem × sigmoid(B_sp/B_sp_half) → B_stem
+   B_stem   → K_stem_to_wood   × sigmoid(B_st/B_st_half) → B_wood
+   B_wood   → K_fruit × maturity × f_O2                  → B_fruit
+   B_fruit  → K_fruit_to_seed                             → B_seed ↺
+```
+
+파라미터 (관측 기반):
+| 파라미터 | 값 | 근거 |
+|----------|-----|------|
+| K_GERM | 0.5 /yr | 발아 ~2년 |
+| K_SPROUT_TO_STEM | 0.25 /yr | 유묘→줄기 ~4년 |
+| K_STEM_TO_WOOD | 0.08 /yr | 목질화 ~12년 |
+| K_FRUIT | 0.15 /yr | 첫 결실 ~7년 |
+| B_WOOD_FRUIT_TH | 1.0 kg C/m² | 성목 임계 |
+
+시뮬레이션 결과 (plant_lifecycle_sim.py):
+```
+1yr:  싹 발아 (B_sprout > 0.001)
+4yr:  줄기 형성 (B_stem > 0.01)
+~5yr: 나무 성장 (B_wood > 0.1)
+열매: ★ B_fruit > 0.01 → B_seed ↺ 순환 닫힘
+```
+
+셋째날 완성 흐름:
+```
+[돌땅] →(2739yr)→ 원시토양 →(1yr)→ 싹 →(4yr)→ 줄기 → 나무 → ★열매 → 씨 ↺
+```
+
+---
+
 ## v1.7.0 — 셋째날: 토양 형성 ODE (Phase 7b — 선구 생물)
 
 **날짜**: 2026-02-26 (session 2)
