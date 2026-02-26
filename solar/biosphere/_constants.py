@@ -57,21 +57,64 @@ SIGMA_T_PHOTO = 15.0          # [K] temperature tolerance
 K_RESP_LEAF = 0.5             # [1/yr]
 K_RESP_ROOT = 0.3
 K_RESP_WOOD = 0.05
-A_LEAF = 0.4                  # NPP allocation
-A_ROOT = 0.3
-A_WOOD = 0.2
-A_SEED = 0.1
-M_LEAF = 0.8
-M_ROOT = 0.2
-M_WOOD = 0.02
-B_THRESHOLD_SEED = 0.2        # [kg C/m²] biomass above which seed production
-K_SEED = 0.1                  # seed production rate
-M_SEED = 0.2                  # seed loss / germination rate
-K_GERM = 0.3                  # germination rate when conditions OK
+# —— 기준 NPP 분배 비율 (Base allocation logits — softmax로 정규화됨) ————
+# 설계: alloc = softmax(base + delta(O2, soil))
+# 합이 1이 되지 않아도 됨 — softmax가 정규화
+A_LEAF_BASE = 2.0             # 잎: 초기 초본 단계에서 높음
+A_ROOT_BASE = 1.5             # 뿌리: 항상 일정 비중
+A_WOOD_BASE = 0.5             # 줄기/목본: 초기엔 낮음, O₂↑ 로 증가
+A_STEM_BASE = 1.0             # 줄기(초본): 싹→줄기 단계
+A_FRUIT_BASE = 0.2            # 열매: 성숙 후 증가
+
+# O₂ 조건에 따른 분배 조정 계수
+A_WOOD_O2   = 3.0             # O₂ 높을수록 목본 비중↑
+A_FRUIT_O2  = 2.0             # O₂ 높을수록 결실 비중↑
+A_LEAF_O2   = -1.5            # O₂ 높을수록 잎 비중↓ (성숙 신호)
+
+# 사망률 [1/yr] — 순수 율(rate), dt는 적분에서만 1회 적용
+M_LEAF  = 0.5                 # 잎: ~2년 수명
+M_ROOT  = 0.15                # 뿌리: ~7년
+M_WOOD  = 0.02                # 목본: ~50년 수명
+M_STEM  = 0.3                 # 초본 줄기: ~3년
+M_FRUIT = 1.5                 # 열매: ~0.7년 (계절성)
+M_SEED  = 0.15                # 씨: 장기 저장 가능
+
+# —— Phase Gate: 씨 → 싹 → 줄기 → 나무 → 열매 ————————————————
+# 발아 게이트
+K_GERM          = 0.5         # [1/yr] 발아율 (~2년)
+GERM_SOIL_HALF  = 0.4         # [kg C/m²] 발아 토양 반포화
+GERM_T_MIN      = 275.0       # [K] 발아 최저 온도 (2°C)
+GERM_T_OPT      = 295.0       # [K] 발아 최적 온도 (22°C)
+GERM_T_MAX      = 313.0       # [K] 발아 최고 온도 (40°C)
+
+# 싹(sprout) → 줄기(stem) 전환
+# 관측 근거: 유묘 → 초본 줄기 ~1~5년
+K_SPROUT_TO_STEM = 0.25       # [1/yr] (~4년)
+B_SPROUT_HALF    = 0.15       # [kg C/m²] 전환 반포화
+
+# 줄기(stem) → 목본(wood) 전환
+# 관측 근거: 초본 → 목질화 ~5~20년
+K_STEM_TO_WOOD  = 0.08        # [1/yr] (~12년)
+B_STEM_HALF     = 0.3         # [kg C/m²] 전환 반포화
+
+# 결실(fruiting): 목본 성숙 후 열매 생산
+# 관측 근거: 성목 → 첫 결실 ~5~20년 (수종별)
+K_FRUIT         = 0.15        # [1/yr] (~7년 성숙 후)
+B_WOOD_FRUIT_TH = 1.0         # [kg C/m²] 열매 생산 시작 목본 임계
+# 열매 → 씨 전환
+K_FRUIT_TO_SEED = 0.8         # [1/yr] (1계절 내 성숙)
+
+# —— 하위 호환 alias (photo.py 등 기존 코드 호환) ———————————————————
+A_LEAF = A_LEAF_BASE
+A_ROOT = A_ROOT_BASE
+A_WOOD = A_WOOD_BASE
+A_SEED = A_FRUIT_BASE
+B_THRESHOLD_SEED = 0.2
+K_SEED = 0.1
 
 # —— O2-dependent (respiration / successional) ———————————————————
 K_O2 = 0.01                   # [mol/mol] O2 half-saturation for f_O2
-O2_THRESHOLD = 0.005          # [mol/mol] ~0.5% O2 for “respiration plants”
+O2_THRESHOLD = 0.005          # [mol/mol] ~0.5% O2 for "respiration plants"
 
 # —— Transpiration / latent heat ——————————————————————————————
 K_TRANS = 0.5e-6              # [kg H2O/(W·m⁻²·yr)] scaling leaf → transpiration
