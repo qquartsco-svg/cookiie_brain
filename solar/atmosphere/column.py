@@ -52,6 +52,11 @@ from .greenhouse import (
     optical_depth, effective_emissivity, equilibrium_surface_temp,
     bare_equilibrium_temp, GreenhouseParams,
 )
+from .water_cycle import (
+    saturation_mixing_ratio,
+    evaporation_rate,
+    latent_heat_flux,
+)
 
 
 @dataclass
@@ -105,6 +110,10 @@ class AtmosphereState:
     water_phase: str              # "solid" / "liquid" / "gas"
     habitable: bool
 
+    # Water cycle (Phase 6b, when enabled)
+    evaporation_kg_ms2: float = 0.0    # E [kg/(m²·s)]
+    latent_heat_flux_wm2: float = 0.0  # L_v × E [W/m²]
+
 
 class AtmosphereColumn:
     """Single-column radiative atmosphere with thermal inertia.
@@ -132,6 +141,10 @@ class AtmosphereColumn:
     T_surface_init : float or None
         Initial surface temperature [K].
         None → start at 250 K and let it relax to equilibrium.
+    use_water_cycle : bool
+        Enable latent heat and water vapor feedback (Phase 6b).
+    h2o_relax_yr : float
+        H₂O relaxation time toward saturation [yr]. ~0.1 = fast.
     """
 
     def __init__(
@@ -144,6 +157,8 @@ class AtmosphereColumn:
         heat_capacity: float = 2.1e8,
         greenhouse_params: Optional[GreenhouseParams] = None,
         T_surface_init: Optional[float] = None,
+        use_water_cycle: bool = False,
+        h2o_relax_yr: float = 0.1,
     ):
         self.body_name = body_name
         self.g = surface_gravity
@@ -158,9 +173,13 @@ class AtmosphereColumn:
             greenhouse_params if greenhouse_params is not None
             else GreenhouseParams()
         )
+        self.use_water_cycle = use_water_cycle
+        self.h2o_relax_yr = h2o_relax_yr
 
         self.time_yr = 0.0
         self._F_solar_si = 1361.0
+        self._E_evap = 0.0
+        self._Q_latent = 0.0
 
         self._tau = self._compute_tau()
         self._eps_a = effective_emissivity(self._tau)
@@ -225,22 +244,23 @@ class AtmosphereColumn:
         """Net heat flux at surface [W/m²].
 
         Positive = surface warming, negative = cooling.
+        Includes latent heat when use_water_cycle is True.
         Output port for SurfaceOcean coupling (Phase 6b).
         """
         denom_factor = max(1.0 - self._eps_a / 2.0, EPS)
         F_in = self._F_solar_si * (1.0 - self.albedo) / self.redistribution
         F_out = SIGMA_SB * self.T_surface ** 4 * denom_factor
-        return F_in - F_out
+        return F_in - F_out - self._Q_latent
 
     # ── time evolution ────────────────────────────────
 
     def step(self, F_solar_si: float, dt_yr: float):
         """Advance surface temperature by dt.
 
-        Solves:  C · dT_s/dt = F_absorbed - F_radiated
+        Solves:  C · dT_s/dt = F_absorbed - F_radiated - Q_latent
 
         Uses linearized implicit integration for numerical stability.
-        Stable for any dt (unconditionally stable first-order scheme).
+        When use_water_cycle: adds latent heat and H₂O feedback.
 
         Parameters
         ----------
@@ -261,8 +281,28 @@ class AtmosphereColumn:
         F_in = F_solar_si * (1.0 - self.albedo) / self.redistribution
         F_out = SIGMA_SB * self.T_surface ** 4 * denom_factor
 
-        # Linearized implicit:
-        # T_{n+1} = T_n + dt/C × (F_in - F_out) / (1 + dt/C × 4σT³(1-ε/2))
+        self._E_evap = 0.0
+        self._Q_latent = 0.0
+
+        if self.use_water_cycle and self.water_phase() == "liquid":
+            P = self.surface_pressure()
+            q_actual = 0.622 * self.composition.H2O  # kg/kg from mol/mol approx
+            self._E_evap = evaporation_rate(
+                self.T_surface, P, q_actual,
+            )
+            self._Q_latent = latent_heat_flux(self._E_evap, self.T_surface)
+            F_out = F_out + self._Q_latent
+
+            # H₂O relaxation toward saturation
+            q_sat = saturation_mixing_ratio(self.T_surface, P)
+            w_sat = q_sat / 0.622
+            tau_h2o_s = self.h2o_relax_yr * YR_S
+            dH2O = (w_sat - self.composition.H2O) * (dt_s / tau_h2o_s)
+            self.composition.H2O = np.clip(
+                self.composition.H2O + dH2O, 1e-6, 0.5,
+            )
+
+        # Linearized implicit
         dF_dT = 4.0 * SIGMA_SB * self.T_surface ** 3 * denom_factor
         net = F_in - F_out
 
@@ -294,6 +334,9 @@ class AtmosphereColumn:
 
         tau_th_yr = self.thermal_timescale_s() / YR_S
 
+        F_rad = SIGMA_SB * self.T_surface ** 4 * denom_factor
+        net = F_in - F_rad - self._Q_latent
+
         return AtmosphereState(
             body_name=self.body_name,
             time_yr=self.time_yr,
@@ -304,8 +347,8 @@ class AtmosphereColumn:
             optical_depth=self._tau,
             emissivity_atm=self._eps_a,
             F_absorbed=F_in,
-            F_radiated=F_out,
-            net_flux=F_in - F_out,
+            F_radiated=F_rad,
+            net_flux=net,
             heat_capacity=self.heat_capacity,
             thermal_timescale_yr=tau_th_yr,
             P_surface=self.surface_pressure(),
@@ -313,4 +356,6 @@ class AtmosphereColumn:
             albedo=self.albedo,
             water_phase=self.water_phase(),
             habitable=self.habitable(),
+            evaporation_kg_ms2=self._E_evap,
+            latent_heat_flux_wm2=self._Q_latent,
         )

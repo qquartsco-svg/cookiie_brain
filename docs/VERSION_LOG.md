@@ -1,5 +1,34 @@
 # solar/ 버전 로그 / Version Log
 
+## v1.5.0 — 수순환 / Water Cycle (Phase 6b)
+
+**날짜**: 2026-02-26
+**작업**: 증발·응결·잠열 + surface_heat_flux → SurfaceOcean 연동
+
+| 파일 | 설명 |
+|------|------|
+| `solar/atmosphere/water_cycle.py` | Clausius-Clapeyron, evaporation_rate, latent_heat_flux |
+| `solar/atmosphere/column.py` | use_water_cycle, H₂O 피드백, latent heat in step() |
+| `solar/core/evolution_engine.py` | SurfaceOcean.update(heat_flux), step(ocean_extras) |
+| `examples/water_cycle_demo.py` | Phase 6b 검증 (5항목 ALL PASS) |
+| `docs/ATMOSPHERE_NUMERICAL_VERIFICATION.md` | Phase 6a 수치 안정성 기록 |
+
+물리 모델:
+- Clausius-Clapeyron: e_sat(T) = 611.2 exp(17.67×T_c/(T_c+243.5))
+- 증발율: E = C_E × ρ × U × (q_sat - q_actual)
+- 잠열: Q_latent = L_v × E (증발 냉각)
+- H₂O 피드백: τ_relax toward q_sat
+- ocean_extras: {"Earth": {"heat_flux": float}} → depths 수정
+
+검증 (ALL PASS):
+- e_sat(273K) ≈ 611 Pa, e_sat(373K) ≈ 101 kPa
+- 잠열 포함 시 T 감소 (증발 냉각)
+- H₂O 포화 수렴
+- surface_heat_flux → ocean depths 연동
+- 기어 분리: core는 atmosphere import 없음, dE/E < 1e-5
+
+---
+
 ## v1.4.0 — 궁창 / Firmament: 대기권 레이어 (Phase 6a)
 
 **날짜**: 2026-02-25

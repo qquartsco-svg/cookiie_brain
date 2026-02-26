@@ -20,6 +20,13 @@ from .greenhouse import (
     bare_equilibrium_temp,
     GreenhouseParams,
 )
+from .water_cycle import (
+    saturation_vapor_pressure,
+    saturation_mixing_ratio,
+    evaporation_rate,
+    latent_heat_flux,
+    L_V_REF,
+)
 
 __all__ = [
     "AtmosphereColumn",
@@ -30,4 +37,9 @@ __all__ = [
     "equilibrium_surface_temp",
     "bare_equilibrium_temp",
     "GreenhouseParams",
+    "saturation_vapor_pressure",
+    "saturation_mixing_ratio",
+    "evaporation_rate",
+    "latent_heat_flux",
+    "L_V_REF",
 ]

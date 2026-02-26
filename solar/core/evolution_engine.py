@@ -60,6 +60,7 @@ class SurfaceOcean:
         spin_axis: np.ndarray,
         spin_rate: float,
         dt: float,
+        heat_flux: Optional[float] = None,
     ):
         # --- tidal deformation (P2 Legendre pattern) ---
         self.tidal_stretch[:] = 0.0
@@ -80,6 +81,14 @@ class SurfaceOcean:
 
         self.depths = 0.5 * (1 + self.tidal_stretch)
         self.widths = 0.3 * (1 + 0.5 * np.abs(self.tidal_stretch))
+
+        # --- heat flux coupling (Phase 6b): evaporation/condensation ---
+        if heat_flux is not None:
+            # Positive flux = warming → evaporation → depth decrease
+            # Scale ~1e-9 so 100 W/m² gives ~1e-7 depth change per dt
+            k_evap = 1e-9
+            d_depth = -k_evap * heat_flux * dt
+            self.depths = np.clip(self.depths + d_depth, 0.01, 1.0)
 
         # --- pressure-gradient driven currents ---
         MAX_CURRENT = 0.01
@@ -227,8 +236,17 @@ class EvolutionEngine:
 
     # ── integration ──────────────────────────────────────
 
-    def step(self, dt: float, ocean: bool = True):
-        """One symplectic leapfrog step + precession + ocean."""
+    def step(
+        self,
+        dt: float,
+        ocean: bool = True,
+        ocean_extras: Optional[Dict[str, Dict]] = None,
+    ):
+        """One symplectic leapfrog step + precession + ocean.
+
+        ocean_extras: optional dict {body_name: {"heat_flux": float}} for
+                      Phase 6b atmosphere-ocean coupling.
+        """
         self._ensure_arrays()
         if self._N < 2:
             self.time += dt
@@ -244,7 +262,7 @@ class EvolutionEngine:
         self._precess(dt)
 
         if ocean and self.oceans:
-            self._ocean(dt)
+            self._ocean(dt, ocean_extras or {})
 
         self.time += dt
 
@@ -288,8 +306,12 @@ class EvolutionEngine:
                 body.spin_axis /= n
             body.obliquity = np.arccos(np.clip(body.spin_axis[2], -1, 1))
 
-    def _ocean(self, dt: float):
-        """Tidal deformation + Coriolis on surface wells."""
+    def _ocean(self, dt: float, ocean_extras: Optional[Dict[str, Dict]] = None):
+        """Tidal deformation + Coriolis on surface wells.
+        ocean_extras: {body_name: {"heat_flux": float}} for Phase 6b coupling.
+        """
+        if ocean_extras is None:
+            ocean_extras = {}
         for name, ocean in self.oceans.items():
             body = self.find(name)
             if body is None:
@@ -303,7 +325,9 @@ class EvolutionEngine:
                 if r < 1e-20:
                     continue
                 sources.append((r_vec / r, self.G * other.mass / r**3))
-            ocean.update(sources, body.spin_axis, body.spin_rate, dt)
+            extras = ocean_extras.get(name, {})
+            heat_flux = extras.get("heat_flux")
+            ocean.update(sources, body.spin_axis, body.spin_rate, dt, heat_flux)
 
     # ── diagnostics ──────────────────────────────────────
 

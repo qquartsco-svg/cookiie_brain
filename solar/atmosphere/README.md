@@ -190,19 +190,14 @@ print(f"Water: {st.water_phase}, Habitable: {st.habitable}")
 
 ---
 
-## 확장: Phase 6b (수순환)
+## Phase 6b: 수순환 (Water Cycle) — v1.5.0
 
-현재 Phase 6a는 **sensible heat**만 모델링한다.
-`latent heat`(증발·응결)가 없어 수순환이 아직 시작되지 않았다.
+- `water_cycle.py`: Clausius-Clapeyron, evaporation_rate, latent_heat_flux
+- `AtmosphereColumn(use_water_cycle=True)`: 잠열 + H₂O 피드백
+- `EvolutionEngine.step(ocean_extras={"Earth": {"heat_flux": ...}})`
+- `SurfaceOcean.update(..., heat_flux=...)` → depths 수정
 
-**Phase 6b 목표**:
-- `surface_heat_flux()` → `SurfaceOcean.depths` 연동
-- 증발율 ∝ T_surface
-- 응결 조건, 수증기 피드백
-- latent heat 항 추가
-
-이 연결이 완성되면 바다와 대기가 질량·에너지를 교환하며
-하나의 **거시적 호흡 루프**로 작동한다.
+검증: `examples/water_cycle_demo.py` (5항목 ALL PASS)
 
 ---
 
