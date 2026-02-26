@@ -30,6 +30,7 @@ from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional
 
 from .column import BiosphereColumn
+from ._constants import O2_FIRE_TH, K_FIRE, EPS as _EPS
 
 
 # ── 물리 상수 ─────────────────────────────────────────────────────────────────
@@ -249,15 +250,34 @@ class LatitudeBands:
                 "succession": s.succession_phase,
             })
 
-        # 전 지구 CO₂·O₂ 갱신
+        # ── 전 지구 CO₂·O₂ 갱신 ─────────────────────────────────────────────
         self.CO2_ppm = max(1e-6, self.CO2_ppm + delta_CO2_global * dt_yr)
-        self.O2_frac = min(0.35, max(0.0, self.O2_frac + delta_O2_global  * dt_yr))
+
+        # [산불 피드백] O₂ 진짜 attractor — 하드 클램프(min 0.35) 제거
+        # fire_sink [mol/mol/yr] = K_FIRE × max(0, O2 - O2_FIRE_TH)²
+        # O₂가 25% 이상일 때 산불이 탄소·O₂를 소비 → O₂ 자연 안정화
+        o2_excess   = max(0.0, self.O2_frac - O2_FIRE_TH)
+        fire_sink   = K_FIRE * o2_excess ** 2      # [mol/mol/yr]
+        self.O2_frac = max(0.0,
+                          self.O2_frac
+                          + delta_O2_global * dt_yr
+                          - fire_sink        * dt_yr)
+        # 산불로 소비된 O₂는 탄소 연소 = CO₂ 방출 (C + O₂ → CO₂)
+        # 몰비 그대로: fire_sink [mol O₂/mol air / yr]
+        # CO₂ 환산: 대기 O₂ 총량 × fire_sink → CO₂_ppm 증가
+        # 단순화: fire_sink × (KG_O2_PER_FRAC / KG_C_PER_PPM) × (12/32)
+        fire_co2_ppm = (fire_sink * dt_yr
+                        * self.KG_O2_PER_FRAC / self.KG_C_PER_PPM
+                        * (12.0 / 32.0))
+        self.CO2_ppm = max(1e-6, self.CO2_ppm + fire_co2_ppm)
+
         self.time_yr += dt_yr
 
         return {
             "bands":        band_results,
             "CO2_ppm":      self.CO2_ppm,
             "O2_pct":       self.O2_frac * 100.0,
+            "fire_sink_pct": fire_sink * 100.0,   # 산불 O₂ 소비율 [%/yr] 모니터링용
             "time_yr":      self.time_yr,
         }
 

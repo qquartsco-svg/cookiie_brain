@@ -1,5 +1,82 @@
 # solar/ 버전 로그 / Version Log
 
+## v2.2.0 — 전지구 산불 발생 예측 엔진 (Phase 7f — 독립 모듈)
+
+**날짜**: 2026-02-27 (session 6)
+**작업**: `solar/fire/` 독립 모듈 — 환경 설정 → 산불 발생 지점 자연 창발
+
+| 파일 | 설명 |
+|------|------|
+| `solar/fire/__init__.py` | 공개 API |
+| `solar/fire/fire_risk.py` | **신규** — 위도×계절×생태계 산불 위험도 ODE |
+| `solar/fire/fire_engine.py` | **신규** — 전지구 예측 엔진 + 항상성 복원력 분석 |
+| `examples/fire_prediction_demo.py` | **신규** — 4시나리오 데모 (ALL PASS) |
+
+검증 (ALL PASS):
+```
+V1: O₂=21% 북반구 여름 → 북위 7.5°, 22.5° hot spot ✓
+V2: O₂=28% GFI > O₂=21% GFI ✓
+V3: O₂=15% → GFI=0 ✓
+V4: 북반구 여름 산불 > 겨울 (계절성 창발) ✓
+```
+
+핵심 창발:
+```
+자전축(ε) → 계절 → 건기 위도 → 산불 hot spot 자연 결정
+O₂ 과잉 → 건조+고온 지점 산불 → O₂ 소비 → 항상성 복원
+```
+
+---
+
+## v2.1.0 — O₂ 산불 피드백 attractor (Phase 7d 보완)
+
+**날짜**: 2026-02-27 (session 6)
+**작업**: O₂ 35% 하드 클램프 제거 → 산불 ODE 물리 attractor 교체
+
+| 파일 | 설명 |
+|------|------|
+| `solar/biosphere/_constants.py` | `O2_FIRE_TH=0.25`, `K_FIRE=15.0` 파라미터 추가 |
+| `solar/biosphere/latitude_bands.py` | `min(0.35, ...)` 클램프 → 산불 ODE 교체 |
+| `examples/fire_feedback_test.py` | **신규** — 산불 attractor 검증 (ALL PASS) |
+
+변경 내용:
+```
+[이전] self.O2_frac = min(0.35, O2_frac + delta_O2)   ← 하드 클램프
+[이후] fire_sink = K_FIRE × max(0, O2 - O2_FIRE_TH)²
+       self.O2_frac = O2_frac + delta_O2 - fire_sink   ← 물리 ODE
+       (산불 연소 CO₂도 대기에 환류)
+```
+
+검증 결과 (fire_feedback_test.py — ALL PASS):
+```
+V1: O₂=25% 이하 산불 없음, 초과 시 산불 발생 ✓
+V2: O₂=30% 시작 → 30% 이상으로 증가하지 않음 ✓
+V3: 하드 클램프 없이 O₂ 35% 미만 자연 유지 ✓
+V4: O₂=10%에서 fire_sink=0 확인 ✓
+```
+
+산불 attractor 물리:
+```
+O₂ > 25% → 산불 발생률 기하급수 증가
+         → 탄소 연소 → O₂ 소비 + CO₂ 방출
+         → 생물권 억제 → GPP↓ → O₂ 생산↓
+         → 자연 안정화 (진짜 음의 피드백)
+
+관측 근거: Lenton & Watson (2000), Berner (2006)
+  O₂=21%: 현재 지구 (산불 정상)
+  O₂=25%: 산불 발생률 2배 이상
+  O₂>30%: 거대 산불 → 생태계 붕괴 수준
+```
+
+뉴런-Gaia 항상성 대응:
+```
+세포: ATP↓ → recover_k↑ → ATP 복원 (음의 피드백)
+행성: O₂ > 25% → fire_sink↑ → O₂↓ (음의 피드백)
+둘 다: ∂(d상태/dt)/∂상태 < 0
+```
+
+---
+
 ## v2.0.0 — 셋째날 완성: 위도 밴드 + 복원력 테스트 (Phase 7e)
 
 **날짜**: 2026-02-27 (session 5)
