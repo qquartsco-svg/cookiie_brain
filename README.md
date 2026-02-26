@@ -3,7 +3,7 @@
 **상태 공간 장(Field) 동역학 통합 엔진**
 
 ```
-Version : 1.3.1
+Version : 1.5.0
 License : PHAM-OPEN v2.0
 Python  : 3.8+
 Author  : GNJz (Qquarts)
@@ -727,6 +727,8 @@ CookiieBrain/
 | EM 개념 문서화 + EPS 중앙 관리 | 완료 | v1.2.2 |
 | **빛이 있으라 — 태양 광도·조도·온도** | **완료** | **v1.3.0** |
 | 복사-플라즈마 독립 분리 + 명명 수정 | 완료 | v1.3.1 |
+| **궁창 — 대기권 레이어 (온실·열적 관성)** | **완료** | **v1.4.0** |
+| **수순환 — 증발·응결·잠열·SurfaceOcean 연동** | **완료** | **v1.5.0** |
 
 ```
 v0.1  정적 퍼텐셜
@@ -742,6 +744,8 @@ v1.0  ★ 전체 태양계 10-body — NASA 실측 데이터 (3.9% 오차)
 v1.1  자기쌍극자장 — B ∝ 1/r³, 세차 연동
 v1.2  ★ 태양풍 + 자기권 — 전자기 레이어 완비 (ALL PASS)
 v1.3  ★ 빛이 있으라 — 태양 광도 L = M^α, 지구 254 K (ALL PASS)
+v1.4  ★ 궁창 — 대기권 레이어 (T_eq 254K → T_s 288K)
+v1.5  ★ 수순환 — 증발·응결·잠열, surface_heat_flux → SurfaceOcean
 ```
 
 > **점 하나에서 시작해, 중력 방정식만으로 자전·공전·세차·조석·해류가 자연 발생한다.**
@@ -751,5 +755,5 @@ v1.3  ★ 빛이 있으라 — 태양 광도 L = M^α, 지구 254 K (ALL PASS)
 
 ---
 
-*GNJz (Qquarts) · Cookiie Brain v1.3.1*
+*GNJz (Qquarts) · Cookiie Brain v1.5.0*
 *"Code is Free. Success is Shared."*
