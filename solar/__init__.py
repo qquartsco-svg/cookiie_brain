@@ -18,6 +18,9 @@
     magnetosphere.py     → Magnetosphere, MagnetosphereState
     solar_luminosity.py  → SolarLuminosity, IrradianceState  (빛이 있으라)
 
+  surface/ (표면 층) [Phase 7 / 셋째날]:
+    surface_schema.py    → SurfaceSchema, effective_albedo (땅-바다 분리)
+
   atmosphere/ (대기 층):
     greenhouse.py        → optical_depth, effective_emissivity, GreenhouseParams
     column.py            → AtmosphereColumn, AtmosphereState, AtmosphereComposition
@@ -29,10 +32,10 @@
 의존 방향:
   data/ → core/ ← cognitive/
                ← em/
-               ← atmosphere/ (em/ 읽기 가능)
+               ← atmosphere/ (em/, surface/ 읽기)
+               ← surface/ (독립)
   core/는 상위를 import하지 않음
-  em/과 cognitive/는 서로 참조하지 않음
-  atmosphere/는 em/을 읽고, core/를 읽는다
+  surface/는 의존 없음. atmosphere/가 effective_albedo 읽음
 """
 
 # ── core (물리) ───────────────────────────────────
@@ -65,6 +68,9 @@ from .em import (
     SolarLuminosity,
     IrradianceState,
 )
+
+# ── surface (표면/땅-바다) [Phase 7] ───────────────
+from .surface import SurfaceSchema, effective_albedo
 
 # ── atmosphere (대기/궁창) ────────────────────────
 from .atmosphere import (
@@ -105,6 +111,9 @@ __all__ = [
     "MagnetosphereState",
     "SolarLuminosity",
     "IrradianceState",
+    # surface (Phase 7)
+    "SurfaceSchema",
+    "effective_albedo",
     # atmosphere
     "AtmosphereColumn",
     "AtmosphereState",
@@ -117,4 +126,4 @@ __all__ = [
     "CouplingState",
 ]
 
-__version__ = "1.5.0"
+__version__ = "1.6.0"
