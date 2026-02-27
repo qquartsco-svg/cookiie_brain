@@ -68,6 +68,20 @@ Creation Days 레이어들이 닫힌 루프로 연결되기 위해,
 | `OceanNutrients.state` | `phyto_biomass` | 식물플랑크톤 질량 | arbitrary units |
 | `OceanNutrients.state` | `CO2_sink_ppm` | 대기 CO₂ 격리량 | ppm/yr |
 
+### 6. Day 5 — 생물 이동 / 정보 네트워크
+
+| Layer / Struct | Port 이름 | 의미 | 단위 |
+|----------------|----------|------|------|
+| `BirdAgent` | `migration_rates(o2_frac)` | 위도별 이동률 | 1/yr |
+| `BirdAgent` | `seed_flux(B_pioneer)` | 밴드별 씨드 분산 플럭스 (Loop F) | 1/yr (rate) |
+| `BirdAgent` | `guano_flux()` | 밴드별 구아노 N 플럭스 (Loop G) | g N/m²/yr |
+| `FishAgent` | `predation_flux(phyto_by_band)` | 밴드별 phyto 포식 플럭스 (Loop H) | 1/yr (rate) |
+| `SeedTransport` | `step(B, dt_yr)` | 보존형 스칼라 필드 transport | B 동일 단위 |
+| `SeedTransport` | `step_with_source(B, source_flux, dt_yr)` | source 가산 보존형 transport | B 동일 단위 |
+| `TrophicState` | `phyto`, `herbivore`, `carnivore` | 트로픽 바이오매스 | arbitrary (일관된 스케일) |
+| `TrophicState` | `co2_resp_yr` | 해당 스텝 연간 환산 호흡 CO₂ | kgC/m²/yr |
+| `FoodWeb` | `net_co2_flux(state, gpp)` | GPP 흡수 − 호흡 (대기 CO₂ 가산) | kgC/m²/yr |
+
 > 이 문서는 코드와 함께 유지보수되어야 하며,  
 > 포트 단위가 변경될 경우 **반드시 이 표를 업데이트** 해야 합니다.
 
