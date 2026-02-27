@@ -1,5 +1,43 @@
 # solar/ 버전 로그 / Version Log
 
+## v2.5.0 — 넷째날 순환 2: Milankovitch 장주기 드라이버 (cycles/)
+
+**날짜**: 2026-02-27 (session 9)
+**작업**: Berger 1978 해석적 3주기 → 빙하기-간빙기 자연 창발
+
+| 파일 | 설명 |
+|------|------|
+| `solar/cycles/milankovitch.py`    | **신규** — 이심률/경사/세차 해석적 시계열 (Berger 1978) |
+| `solar/cycles/insolation.py`      | **신규** — 위도×시간 일사량 + MilankovitchDriver |
+| `solar/cycles/__init__.py`        | v1.0.0 공개 API |
+| `solar/cycles/milankovitch_demo.py` | V1~V4 ALL PASS 검증 |
+| `solar/__init__.py`               | v2.5.0, cycles/ 등록 |
+
+**Milankovitch 3주기 (Berger 1978 단순화)**
+```
+이심률  e(t) = 0.0167 + Σ aᵢ cos(2πt/Tᵢ + φᵢ)   T ~ 100kyr / 413kyr
+경사각  ε(t) = 23.44° + Σ bᵢ cos(2πt/Tᵢ + ψᵢ)   T ~ 41kyr   [22.0°~24.5°]
+세차    e×sin(ψ) = Σ cᵢ sin(2πt/Tᵢ + χᵢ)          T ~ 26kyr
+```
+
+**일사량 공식 (Berger 1978)**
+```
+Q_ss(φ,t) = (F₀/π) × (a/r_ss)² × (H₀ sinφ sinε + cosφ cosε sinH₀)
+  현재 65°N: 534 W/m²
+  LGM(-21kyr): 494.8 W/m² → 빙하기 판단 ✓
+  threshold: 480 W/m² (is_glacial), 510 W/m² (V2 LGM 판단)
+```
+
+**V1~V4 ALL PASS**
+```
+V1: 경사각 22.00~24.50°, 이심률 0.001~0.040 ✓
+V2: LGM(빙하기)✓ / 현재(간빙기)✓
+V3: obliquity_scale → GaiaLoopConnector.Loop C 주입 ✓
+V4: 200kyr 시계열, 빙하기 11/41 포인트 ✓
+```
+
+---
+
 ## v2.4.0 — 셋째날 완성: 3개 열린 루프 닫힘 + 뉴런-Gaia 연결 (Phase 8 + 8.5)
 
 **날짜**: 2026-02-27 (session 8)

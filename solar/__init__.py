@@ -153,4 +153,30 @@ __all__ += [
     "make_connector",
 ]
 
-__version__ = "2.2.0"
+# ── cycles (넷째날 순환 2: Milankovitch 장주기 드라이버) ──────────────────────
+from .cycles import (
+    MilankovitchCycle,
+    MilankovitchState,
+    make_earth_cycle,
+    make_custom_cycle,
+    insolation_at,
+    insolation_grid,
+    MilankovitchDriver,
+    DriverOutput,
+    make_earth_driver,
+)
+
+__all__ += [
+    # cycles (넷째날 순환 2)
+    "MilankovitchCycle",
+    "MilankovitchState",
+    "make_earth_cycle",
+    "make_custom_cycle",
+    "insolation_at",
+    "insolation_grid",
+    "MilankovitchDriver",
+    "DriverOutput",
+    "make_earth_driver",
+]
+
+__version__ = "2.5.0"
