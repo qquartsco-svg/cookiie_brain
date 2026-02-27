@@ -1,10 +1,10 @@
-"""gaia_loop_connector.py — 3개 열린 루프를 닫는 항상성 연결기 (Phase 8.5)
+"""gaia_loop_connector.py — 5개 열린 루프를 닫는 항상성 연결기 (Phase 8.5 → v1.1)
 
 목적:
     "초기 조건만 주면 스스로 순환하는" 환경 구현을 위해
     개별적으로 존재했던 모듈들을 닫힌 피드백 루프로 연결한다.
 
-닫히는 루프 3개:
+닫히는 루프 5개:
 ─────────────────────────────────────────────────────────────────────
 [Loop A] 산불 CO₂ → 대기 CO₂ (fire_engine → atmosphere)
     fire_co2_source_kgC [kg C/m²/yr]
@@ -23,6 +23,17 @@
     → dry_season_amplitude 동적 조정
     → fire_risk.dry_season_modifier 의 진폭 변경
     → 건기 강도 변화 → fire_risk 변화
+
+[Loop D] 질소 N_limitation → biosphere GPP 게이트 (nitrogen → biosphere)
+    NitrogenCycle.n_limitation() [0~1]
+    → GPP_effective = GPP_potential × N_limitation
+    → biosphere 실효 GPP 반영
+    → N_uptake 변화 → N_soil 변화 → N_limitation 변화 (음의 피드백)
+
+[Loop E] 조석 탄소 펌프 → 대기 CO₂ 감소 (gravity_tides → atmosphere)
+    OceanNutrients.CO2_sink_ppm [ppm/yr] (해양 탄소 펌프 흡수)
+    → atmosphere.composition.CO₂ 감소
+    → 다음 스텝 온실 약화 → T 안정 (음의 피드백, 해양 attractor)
 ─────────────────────────────────────────────────────────────────────
 
 사용법:
@@ -36,24 +47,37 @@
     connector.apply_fire_co2_loop(fire_results, dt_yr=1.0)
 
     # 3) FireEnvSnapshot 생성 시 → Loop C 반영
-    env = connector.make_fire_env(base_env, obliquity_deg, time_yr)
+    env = connector.make_fire_env(base_env, obliquity_deg)
+
+    # 4) NitrogenCycle.n_limitation() → Loop D 적용 → 실효 GPP 반환
+    gpp_eff = connector.apply_nitrogen_loop(gpp_potential, n_limitation)
+
+    # 5) OceanNutrients.step() 결과 → Loop E 적용
+    connector.apply_tidal_co2_loop(ocean_state, dt_yr=1.0)
 
 수학:
-    Loop A: ΔCO₂ = fire_co2_total_kgC × (12/44) / (M_ATM_CO2_REF)
-              = fire_co2_kgC [kg/m²/yr] × LAND_AREA_M2 / (M_ATM_kg_CO2)
-              더 단순하게: Δ(CO2_mol_frac) = fire_co2_kgC × K_C_TO_PPM × 1e-6
+    Loop A: ΔCO₂ = fire_co2_kgC [kg/m²/yr] × K_KGC_TO_CO2_FRAC
 
     Loop B: albedo_eff = albedo_base × (1 - land_frac)
                        + (albedo_base + delta_albedo_land) × land_frac
-            → albedo_eff를 atmosphere.albedo에 반영
 
-    Loop C: amplitude(φ) = amplitude_base(φ) × obliquity_scale(obliquity_deg)
-            obliquity_scale = 1.0 + K_OBLIQ × (obliquity_deg - OBLIQUITY_REF) / OBLIQUITY_REF
+    Loop C: obliquity_scale = 1.0 + K_OBLIQ × (obliquity_deg - OBLIQUITY_REF) / OBLIQUITY_REF
+
+    Loop D: GPP_eff = GPP_potential × N_limitation
+            N_limitation = N_soil / (N_soil + N_soil_ref)  [Michaelis-Menten]
+
+    Loop E: ΔCO₂ = -CO2_sink_ppm × 1e-6 × dt_yr
+            CO2_sink_ppm [ppm/yr] = OceanState.CO2_sink_ppm
 
 v1.0 (Phase 8.5):
-    GaiaLoopConnector — 3루프 연결기
+    GaiaLoopConnector — 3루프 연결기 (Loop A/B/C)
     LoopState — 매 스텝 루프 상태 스냅샷
-    make_fire_env_with_obliquity — Loop C 반영 FireEnvSnapshot 생성
+
+v1.1:
+    - Loop D 추가: NitrogenCycle.n_limitation() → biosphere GPP 게이트
+    - Loop E 추가: OceanNutrients.CO2_sink_ppm → 대기 CO₂ 감소
+    - LoopState에 N_limitation, GPP_effective, tidal_co2_sink_ppm 필드 추가
+    - gaia_loop_connector.py make_connector() atmosphere import 경로 수정
 """
 
 from __future__ import annotations
@@ -105,6 +129,19 @@ K_OBLIQ_SCALE   = 0.8    # obliquity 변화 → 계절성 진폭 감도
 OBLIQUITY_MIN   = 0.0    # 수학적 최솟값 (0° = 계절 없음)
 OBLIQUITY_MAX   = 90.0   # 수학적 최댓값 (90° = 극한 계절)
 
+# [Loop D] 질소 N_limitation → biosphere GPP 게이트
+# N_limitation [0~1] — Michaelis-Menten, NitrogenCycle.n_limitation() 출력
+# GPP_effective = GPP_potential × N_limitation
+# N_LIMIT_MIN: 극도로 N이 없어도 최소 GPP 유지 (절대 0이 되지 않도록)
+N_LIMIT_MIN     = 0.0    # [0~1] N_limitation 하한 클램프 (0 = 완전 차단 허용)
+N_LIMIT_MAX     = 1.0    # [0~1] N_limitation 상한 클램프
+
+# [Loop E] 조석 탄소 펌프 → 대기 CO₂ 감소
+# CO2_sink_ppm [ppm/yr]: OceanNutrients.step() → OceanState.CO2_sink_ppm
+# ΔCO₂ [mol/mol] = -CO2_sink_ppm × 1e-6 × dt_yr
+# 부호: 양의 CO2_sink_ppm → 대기 CO₂ 감소 (해양 흡수)
+TIDAL_CO2_SCALE = 1.0    # 조석 탄소 펌프 → 대기 CO₂ 감도 배율 (1.0 = 물리 그대로)
+
 EPS = 1e-30
 
 
@@ -126,6 +163,12 @@ class LoopState:
         # Loop C
         obliquity_deg: 현재 황도경사 [deg]
         obliquity_scale: 계절성 진폭 배율
+        # Loop D
+        N_limitation: 질소 제한 팩터 [0~1]
+        GPP_effective: N_limitation 적용 후 실효 GPP [g C m⁻² yr⁻¹]
+        # Loop E
+        tidal_co2_sink_ppm: 조석 탄소 펌프 CO₂ 흡수량 [ppm/yr]
+        delta_CO2_tidal_frac: Loop E에 의한 CO₂ 변화량 [mol/mol]
     """
     time_yr: float
     # Loop A
@@ -138,6 +181,12 @@ class LoopState:
     # Loop C
     obliquity_deg: float = 23.5
     obliquity_scale: float = 1.0
+    # Loop D
+    N_limitation: float = 1.0
+    GPP_effective: float = 0.0
+    # Loop E
+    tidal_co2_sink_ppm: float = 0.0
+    delta_CO2_tidal_frac: float = 0.0
 
     def summary(self) -> str:
         return (
@@ -147,7 +196,10 @@ class LoopState:
             f"Δalbedo={self.delta_albedo_land:+.4f} "
             f"albedo={self.albedo_new:.4f} | "
             f"obliq={self.obliquity_deg:.1f}° "
-            f"dry_scale={self.obliquity_scale:.3f}"
+            f"dry_scale={self.obliquity_scale:.3f} | "
+            f"N_lim={self.N_limitation:.3f} "
+            f"GPP_eff={self.GPP_effective:.2f} | "
+            f"tidal_sink={self.tidal_co2_sink_ppm:.3f}ppm/yr"
         )
 
 
@@ -198,6 +250,12 @@ class GaiaLoopConnector:
 
         # Loop C 현재 obliquity scale
         self._obliquity_scale: float = 1.0
+
+        # Loop D 현재 N_limitation
+        self._N_limitation: float = 1.0       # 초기값: 제한 없음
+
+        # Loop E 현재 tidal CO₂ sink
+        self._tidal_co2_sink_ppm: float = 0.0  # [ppm/yr]
 
         # 히스토리
         self._loop_history: List[LoopState] = []
@@ -334,6 +392,59 @@ class GaiaLoopConnector:
             band_ecosystems = base_env.band_ecosystems,
         )
 
+    # ── Loop D: 질소 N_limitation → biosphere GPP 게이트 ────────────────────
+
+    def apply_nitrogen_loop(
+        self,
+        GPP_potential: float,
+        N_limitation: float,
+    ) -> float:
+        """질소 제한 팩터를 biosphere GPP에 곱해 실효 GPP를 반환한다.
+
+        Loop D: NitrogenCycle.n_limitation() → GPP_effective = GPP × N_lim
+
+        Args:
+            GPP_potential: 질소 제한 없을 때 최대 GPP [g C m⁻² yr⁻¹]
+            N_limitation:  NitrogenCycle.n_limitation() 출력 [0~1]
+
+        Returns:
+            GPP_effective: 실효 GPP [g C m⁻² yr⁻¹]
+        """
+        n_lim = max(N_LIMIT_MIN, min(N_LIMIT_MAX, N_limitation))
+        self._N_limitation = n_lim
+        return GPP_potential * n_lim
+
+    # ── Loop E: 조석 탄소 펌프 → 대기 CO₂ 감소 ──────────────────────────────
+
+    def apply_tidal_co2_loop(
+        self,
+        ocean_state,          # OceanState (duck-typed: .CO2_sink_ppm)
+        dt_yr: float = 1.0,
+    ) -> float:
+        """해양 탄소 펌프 흡수량을 대기 CO₂ 농도에 반영한다.
+
+        Loop E: OceanNutrients → CO2_sink_ppm → atmosphere.composition.CO₂ 감소
+
+        Args:
+            ocean_state: OceanNutrients.step() 반환 OceanState
+                         .CO2_sink_ppm [ppm/yr] — 양수 = 해양 흡수 = CO₂ 감소
+            dt_yr: 시간 스텝 [yr]
+
+        Returns:
+            delta_CO2_frac: 이번 스텝 CO₂ 변화량 [mol/mol] (음수 = 감소)
+        """
+        sink_ppm_yr = getattr(ocean_state, "CO2_sink_ppm", 0.0)
+        self._tidal_co2_sink_ppm = sink_ppm_yr * TIDAL_CO2_SCALE
+
+        # 흡수 → 대기 CO₂ 감소 (부호 음수)
+        delta_CO2 = -self._tidal_co2_sink_ppm * 1e-6 * dt_yr
+
+        old_CO2 = self.atm.composition.CO2
+        new_CO2 = max(CO2_MIN, min(CO2_MAX, old_CO2 + delta_CO2))
+        self.atm.composition.CO2 = new_CO2
+
+        return delta_CO2
+
     # ── 통합 스텝 ─────────────────────────────────────────────────────────────
 
     def step(
@@ -344,22 +455,28 @@ class GaiaLoopConnector:
         dt_yr: float = 1.0,
         time_yr: float = 0.0,
         fire_engine: Optional[FireEngine] = None,
+        N_limitation: float = 1.0,
+        GPP_potential: float = 0.0,
+        ocean_state=None,
     ) -> LoopState:
-        """3개 루프를 한 번에 적용하는 통합 스텝.
+        """5개 루프를 한 번에 적용하는 통합 스텝.
 
         Args:
-            fire_results: FireEngine.predict() 결과
-            bio_result: BiosphereColumn.step() 결과 dict
-            obliquity_deg: 현재 황도경사 [deg]
-            dt_yr: 스텝 크기 [yr]
-            time_yr: 현재 시뮬레이션 시간 [yr]
-            fire_engine: Loop A에서 선택적으로 사용
+            fire_results:   FireEngine.predict() 결과
+            bio_result:     BiosphereColumn.step() 결과 dict
+            obliquity_deg:  현재 황도경사 [deg]
+            dt_yr:          스텝 크기 [yr]
+            time_yr:        현재 시뮬레이션 시간 [yr]
+            fire_engine:    Loop A에서 선택적으로 사용
+            N_limitation:   NitrogenCycle.n_limitation() [0~1]  (Loop D)
+            GPP_potential:  Loop D 적용 전 최대 GPP [g C m⁻² yr⁻¹]
+            ocean_state:    OceanNutrients.step() OceanState  (Loop E)
 
         Returns:
             LoopState: 이번 스텝 루프 상태 스냅샷
         """
         # Loop A
-        dCO2 = self.apply_fire_co2_loop(fire_results, dt_yr, fire_engine)
+        dCO2_fire = self.apply_fire_co2_loop(fire_results, dt_yr, fire_engine)
 
         # Loop B
         alb_new = self.apply_albedo_loop(bio_result)
@@ -367,18 +484,31 @@ class GaiaLoopConnector:
         # Loop C
         scale = self.obliquity_scale(obliquity_deg)
 
+        # Loop D
+        gpp_eff = self.apply_nitrogen_loop(GPP_potential, N_limitation)
+
+        # Loop E
+        dCO2_tidal = (
+            self.apply_tidal_co2_loop(ocean_state, dt_yr)
+            if ocean_state is not None else 0.0
+        )
+
         state = LoopState(
-            time_yr             = time_yr,
-            fire_co2_total_kgC  = sum(
+            time_yr              = time_yr,
+            fire_co2_total_kgC   = sum(
                 r.fire_co2_source_kgC * BAND_WEIGHTS[i]
                 for i, r in enumerate(fire_results)
             ) * LAND_AREA_M2,
-            delta_CO2_frac      = dCO2,
-            CO2_new             = self.atm.composition.CO2,
-            delta_albedo_land   = bio_result.get("delta_albedo_land", 0.0),
-            albedo_new          = alb_new,
-            obliquity_deg       = obliquity_deg,
-            obliquity_scale     = scale,
+            delta_CO2_frac       = dCO2_fire,
+            CO2_new              = self.atm.composition.CO2,
+            delta_albedo_land    = bio_result.get("delta_albedo_land", 0.0),
+            albedo_new           = alb_new,
+            obliquity_deg        = obliquity_deg,
+            obliquity_scale      = scale,
+            N_limitation         = self._N_limitation,
+            GPP_effective        = gpp_eff,
+            tidal_co2_sink_ppm   = self._tidal_co2_sink_ppm,
+            delta_CO2_tidal_frac = dCO2_tidal,
         )
         self._loop_history.append(state)
         return state
@@ -422,15 +552,19 @@ class GaiaLoopConnector:
     def summary(self) -> Dict[str, Any]:
         """현재 대기 + 루프 상태 요약."""
         return {
-            "CO2_ppm":          self.atm.composition.CO2 * 1e6,
-            "O2_frac":          self.atm.composition.O2,
-            "albedo":           self.atm.albedo,
-            "T_surface_K":      self.atm.T_surface,
-            "obliquity_scale":  self._obliquity_scale,
-            "albedo_land":      self._albedo_land_current,
-            "loop_a":           self.loop_a,
-            "loop_b":           self.loop_b,
-            "loop_c":           self.loop_c,
+            "CO2_ppm":              self.atm.composition.CO2 * 1e6,
+            "O2_frac":              self.atm.composition.O2,
+            "albedo":               self.atm.albedo,
+            "T_surface_K":          self.atm.T_surface,
+            "obliquity_scale":      self._obliquity_scale,
+            "albedo_land":          self._albedo_land_current,
+            "N_limitation":         self._N_limitation,
+            "tidal_co2_sink_ppm":   self._tidal_co2_sink_ppm,
+            "loop_a":               self.loop_a,
+            "loop_b":               self.loop_b,
+            "loop_c":               self.loop_c,
+            "loop_d":               True,   # 항상 활성 (N_limitation 직접 주입)
+            "loop_e":               True,   # 항상 활성 (ocean_state 있을 때)
         }
 
 
@@ -449,7 +583,7 @@ def make_connector(
     Returns:
         (atmosphere, connector) tuple
     """
-    from .atmosphere import AtmosphereComposition
+    from solar.day2.atmosphere import AtmosphereComposition
 
     comp = AtmosphereComposition(
         O2=O2_frac,
@@ -470,7 +604,10 @@ def make_connector(
 
 __all__ = [
     "GaiaLoopConnector",
-    "GaiaLoopConnectorConfig",
     "LoopState",
     "make_connector",
+    # Loop D/E 상수
+    "N_LIMIT_MIN",
+    "N_LIMIT_MAX",
+    "TIDAL_CO2_SCALE",
 ]
