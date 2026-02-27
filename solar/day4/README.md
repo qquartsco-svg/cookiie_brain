@@ -1,21 +1,23 @@
-# day4/ — 넷째날 순환 레이어 집합 (nitrogen · cycles · gravity_tides)
+# day4/ — 넷째날 순환 레이어 집합 (core gravity · nitrogen · cycles · gravity_tides)
 
-**역할**: 셋째날까지 완성된 `surface/` + `atmosphere/` + `biosphere/` + `fire/` 위에,  
-넷째날 3개 순환 레이어를 **한 폴더에서 한눈에** 볼 수 있게 정리한 집합 패키지.
+**역할**: `core/ + data/` 가 만든 **태양계 중력필드** 위에,  
+셋째날까지 완성된 `surface/` + `atmosphere/` + `biosphere/` + `fire/` 를 올리고,  
+그 위에서 동작하는 넷째날 3개 순환 레이어를 **한 폴더에서 한눈에** 보이게 하는 집합 패키지.
 
+- **중력 필드 (`core/ + data/`)**: EvolutionEngine, Body3D, PlanetData, build_solar_system — 태양계 N-body / 지구·달 중력장 / 세차·조석  
 - **순환 1 (`nitrogen/`)**: 질소 고정·탈질·낙엽 분해 → 토양 질소 항상성  
 - **순환 2 (`cycles/`)**: Milankovitch 3주기 → 일사량·계절성 진폭 → 빙하기 드라이버  
 - **순환 3 (`gravity_tides/`)**: 달·태양 조석 → 해양 혼합·영양염 → 식물플랑크톤 → 탄소 펌프  
 - **연결 (`gaia_loop_connector.py`)**: 산불 CO₂, 식생 알베도, 세차 obliquity 루프와의 결합 지점
 
-`day4/` 자체는 **새 구현을 넣지 않고**, 아래 세 패키지와 Gaia 루프를  
+`day4/` 자체는 **새 구현을 넣지 않고**, core/data + 아래 세 패키지와 Gaia 루프를  
 **import/export 로만 모아두는 “지도/인덱스” 역할**을 한다.
 
 ---
 
-## 1. 넷째날 큰 그림
+## 1. 넷째날 큰 그림 (중력 필드 + 3개 순환)
 
-셋째날(Phase 7)까지의 상태:
+중력 필드 및 셋째날(Phase 7)까지의 상태:
 
 ```text
 surface/    — 땅/바다 분리, effective_albedo (land_fraction)
