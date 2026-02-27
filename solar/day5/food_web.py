@@ -19,14 +19,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, Any, List, Optional
 
-
-# ── 속도 상수 ──────────────────────────────────────────────────────────────────
-
-ALPHA_CO2_ABS        = 0.5   # CO₂ 흡수 계수 (phyto 기준)
-DEFAULT_GROWTH_PHYTO = 1.0   # [1/yr] phyto 내재 성장률
-DEFAULT_GRAZING_RATE = 0.5   # [1/yr] 초식 포식률
-DEFAULT_PREDATION    = 0.3   # [1/yr] 상위 포식률
-DEFAULT_RESP_FRAC    = 0.5   # 호흡 CO₂ 비율
+from ._constants import (
+    ALPHA_CO2_ABS,
+    DEFAULT_GROWTH_PHYTO,
+    DEFAULT_GRAZING_RATE,
+    DEFAULT_PREDATION,
+    DEFAULT_RESP_FRAC,
+)
 
 
 # ── 스냅샷 ────────────────────────────────────────────────────────────────────
@@ -147,9 +146,4 @@ __all__ = [
     "FoodWeb",
     "TrophicState",
     "make_food_web",
-    "ALPHA_CO2_ABS",
-    "DEFAULT_GROWTH_PHYTO",
-    "DEFAULT_GRAZING_RATE",
-    "DEFAULT_PREDATION",
-    "DEFAULT_RESP_FRAC",
 ]
