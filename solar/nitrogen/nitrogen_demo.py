@@ -4,17 +4,38 @@ V1: 질소고정 속도 — O₂ 억제, 온도/수분 팩터
 V2: 토양 질소 항상성 — pioneer 증가 → N_soil 증가 → uptake 균형
 V3: 혐기성 탈질 — O₂=0% 조건에서 탈질 지배
 V4: 150yr 시계열 — pioneer 성장에 따른 N_soil 진화
+
+실행 환경 (3가지 모두 지원):
+    1. CookiieBrain:    python solar/nitrogen/nitrogen_demo.py
+    2. GaiaFire_Engine: python nitrogen/nitrogen_demo.py
+    3. 완전 평면:       python nitrogen_demo.py  (같은 폴더에 파일 있음)
 """
 
 import sys
 import os
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+# 실행 위치 자동 감지 — 세 경로 등록
+_HERE   = os.path.dirname(os.path.abspath(__file__))  # 이 파일이 있는 폴더
+_PARENT = os.path.dirname(_HERE)                       # 상위 (solar/ or GaiaFire_Engine/)
+_ROOT   = os.path.dirname(_PARENT)                     # 최상위 (CookiieBrain/ or 상위)
+for _p in (_HERE, _PARENT, _ROOT):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
-from solar.nitrogen import (
-    NitrogenFixation, make_fixation_engine,
-    NitrogenCycle, make_nitrogen_cycle,
-)
+try:
+    from solar.nitrogen import (        # CookiieBrain 패키지 구조
+        NitrogenFixation, make_fixation_engine,
+        NitrogenCycle, make_nitrogen_cycle,
+    )
+except ImportError:
+    try:
+        from nitrogen import (          # GaiaFire_Engine / 상위 폴더 구조
+            NitrogenFixation, make_fixation_engine,
+            NitrogenCycle, make_nitrogen_cycle,
+        )
+    except ImportError:
+        from fixation import NitrogenFixation, make_fixation_engine   # 완전 평면
+        from cycle import NitrogenCycle, make_nitrogen_cycle
 
 PASS = "✅ PASS"
 FAIL = "❌ FAIL"
