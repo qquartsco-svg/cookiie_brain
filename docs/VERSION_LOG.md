@@ -1,5 +1,31 @@
 # solar/ 버전 로그 / Version Log
 
+## v2.7.0 — 넷째날 순환 3: 조석-해양 탄소 펌프 (gravity_tides/)
+
+**날짜**: 2026-02-27 (session 9)
+**작업**: 달+태양 조석 → 해양 혼합 → 식물플랑크톤 → CO₂ 격리
+
+| 파일 | 설명 |
+|------|------|
+| `solar/gravity_tides/tidal_mixing.py`    | **신규** — 달+태양 조석력, 사리-조금, 혼합 깊이 |
+| `solar/gravity_tides/ocean_nutrients.py` | **신규** — 식물플랑크톤 동역학, 탄소 수출 |
+| `solar/gravity_tides/__init__.py`        | v1.0.0 공개 API |
+| `solar/gravity_tides/gravity_tides_demo.py` | V1~V4 ALL PASS 검증 |
+| `solar/__init__.py`                      | v2.7.0, gravity_tides/ 등록 |
+
+**V1~V4 ALL PASS**
+```
+사리 혼합=333.7m > 조금=206.1m ✓
+강한 달(1.5×) CO₂ 격리 > 약한 달(0.6×) ✓
+연간 CO₂ 격리: 0.214 ppm/yr ✓
+사리-조금 주기 진동 max/min=1.82× ✓
+```
+
+**파이프라인**:
+TidalField → nutrient_flux → OceanNutrients → CO2_sink_ppm → atmosphere.CO2↓
+
+---
+
 ## v2.6.0 — 넷째날 순환 1: 질소 순환 ODE (nitrogen/)
 
 **날짜**: 2026-02-27 (session 9)

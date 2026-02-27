@@ -199,4 +199,24 @@ __all__ += [
     "make_nitrogen_cycle",
 ]
 
-__version__ = "2.6.0"
+# ── gravity_tides (넷째날 순환 3: 조석-해양 탄소 펌프) ────────────────────────
+from .gravity_tides import (
+    TidalField,
+    TidalState,
+    make_tidal_field,
+    OceanNutrients,
+    OceanState,
+    make_ocean_nutrients,
+)
+
+__all__ += [
+    # gravity_tides (넷째날 순환 3)
+    "TidalField",
+    "TidalState",
+    "make_tidal_field",
+    "OceanNutrients",
+    "OceanState",
+    "make_ocean_nutrients",
+]
+
+__version__ = "2.7.0"
