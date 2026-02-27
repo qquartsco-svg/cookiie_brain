@@ -83,6 +83,9 @@ class SeasonEngine:
 
         self.t_in_year = 0.0  # [0, 1)
 
+        # 기준 경사각 (현 지구값) 대비 season amplitude 스케일
+        self._obliquity_ref_deg = 23.44
+
     @property
     def phase(self) -> float:
         """현재 계절 위상 [rad], 0~2π."""
@@ -95,23 +98,46 @@ class SeasonEngine:
         self.t_in_year = (self.t_in_year + dt_yr / self.year_length_yr) % 1.0
 
     def _latitude_weight(self, lat_deg: float) -> float:
-        """위도에 따른 0~1 가중치 (0=적도, 1=극지)."""
-        lat = abs(lat_deg)
-        return min(max(lat / 90.0, 0.0), 1.0)
+        """위도에 따른 0~1 가중치 (0=적도, 1=극지).
+
+        선형보다는 기하학에 가까운 형태를 위해 sin(|lat|) 기반으로 사용한다.
+        """
+        lat_rad = math.radians(abs(lat_deg))
+        return min(max(math.sin(lat_rad), 0.0), 1.0)
+
+    @property
+    def obliquity_scale(self) -> float:
+        """경사각에 따른 계절 진폭 스케일.
+
+        기본 아이디어: 계절성 진폭 ∝ sin(obliquity).
+        경사각이 0이면 계절성이 0, 경사각이 커질수록 진폭이 커진다.
+        """
+        ref = math.sin(math.radians(self._obliquity_ref_deg))
+        cur = math.sin(math.radians(self.obliquity_deg))
+        if ref <= 0:
+            return 1.0
+        return max(0.0, cur / ref)
 
     def _temp_amplitude(self, lat_deg: float) -> float:
         """위도별 온도 진폭 [K]."""
         w = self._latitude_weight(lat_deg)
-        return (1.0 - w) * self.temp_amp_eq + w * self.temp_amp_pole
+        base = (1.0 - w) * self.temp_amp_eq + w * self.temp_amp_pole
+        return base * self.obliquity_scale
 
     def _dry_amplitude(self, lat_deg: float) -> float:
         """위도별 건기 진폭 계수."""
         w = self._latitude_weight(lat_deg)
-        return (1.0 - w) * self.dry_amp_eq + w * self.dry_amp_pole
+        base = (1.0 - w) * self.dry_amp_eq + w * self.dry_amp_pole
+        return base * self.obliquity_scale
 
     def state(self, lat_deg: float) -> SeasonState:
         """해당 위도의 계절 상태를 계산."""
-        phase = self.phase
+        # 북반구: phase 그대로, 남반구: 위상 반전 (반년 차이)
+        global_phase = self.phase
+        if lat_deg >= 0:
+            phase = global_phase
+        else:
+            phase = (global_phase + math.pi) % (2.0 * math.pi)
 
         # 간단한 사인파 계절 온도 편차: 여름(phase ≈ π/2)에서 최대
         temp_amp = self._temp_amplitude(lat_deg)
