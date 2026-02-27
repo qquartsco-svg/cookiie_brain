@@ -14,7 +14,7 @@
 > ⚠️ **재현성 / Reproducibility**  
 > - `day2` 는 **re‑export 전용 패키지**이며, 실제 구현은 `solar/day2/atmosphere/*.py` 에 있다.  
 > - 예제 코드의 `from solar.day2 import AtmosphereColumn` 은  
->   리포지토리를 **패키지 구조(`solar/` 루트 유지)** 로 설치했을 때 기준이다.  
+>   리포지토리를 **파이썬 패키지(`solar/` 루트 유지)** 로 설치/실행하는 구성을 전제로 한다.  
 > - 파일만 평면으로 복사해서 쓸 경우, `solar.day2.*` import 가 동작하지 않을 수 있다.
 
 ---
@@ -25,14 +25,14 @@
 
 - `AtmosphereColumn` — 0D 대기 컬럼 (온실 + 열적 관성 + 대기압 + 물 상태)
 - `AtmosphereState` — 스냅샷 (T_surface, P_surface, water_phase 등)
-- `AtmosphereComposition` — CO₂ / H₂O / O₂ / CH₄ / column_mass
+- `AtmosphereComposition` — CO₂ / H₂O / O₂ / CH₄ / column_mass  (모두 mol fraction 기반)
 - `GreenhouseParams` — 온실 파라미터 구조체
 
 실제 구현 파일:
 
-- `solar/atmosphere/greenhouse.py`
-- `solar/atmosphere/column.py`
-- `solar/atmosphere/_constants.py`
+- `solar/day2/atmosphere/greenhouse.py`
+- `solar/day2/atmosphere/column.py`
+- `solar/day2/atmosphere/_constants.py`
 
 ---
 

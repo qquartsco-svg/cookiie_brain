@@ -18,7 +18,7 @@
 >   `solar/day4/core/*`, `solar/day4/data/*`, `solar/day4/nitrogen/*`,  
 >   `solar/day4/cycles/*`, `solar/day4/gravity_tides/*` 에 있다.  
 > - 예제 코드의 `from solar.day4 import EvolutionEngine` 등은  
->   리포지토리를 **패키지 구조 그대로(`solar/` 루트 보존)** 로 설치했을 때 기준이다.  
+>   리포지토리를 **파이썬 패키지(`solar/` 루트 보존)** 로 설치/실행하는 구성을 전제로 한다.  
 > - 평면 파일 업로드/복사만 사용할 경우, `solar.day4.*` import 와  
 >   넷째날 순환 데모 스크립트의 경로가 깨질 수 있다.
 
@@ -106,6 +106,12 @@ gaia_loop_connector.py — Loop A/B/C (산불 CO2, 알베도, obliquity)
     - obliquity, F0 보정, is_glacial 정보를 가진 `FireEnvSnapshot` 생성 헬퍼.
 - `milankovitch_demo.py`
   - V1~V4 ALL PASS: 주기 범위, LGM vs 현재, Loop C 연결, 200 kyr 시계열 검증.
+
+> **Insolation 사용 규칙 / Usage rules**  
+> - 빙하기 판정(`is_glacial`) 은 **65°N 하지 일사량** `insolation_summer_solstice` (세차각 ψ 포함) 을 기준으로 한다.  
+> - 위도 밴드별 에너지 입력/시각화는 `insolation_grid` (연평균 근사, ψ 미포함)를 사용한다.  
+> - Loop C (장주기 건기/산불 변조) 에서는 직접적인 Q 값 대신  
+>   `obliquity_scale` / `season_amplitude` 와 같은 **무차원 스케일 포트**를 기본으로 사용한다.
 
 `day4/__init__.py` 에서 재export 되는 이름:
 

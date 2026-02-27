@@ -15,7 +15,7 @@
 > ⚠️ **재현성 / Reproducibility**  
 > - `day1` 은 **re‑export 전용 패키지**이며, 실제 구현은 `solar/day1/em/*.py` 에 있다.  
 > - 예제 코드의 `from solar.day1 import SolarLuminosity` 는  
->   이 리포지토리를 **패키지 형태(`solar/` 루트 그대로)** 로 사용할 때를 기준으로 한다.  
+>   이 리포지토리를 **파이썬 패키지(`solar/` 루트 유지)** 로 설치/실행하는 구성을 전제로 한다.  
 > - 업로드된 평면 파일만 복사해서 쓸 경우, `solar.day1.*` import 가 깨질 수 있다.
 
 ---
@@ -33,12 +33,12 @@
 - `Magnetosphere`, `MagnetosphereState`  
   - 자기장 vs 태양풍 동압 균형 → 마그네토포즈 \(r_{\text{mp}}\), 차폐율.
 
-실제 구현 파일은 그대로 이곳에 있다:
+실제 구현 파일은 여기(day1/em) 아래에 있다:
 
-- `solar/em/solar_luminosity.py`
-- `solar/em/magnetic_dipole.py`
-- `solar/em/solar_wind.py`
-- `solar/em/magnetosphere.py`
+- `solar/day1/em/solar_luminosity.py`
+- `solar/day1/em/magnetic_dipole.py`
+- `solar/day1/em/solar_wind.py`
+- `solar/day1/em/magnetosphere.py`
 
 ---
 
@@ -47,10 +47,13 @@
 ```text
 data/ (행성 질량·반지름) ──► core/EvolutionEngine
                              │
-                             ├─► em/SolarLuminosity   — L=M^α, F(r), T_eq, P_rad
-                             ├─► em/MagneticDipole    — B ∝ 1/r³
-                             ├─► em/SolarWind         — P_sw, Φ, IMF (1/r²)
-                             └─► em/Magnetosphere     — r_mp, shielding
+                             ├─► day1/em/SolarLuminosity   — L=M^α, F(r), T_eq, P_rad
+                             ├─► day1/em/MagneticDipole    — B ∝ 1/r³
+                             ├─► day1/em/SolarWind         — P_sw, Φ, IMF (1/r²)
+                             └─► day1/em/Magnetosphere     — r_mp, shielding
+
+Magnetosphere 의 `shielding` 값은 \([0,1]\) 범위의 **상대 차폐 지표(surrogate)** 로,  
+실제 방사선량이 아니라 “태양풍 동압에 비해 자기권이 제공하는 보호 강도 스케일”을 의미한다.
 ```
 
 - `core/` 의 궤도와 자전은 **빛·자기장 없이도** 돌아갈 수 있다.  

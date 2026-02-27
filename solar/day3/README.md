@@ -66,6 +66,8 @@
 - `surface/` 가 **땅/바다 분리 + 유효 알베도**를 만든다.  
 - `biosphere/` 가 **척박→선구→광합성→대기 변화→호흡 식생** 흐름을 모델링한다.  
 - `fire/` 가 **O₂ 과잉일 때 산불이 자동으로 발생하는 attractor**를 만든다.  
+  이때 O₂ 는 상한 clamp 로 잘라버리지 않고, 임계값 이상에서 `fire_sink(O2)` 가 커져  
+  **연속 ODE 피드백으로 O₂ 를 되돌리는 메커니즘**으로 attractor 를 형성한다.  
 - `GaiaLoopConnector` 가 **산불 CO₂, 식생 알베도, 세차 obliquity** 를 묶어  
   **자율 조절 Gaia 항상성 루프(Loop A/B/C)** 를 완성한다.
 
