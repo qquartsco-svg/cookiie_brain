@@ -159,6 +159,12 @@ class GaiaLoopConnector:
     Loop A: 산불 CO₂ → 대기 CO₂ → 온실 효과 → 온도 → 건조 → 산불
     Loop B: 식생 알베도 → 대기 온도 → GPP → 식생 → 알베도
     Loop C: 세차 obliquity → 건기 진폭 → 산불 위험도 → 탄소 플럭스
+
+    참고:
+        fire_risk.dry_season_modifier() 는 기본 고정 진폭 건기 함수이고,
+        obliquity에 따른 계절성 진폭 변화까지 포함하려면
+        obliquity_dry_modifier(phi_deg, time_yr, base_amplitude)를
+        래핑하여 사용한다.
     """
 
     def __init__(

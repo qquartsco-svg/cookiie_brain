@@ -32,6 +32,9 @@ from .cycle import (
     K_UPTAKE,
     K_DENITRIFY,
     K_DECOMP,
+    GPP_REF,
+    Q10_DECOMP,
+    T_REF_DECOMP,
 )
 
 __all__ = [
@@ -49,6 +52,9 @@ __all__ = [
     "K_UPTAKE",
     "K_DENITRIFY",
     "K_DECOMP",
+    "GPP_REF",
+    "Q10_DECOMP",
+    "T_REF_DECOMP",
 ]
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"

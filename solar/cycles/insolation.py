@@ -7,9 +7,9 @@
       3) is_glacial(t) → ice_albedo.py 트리거 (구현 예정)
 
 핵심 함수:
-    insolation_at(cycle, t_yr, phi_deg)    — 특정 위도 일사량
-    make_fire_env_milank(connector, ...)   — Milankovitch 반영 FireEnvSnapshot
-    MilankovitchDriver                     — 매 스텝 통합 드라이버
+    insolation_at(cycle, t_yr, phi_deg)        — 특정 위도 연평균 일사량(단순 근사, ψ 미포함)
+    make_fire_env_milank(connector, ...)       — Milankovitch 반영 FireEnvSnapshot
+    MilankovitchDriver                         — 매 스텝 통합 드라이버
 
 v1.0 (넷째날 순환 2-B)
 """
@@ -40,11 +40,13 @@ def insolation_at(
     phi_deg: float,
     include_atmosphere: bool = True,
 ) -> float:
-    """특정 위도·시점의 일사량 [W/m²].
+    """특정 위도·시점의 연평균 일사량 근사값 [W/m²].
 
     Args:
         cycle: MilankovitchCycle 인스턴스
-        t_yr: 시간 [yr] (0 = 현재)
+        t_yr: 시간 [yr] (0 = 현재). 이 함수에서는 e(t)와 ε(t)만 사용하며
+              세차 ψ(t)는 사용하지 않는다. (하지 일사량은
+              milankovitch.MilankovitchCycle.insolation_summer_solstice 사용.)
         phi_deg: 위도 [deg]
         include_atmosphere: True = 대기 투과율 반영
 
@@ -217,10 +219,44 @@ def make_earth_driver(
     )
 
 
+def make_fire_env_milank(
+    connector: "GaiaLoopConnector",
+    base_env: "FireEnvSnapshot",
+    t_yr: float,
+    cycle: Optional[MilankovitchCycle] = None,
+    glacial_threshold_Wm2: float = 450.0,
+    glacial_phi_deg: float = 65.0,
+) -> tuple["FireEnvSnapshot", DriverOutput]:
+    """Milankovitch 상태를 반영한 FireEnvSnapshot + DriverOutput 생성 헬퍼.
+
+    - 내부적으로 MilankovitchDriver(step)를 한 번 호출해
+      obliquity, F0_corrected, is_glacial, insolation_by_band 를 계산한다.
+    - connector.make_fire_env(...) 로 Loop C(obliquity) 를 반영한
+      FireEnvSnapshot 를 만들고, F0 를 F0_corrected 로 덮어쓴다.
+    - 빙하기 트리거(is_glacial)는 호출자가 ice_albedo 등에서 사용할 수 있도록
+      DriverOutput 에 포함된 값을 그대로 돌려준다.
+    """
+    driver = MilankovitchDriver(
+        cycle=cycle or make_earth_cycle(),
+        glacial_threshold_Wm2=glacial_threshold_Wm2,
+        glacial_phi_deg=glacial_phi_deg,
+    )
+    out = driver.step(t_yr=t_yr)
+
+    env = connector.make_fire_env(
+        base_env=base_env,
+        obliquity_deg=out.milank_state.obliquity_deg,
+    )
+    env.F0 = out.F0_corrected
+
+    return env, out
+
+
 __all__ = [
     "insolation_at",
     "insolation_grid",
     "MilankovitchDriver",
     "DriverOutput",
     "make_earth_driver",
+    "make_fire_env_milank",
 ]

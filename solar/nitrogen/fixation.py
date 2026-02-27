@@ -26,6 +26,9 @@ v1.0 (넷째날 순환 1-A):
     NitrogenFixation: 질소고정 속도 계산기
     LightningFixation: 번개 질소고정
     total_fixation(): 생물+번개 합산
+
+v1.1:
+    - 버전 표기 패키지 v1.1과 동기화 (로직 변경 없음)
 """
 
 from __future__ import annotations

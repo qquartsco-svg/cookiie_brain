@@ -303,6 +303,29 @@ class MilankovitchCycle:
         e   = self.eccentricity(t_yr)
         return ((eps - EPS_MIN) / (EPS_MAX - EPS_MIN)) * (1.0 + e) / 2.0
 
+    def insolation_scale(self, t_yr: float, phi_deg: float) -> float:
+        """위도별 일사량 스케일 팩터.
+
+        설계 문서에서 fire_risk 입력 F_solar 보정용으로 가정한 함수.
+
+        정의:
+            scale(t, φ) = Q_ss(t, φ) / Q_ss(0, φ)
+
+        여기서 Q_ss는 하지점 일일 평균 일사량 [W/m²].
+        현재(t=0) 대비 상대 비율이므로:
+          - scale = 1.0  → 현재와 동일
+          - scale > 1.0 → 해당 위도 여름 일사량 증가
+          - scale < 1.0 → 해당 위도 여름 일사량 감소
+
+        수치 폭주 방지를 위해 [0.5, 2.0] 범위로 클램프한다.
+        """
+        Q_ref = self.insolation_summer_solstice(0.0, phi_deg)
+        if Q_ref <= EPS:
+            return 1.0
+        Q_now = self.insolation_summer_solstice(t_yr, phi_deg)
+        scale = Q_now / Q_ref
+        return max(0.5, min(2.0, scale))
+
     def obliquity_scale(self, t_yr: float) -> float:
         """GaiaLoopConnector.Loop C 주입용 배율.
 
