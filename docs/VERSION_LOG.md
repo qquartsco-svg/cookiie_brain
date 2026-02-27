@@ -1,5 +1,39 @@
 # solar/ 버전 로그 / Version Log
 
+## v2.8.0 — 다섯째날: 생물 이동 · 정보 네트워크 레이어 (day5/)
+
+**날짜**: 2026-02-28 (session 10)
+**작업**: 위도 밴드 간 transport 항 추가 — 씨드 분산·구아노 N·포식 CO₂ (Loop F/G/H)
+
+| 파일 | 설명 |
+|------|------|
+| `solar/day5/_constants.py`       | **신규** — Day5 공유 상수 단일 소스 |
+| `solar/day5/mobility_engine.py`  | **신규** — BirdAgent / FishAgent 이동률 계산 |
+| `solar/day5/seed_transport.py`   | **신규** — 보존형 transport 커널 |
+| `solar/day5/food_web.py`         | **신규** — 트로픽 ODE (phyto→herb→carn) + CO₂ 호흡 |
+| `solar/day5/day5_demo.py`        | V1~V8 ALL PASS 검증 |
+| `solar/day5/__init__.py`         | v1.0.0 공개 API |
+| `solar/day5/README.md`           | 물리·엔지니어링 설계 문서 |
+
+**V1~V8 ALL PASS**
+```
+극지 topology: 밴드0(남극)/밴드11(북극) 단방향 이웃 ✓
+SeedTransport 총합 보존: 1.000000 → 1.000000 (차이=0.00e+00) ✓
+Loop F: 씨드 분산 발생 ✓
+Loop G: 구아노 N > 0 ✓
+carnivore 20yr 후 감소 (사망률 0.1/yr) ✓
+fish_predation 주입 시 phyto 감소 + CO₂ 증가 ✓
+```
+
+**파이프라인**:
+```
+BirdAgent.seed_flux()      → SeedTransport → latitude_bands[i].pioneer += Δ   (Loop F)
+BirdAgent.guano_flux()     → NitrogenCycle.N_soil[i] += Δ                     (Loop G)
+FishAgent.predation_flux() → FoodWeb.step(env["fish_predation"]) → co2_resp_yr (Loop H)
+```
+
+---
+
 ## v2.7.0 — 넷째날 순환 3: 조석-해양 탄소 펌프 (gravity_tides/)
 
 **날짜**: 2026-02-27 (session 9)

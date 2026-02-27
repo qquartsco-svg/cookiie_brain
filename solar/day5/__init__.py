@@ -25,6 +25,18 @@ Loop 연결:
 
 __version__ = "1.0.0"
 
+from ._constants import (
+    R_SEED_DISPERSAL,
+    R_GUANO_N,
+    R_PREDATION,
+    R_RESP_CO2,
+    ALPHA_CO2_ABS,
+    DEFAULT_GROWTH_PHYTO,
+    DEFAULT_GRAZING_RATE,
+    DEFAULT_PREDATION,
+    DEFAULT_RESP_FRAC,
+    M_CARNIVORE,
+)
 from .mobility_engine import (
     BirdAgent,
     FishAgent,
@@ -43,6 +55,17 @@ from .food_web import (
 )
 
 __all__ = [
+    # constants
+    "R_SEED_DISPERSAL",
+    "R_GUANO_N",
+    "R_PREDATION",
+    "R_RESP_CO2",
+    "ALPHA_CO2_ABS",
+    "DEFAULT_GROWTH_PHYTO",
+    "DEFAULT_GRAZING_RATE",
+    "DEFAULT_PREDATION",
+    "DEFAULT_RESP_FRAC",
+    "M_CARNIVORE",
     # mobility
     "BirdAgent",
     "FishAgent",

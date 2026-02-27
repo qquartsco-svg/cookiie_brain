@@ -70,22 +70,23 @@
       state.set_extension("solar_environment", data)
       ```
 
-### 3. Creation Days와의 관계 / Relation to Day1–Day4
+### 3. Creation Days와의 관계 / Relation to Day1–Day5
 
 - **입력 레이어**
-  - Day 1: `SolarLuminosity` (복사 조도, 평형 온도)  
-  - Day 2: `AtmosphereColumn` (T, P, water_phase, habitable)  
-  - Day 3: `SurfaceSchema`, `BiosphereColumn`, `FireEngine`  
+  - Day 1: `SolarLuminosity` (복사 조도, 평형 온도)
+  - Day 2: `AtmosphereColumn` (T, P, water_phase, habitable)
+  - Day 3: `SurfaceSchema`, `BiosphereColumn`, `FireEngine`
   - Day 4: `EvolutionEngine`, `NitrogenCycle`, `MilankovitchCycle`, `gravity_tides` (간접적으로 사용)
+  - Day 5: `BirdAgent`, `FishAgent`, `SeedTransport`, `FoodWeb` (생물 이동 → Loop F/G/H)
 
 - **출력 레이어**
-  - BrainCore / CookiieBrain: `solar_environment` extension, NeuronEvent, CognitiveBrainSnapshot  
-  - Gaia Layer: Loop A/B/C 가 닫힌 항상성 상태 (`LoopState`, PlanetStressIndex)
+  - BrainCore / CookiieBrain: `solar_environment` extension, NeuronEvent, CognitiveBrainSnapshot
+  - Gaia Layer: Loop A/B/C/F/G/H 가 닫힌 항상성 상태 (`LoopState`, PlanetStressIndex)
 
-브리지들은 **엔진의 내부 물리를 수정하지 않고**,  
+브리지들은 **엔진의 내부 물리를 수정하지 않고**,
 항상 **입력/출력 데이터 변환만 담당**하도록 설계되어 있습니다.
 
-### 4. Loop A/B/C 표준 정의 / Standard Loop Definition
+### 4. Loop A/B/C 표준 정의 / Standard Loop Definition (Day 3–4)
 
 | Loop | 물리 의미 | 읽는 포트 (from) | 쓰는 포트 (to) | 주요 함수 (gaia_loop_connector) |
 |------|-----------|------------------|----------------|----------------------------------|
@@ -95,12 +96,67 @@
 
 Loop A/B/C 는 위 표를 기준으로 다른 문서들(day3/day4 README, docs/PORTS_AND_UNITS.md)과 의미를 맞춘다.
 
+### 4-bis. Loop F/G/H 표준 정의 / Standard Loop Definition (Day 5)
+
+Day 5 생물 이동 레이어가 추가하는 3개 피드백 루프.
+**구현 모듈**: `solar/day5/mobility_engine.py`, `seed_transport.py`, `food_web.py`
+
+| Loop | 물리 의미 | 읽는 포트 (from) | 쓰는 포트 (to) | 연결 방법 |
+|------|-----------|------------------|----------------|-----------|
+| **F** | 씨드 분산 → pioneer 원거리 확산 | `BirdAgent.seed_flux(B_pioneer)` → `SeedTransport.step(B, dt_yr)` | 각 위도 밴드 `pioneer += Δ` (Day3 `BiosphereColumn` 외부 주입) | `B_new = transport.step(B_pioneer, dt_yr)` 후 각 밴드 pioneer 갱신 |
+| **G** | 구아노 N → 토양 질소 보강 | `BirdAgent.guano_flux()` → `[g N/m²/yr]` per band | Day4 `NitrogenCycle` 입력 또는 `N_soil[i] += guano[i] * dt_yr` | `nitro.step(..., external_N_source=guano[i])` 또는 직접 가산 |
+| **H** | 포식 → phyto 감소 → CO₂ 호흡 | `FishAgent.predation_flux(phyto_by_band)` → `env["fish_predation"]` | `FoodWeb.step(state, env, dt_yr)` → `co2_resp_yr` → Day2 대기 CO₂ | `fw.step(state, env={"GPP": gpp, "fish_predation": fish_pred[i]}, dt_yr)` |
+
+#### Loop F/G/H 연결 개요
+
+```text
+[BirdAgent]
+  migration_rates(o2_by_band) ──► [SeedTransport.step(B_pioneer)]
+                                        │
+                                        ▼  (보존형 transport)
+                                  각 밴드 pioneer += Δ  ─► Loop F 닫힘
+
+  guano_flux() ─────────────────► N_soil[i] += guano[i] * dt_yr
+                                        │
+                                        ▼
+                              [NitrogenCycle.N_limitation] ─► Loop G 닫힘
+
+[FishAgent]
+  predation_flux(phyto_by_band) ─► env["fish_predation"]
+                                        │
+                                        ▼
+                               [FoodWeb.step(state, env)]
+                                        │
+                                  co2_resp_yr [kgC/m²/yr]
+                                        │
+                                        ▼
+                          atmosphere.CO₂ += net_co2_flux(state, gpp) ─► Loop H 닫힘
+```
+
+#### 단위 요약 (Loop F/G/H)
+
+| 포트 | 단위 | 비고 |
+|------|------|------|
+| `migration_rates()` | 1/yr | O₂ 반응형 이동률 |
+| `seed_flux(B_pioneer)` | 1/yr (rate) | pioneer biomass와 같은 단위 스케일 |
+| `guano_flux()` | g N/m²/yr | Day4 `NitrogenCycle` N_soil 입력과 동일 단위 |
+| `predation_flux(phyto)` | 1/yr (rate) | phyto biomass 기준 포식률 |
+| `co2_resp_yr` | kgC/m²/yr | 연간 환산 플럭스 (누적값 아님) |
+| `net_co2_flux(state, gpp)` | kgC/m²/yr | GPP 흡수 − 호흡 합산 |
+
+> **통합 시 주의사항**
+> - Loop F: `SeedTransport.step(B)` 은 보존형. 결과를 외부에서 pioneer 에 더함. `BiosphereColumn` 내부 수정 불필요.
+> - Loop G: `guano_flux()` 결과는 `NitrogenCycle.step` 의 `external_N_source` 파라미터로 주입하거나, `N_soil[i]` 에 직접 가산.
+> - Loop H: `FoodWeb.step` 에 `env["fish_predation"]` 키로 주입. 없으면 0.0 으로 처리 (기본값 보장).
+> - 모든 상수는 `solar/day5/_constants.py` 단일 소스. `M_CARNIVORE`, `R_PREDATION` 등 참고.
+
 ### 5. 버전 및 PHAM 서명 / Version & PHAM
 
-- Gaia 루프 브리지 (`gaia_loop_connector.py`): Phase 8.5, Day 3–4 루프 통합.  
-- CookiieBrain ↔ GaiaFire 브리지 (`gaia_bridge.py`): Phase 8.0.  
-- BrainCore 환경 브리지 (`brain_core_bridge.py`): GEAR_CONNECTION_STRATEGY Phase 1.  
+- Gaia 루프 브리지 (`gaia_loop_connector.py`): Phase 8.5, Day 3–4 루프 통합.
+- CookiieBrain ↔ GaiaFire 브리지 (`gaia_bridge.py`): Phase 8.0.
+- BrainCore 환경 브리지 (`brain_core_bridge.py`): GEAR_CONNECTION_STRATEGY Phase 1.
+- **Day 5 Loop F/G/H 연결 정의 추가**: `solar` v2.8.0 (생물 이동 레이어 통합).
 - 추적 체인: `blockchain/pham_chain_LAYER8_bridges.json` (추가 예정).
 
-*v2.x · PHAM-ready · GNJz (Qquarts) + Claude 5.1*
+*v2.8.0 · PHAM-ready · GNJz (Qquarts) + Claude*
 
