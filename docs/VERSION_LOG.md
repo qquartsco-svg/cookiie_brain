@@ -1,5 +1,22 @@
 # solar/ 버전 로그 / Version Log
 
+## v2.6.0 — 넷째날 순환 1: 질소 순환 ODE (nitrogen/)
+
+**날짜**: 2026-02-27 (session 9)
+**작업**: 생물질소고정 + 탈질 + 낙엽분해 → N_soil 항상성
+
+| 파일 | 설명 |
+|------|------|
+| `solar/nitrogen/fixation.py`    | **신규** — 생물질소고정 ODE (pioneer + 번개) |
+| `solar/nitrogen/cycle.py`       | **신규** — 질소순환 통합 ODE |
+| `solar/nitrogen/__init__.py`    | v1.0.0 공개 API |
+| `solar/nitrogen/nitrogen_demo.py` | V1~V4 ALL PASS 검증 |
+| `solar/__init__.py`             | v2.6.0, nitrogen/ 등록 |
+
+**V1~V4 ALL PASS**: N_soil 항상성, 혐기성 탈질, N_limitation GPP 게이트(0.204) ✓
+
+---
+
 ## v2.5.0 — 넷째날 순환 2: Milankovitch 장주기 드라이버 (cycles/)
 
 **날짜**: 2026-02-27 (session 9)

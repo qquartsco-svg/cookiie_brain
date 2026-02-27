@@ -179,4 +179,24 @@ __all__ += [
     "make_earth_driver",
 ]
 
-__version__ = "2.5.0"
+# ── nitrogen (넷째날 순환 1: 질소 순환) ───────────────────────────────────────
+from .nitrogen import (
+    NitrogenFixation,
+    FixationResult,
+    make_fixation_engine,
+    NitrogenCycle,
+    NitrogenState,
+    make_nitrogen_cycle,
+)
+
+__all__ += [
+    # nitrogen (넷째날 순환 1)
+    "NitrogenFixation",
+    "FixationResult",
+    "make_fixation_engine",
+    "NitrogenCycle",
+    "NitrogenState",
+    "make_nitrogen_cycle",
+]
+
+__version__ = "2.6.0"
