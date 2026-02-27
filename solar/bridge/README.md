@@ -85,7 +85,17 @@
 브리지들은 **엔진의 내부 물리를 수정하지 않고**,  
 항상 **입력/출력 데이터 변환만 담당**하도록 설계되어 있습니다.
 
-### 4. 버전 및 PHAM 서명 / Version & PHAM
+### 4. Loop A/B/C 표준 정의 / Standard Loop Definition
+
+| Loop | 물리 의미 | 읽는 포트 (from) | 쓰는 포트 (to) | 주요 함수 (gaia_loop_connector) |
+|------|-----------|------------------|----------------|----------------------------------|
+| A | 산불 CO₂ → 대기 CO₂ | `FireEngine.predict` 결과 (`CO2_source_kgC`, 밴드별 결과) | `AtmosphereComposition.CO2` (mol/mol) | `apply_fire_co2_loop(fire_results, dt_yr)` |
+| B | 식생 알베도 → 온도 | `BiosphereColumn.step` 결과 (`delta_albedo_land`, `delta_CO2`, `delta_O2`, `delta_H2O`) | `atmosphere.albedo`, `AtmosphereComposition.(CO2,O2,H2O)` | `apply_biosphere_feedback` (`biosphere_feedback_to_atmosphere` 내부 호출) |
+| C | 세차 obliquity → 계절성 (건기) | `MilankovitchCycle` / `MilankovitchDriver` (`obliquity_deg`, `insolation_scale`) | `FireEnvSnapshot` 의 건기 진폭(dry_season_modifier 계열) | `make_fire_env` / `make_fire_env_milank` |
+
+Loop A/B/C 는 위 표를 기준으로 다른 문서들(day3/day4 README, docs/PORTS_AND_UNITS.md)과 의미를 맞춘다.
+
+### 5. 버전 및 PHAM 서명 / Version & PHAM
 
 - Gaia 루프 브리지 (`gaia_loop_connector.py`): Phase 8.5, Day 3–4 루프 통합.  
 - CookiieBrain ↔ GaiaFire 브리지 (`gaia_bridge.py`): Phase 8.0.  

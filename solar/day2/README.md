@@ -6,9 +6,16 @@
 **엔진 해석**  
 둘째날은 **우물에 고인 물(SurfaceOcean)** 위에 태양 복사가 가해져  
 **액체 바다와 기체 대기**가 분리되고, 온실 효과와 열적 관성이 생기는 단계다.  
-`solar/atmosphere/` 레이어가 이 역할을 담당한다.
+`solar/day2/atmosphere/` (원래 `solar/atmosphere/`) 레이어가 이 역할을 담당한다.
 
-`day2/` 폴더는 `atmosphere/` 의 핵심 기어를 **둘째날 관점에서 묶어 보여주는 집합 패키지**다.
+`day2/` 폴더는 이 대기 레이어의 핵심 기어를  
+**둘째날 관점에서 묶어 보여주는 집합 패키지(re‑export index)** 다.
+
+> ⚠️ **재현성 / Reproducibility**  
+> - `day2` 는 **re‑export 전용 패키지**이며, 실제 구현은 `solar/day2/atmosphere/*.py` 에 있다.  
+> - 예제 코드의 `from solar.day2 import AtmosphereColumn` 은  
+>   리포지토리를 **패키지 구조(`solar/` 루트 유지)** 로 설치했을 때 기준이다.  
+> - 파일만 평면으로 복사해서 쓸 경우, `solar.day2.*` import 가 동작하지 않을 수 있다.
 
 ---
 

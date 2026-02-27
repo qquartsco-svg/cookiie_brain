@@ -14,7 +14,16 @@
 
 가 연속으로 작동하는 단계다.
 
-`day3/` 폴더는 이 네 레이어의 핵심 기어를 **셋째날 관점에서 한 눈에 보여주는 집합 패키지**다.
+`day3/` 폴더는 이 네 레이어의 핵심 기어를  
+**셋째날 관점에서 한 눈에 보여주는 집합 패키지(re‑export index)** 다.  
+
+> ⚠️ **재현성 / Reproducibility**  
+> - `day3` 는 **re‑export 전용 패키지**이며, 실제 구현은  
+>   `solar/day3/surface/*`, `solar/day3/biosphere/*`, `solar/day3/fire/*` 와  
+>   `solar/bridge/gaia_loop_connector.py` 에 있다.  
+> - 예제 코드의 `from solar.day3 import BiosphereColumn` 등은  
+>   리포지토리를 **패키지 구조 그대로(`solar/` 루트)** 둘 때 기준이다.  
+> - 개별 파일만 평면으로 복사하면, `solar.day3.*` 및 Gaia 브리지 import 가 깨질 수 있다.
 
 ---
 

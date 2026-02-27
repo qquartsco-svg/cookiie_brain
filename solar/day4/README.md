@@ -1,7 +1,7 @@
 # day4/ — 넷째날 순환 레이어 집합 (core gravity · nitrogen · cycles · gravity_tides)
 
-**역할**: `core/ + data/` 가 만든 **태양계 중력필드** 위에,  
-셋째날까지 완성된 `surface/` + `atmosphere/` + `biosphere/` + `fire/` 를 올리고,  
+**역할**: `day4/core/ + day4/data/` 가 만든 **태양계 중력필드** 위에,  
+셋째날까지 완성된 `day3/surface/` + `day2/atmosphere/` + `day3/biosphere/` + `day3/fire/` 를 올리고,  
 그 위에서 동작하는 넷째날 3개 순환 레이어를 **한 폴더에서 한눈에** 보이게 하는 집합 패키지.
 
 - **중력 필드 (`core/ + data/`)**: EvolutionEngine, Body3D, PlanetData, build_solar_system — 태양계 N-body / 지구·달 중력장 / 세차·조석  
@@ -11,7 +11,16 @@
 - **연결 (`gaia_loop_connector.py`)**: 산불 CO₂, 식생 알베도, 세차 obliquity 루프와의 결합 지점
 
 `day4/` 자체는 **새 구현을 넣지 않고**, core/data + 아래 세 패키지와 Gaia 루프를  
-**import/export 로만 모아두는 “지도/인덱스” 역할**을 한다.
+**import/export 로만 모아두는 “지도/인덱스(re‑export index)” 역할**을 한다.
+
+> ⚠️ **재현성 / Reproducibility**  
+> - `day4` 는 **re‑export 전용 패키지**이며, 실제 구현은  
+>   `solar/day4/core/*`, `solar/day4/data/*`, `solar/day4/nitrogen/*`,  
+>   `solar/day4/cycles/*`, `solar/day4/gravity_tides/*` 에 있다.  
+> - 예제 코드의 `from solar.day4 import EvolutionEngine` 등은  
+>   리포지토리를 **패키지 구조 그대로(`solar/` 루트 보존)** 로 설치했을 때 기준이다.  
+> - 평면 파일 업로드/복사만 사용할 경우, `solar.day4.*` import 와  
+>   넷째날 순환 데모 스크립트의 경로가 깨질 수 있다.
 
 ---
 
