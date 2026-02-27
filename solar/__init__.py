@@ -134,12 +134,23 @@ from .gaia_bridge import (
     make_bridge,
 )
 
+# ── gaia_loop_connector (Phase 8.5: 3개 루프 연결, 항상성 순환) ──
+from .gaia_loop_connector import (
+    GaiaLoopConnector,
+    LoopState,
+    make_connector,
+)
+
 __all__ += [
     # gaia_bridge
     "GaiaBridge",
     "GaiaBridgeConfig",
     "BrainGaiaState",
     "make_bridge",
+    # gaia_loop_connector
+    "GaiaLoopConnector",
+    "LoopState",
+    "make_connector",
 ]
 
-__version__ = "2.1.0"
+__version__ = "2.2.0"
