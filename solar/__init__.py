@@ -126,4 +126,20 @@ __all__ = [
     "CouplingState",
 ]
 
-__version__ = "2.0.0"
+# ── gaia_bridge (Phase 8: 뉴런-Gaia 연결) ───────────────
+from .gaia_bridge import (
+    GaiaBridge,
+    GaiaBridgeConfig,
+    BrainGaiaState,
+    make_bridge,
+)
+
+__all__ += [
+    # gaia_bridge
+    "GaiaBridge",
+    "GaiaBridgeConfig",
+    "BrainGaiaState",
+    "make_bridge",
+]
+
+__version__ = "2.1.0"
