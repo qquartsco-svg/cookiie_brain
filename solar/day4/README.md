@@ -143,6 +143,25 @@ gaia_loop_connector.py — Loop A/B/C (산불 CO2, 알베도, obliquity)
 - `TidalField`, `TidalState`, `make_tidal_field`
 - `OceanNutrients`, `OceanState`, `make_ocean_nutrients`
 
+### 2.4 보조 순환 — SeasonEngine (계절 리듬 드라이버)
+
+계절성은 이미 fire_risk 의 dry_season_modifier 등에서 암묵적으로 쓰이고 있지만,  
+넷째날에서는 이를 **독립 엔진(SeasonEngine)** 으로 분리해 재사용 가능하게 만든다.
+
+- `season_engine.py`
+  - `SeasonEngine`, `SeasonState`
+  - 상태:
+    - `t_in_year ∈ [0,1)` 또는 `phase ∈ [0,2π)` — 봄·여름·가을·겨울 위상
+  - 위도별 출력:
+    - `delta_T` — 계절 온도 편차 [K]
+    - `dry_season_modifier` — 건기 강도 계수 (1 = 기준, >1 = 더 건조)
+  - 입력:
+    - 향후 Milankovitch 의 `obliquity_scale` / `season_amplitude` 를
+      amplitude 파라미터로 받아, 장주기적으로 계절 강도를 조절할 수 있다.
+
+SeasonEngine 결과는 Day2~Day3 레이어(Atmosphere/Biosphere/Fire)가  
+**“지금이 연중 어느 시점인지, 계절 진폭이 얼마나 큰지”** 를 공유하는 공통 리듬 포트로 쓰인다.
+
 ---
 
 ## 3. Gaia 루프와의 연결

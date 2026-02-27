@@ -62,6 +62,9 @@ from .gravity_tides import (
     make_ocean_nutrients,
 )
 
+# 보조 계절 엔진 — 1년 주기 리듬 표현
+from .season_engine import SeasonEngine, SeasonState
+
 __all__ = [
     # core/data — 중력 필드 기반
     "EvolutionEngine",
@@ -93,6 +96,9 @@ __all__ = [
     "OceanNutrients",
     "OceanState",
     "make_ocean_nutrients",
+    # season engine
+    "SeasonEngine",
+    "SeasonState",
 ]
 
 __version__ = "1.0.0"
