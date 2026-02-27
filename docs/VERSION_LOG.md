@@ -1,5 +1,52 @@
 # solar/ 버전 로그 / Version Log
 
+## v2.3.0 — StressAccumulator + 확장성 개선 + 인지-Gaia 브리지 (Phase 7f 완성)
+
+**날짜**: 2026-02-27 (session 7)
+**작업**: GaiaFire_Engine v1.2 → CookiieBrain solar/fire/ 연동
+
+| 파일 | 설명 |
+|------|------|
+| `solar/fire/stress_accumulator.py` | **신규** — 뉴런(ms)→기관(hr)→행성(yr) 3단계 번역기 |
+| `solar/fire/fire_risk.py` | **업데이트** — 로컬 플럭스 단위 분리 (전지구 상수 제거) |
+| `solar/fire/fire_engine.py` | **업데이트** — BandEco dataclass + provider 주입 |
+| `solar/fire/__init__.py` | **업데이트** — StressAccumulator 공개 API 등록 |
+
+StressAccumulator 3단계 파이프라인:
+```
+Level 1: NeuronEvent(ms) → CellStressState    τ=0.1s
+Level 2: CellStress      → OrganFatigueState  τ=1hr (코르티솔 반감기)
+Level 3: OrganFatigue    → PlanetStressIndex  τ=1yr (생태계 회복)
+
+출력:
+  to_brain_snapshot()   → ForgetEngine 입력 (cortisol, atp, load)
+  to_fire_env_patch()   → FireEngine O2_frac/CO2_ppm 보정값
+```
+
+LocalFireReset:
+```
+산불 발생 → B_wood 국소 소각 → recovery_mode
+           planet_ema × 0.7  → 스트레스 30% 해소
+```
+
+확장성 개선 (병목 3개 해결):
+```
+1. fire_risk.py 단위 분리: kgO2/m²/yr 로컬 플럭스만
+2. BandEco int 인덱스 (float 키 → 타입 안전)
+3. FireEngine provider 주입 (LatitudeBands 연결용)
+```
+
+검증 (ALL PASS):
+```
+stress_demo.py V1~V4 ALL PASS
+  V1: 정상 발화 → 피로<0.3, 산불압력<0.01 ✓
+  V2: 과발화 → O₂오프셋 > 0, GFI 증가 ✓
+  V3: 수면 피로(0.031) < 각성 피로(0.559) ✓
+  V4: 산불 후 B_wood 리셋 + recovery_mode ✓
+```
+
+---
+
 ## v2.2.0 — 전지구 산불 발생 예측 엔진 (Phase 7f — 독립 모듈)
 
 **날짜**: 2026-02-27 (session 6)
