@@ -67,45 +67,16 @@ gaia_loop_connector.py — Loop A/B/C (산불 CO2, 알베도, obliquity)
 
 ### 2.1 순환 1 — 질소 루프 (`nitrogen/`)
 
-**핵심 아이디어**:  
-대기 질소 \(N_2\) 를 pioneer 생물과 번개가 고정하고,  
-식물·사체·탈질을 거쳐 다시 \(N_2\) 로 돌아가는 루프를  
-**토양 질소 \(N_{\text{soil}}\)** 하나의 상태 변수로 모델링.
-
-- `fixation.py` — `NitrogenFixation`
-  - \(N_{\text{fix}} = K_{\text{fix}} B_{\text{pioneer}} f_{O_2}(O_2) f_T(T) f_W(W)\)
-  - 낮은 O₂, 적당한 온도·수분에서 최대 질소 고정.
-- `cycle.py` — `NitrogenCycle`
-  - \(dN_{\text{soil}}/dt = N_{\text{fix}} + N_{\text{decomp}} - N_{\text{uptake}} - N_{\text{denitrify}} - N_{\text{leach}}\)
-  - `N_limitation = N_soil / (N_soil + N_soil_ref)` 로 **GPP 게이트**를 계산.
-- `nitrogen_demo.py`
-  - V1~V4 ALL PASS: 질소고정 환경 의존성, 항상성, 혐기성 탈질, 150yr 시계열 검증.
-
-`day4/__init__.py` 에서 재export 되는 이름:
-
-- `NitrogenFixation`, `FixationResult`, `make_fixation_engine`
-- `NitrogenCycle`, `NitrogenState`, `make_nitrogen_cycle`
+- 대기 질소를 pioneer 생물·번개가 고정하고, 분해·흡수·탈질·침출을 거쳐  
+  다시 \(N_2\) 로 되돌리는 루프를 **토양 질소 \(N_{\text{soil}}\)** 하나로 표현한다.  
+- 결과로 얻는 `N_limitation` 이 biosphere GPP 의 **질소 게이트** 역할을 한다.
 
 ### 2.2 순환 2 — Milankovitch 장주기 드라이버 (`cycles/`)
 
-**핵심 아이디어**:  
-세차(26 kyr), 경사(41 kyr), 이심률(100/413 kyr) 3주기를  
-합성해서 **고위도 여름 일사량**과 **계절성 진폭**을 만들고,  
-이를 통해 **빙하기-간빙기**와 **건기 강도**를 장주기적으로 변조.
-
-- `milankovitch.py`
-  - `MilankovitchCycle`, `MilankovitchState`
-  - `eccentricity(t)`, `obliquity(t)`, `precession_index(t)`
-  - `insolation_summer_solstice(t, φ)` — Berger 1978 하지 일사량 공식
-  - `insolation_scale(t, φ)` — 현재( t=0 ) 대비 상대 일사량 스케일
-  - `is_glacial(t)` — 65°N 하지 일사량 임계값으로 빙하기 판단
-- `insolation.py`
-  - `insolation_at(t, φ)` — 위도별 연평균 일사량 근사 (ψ 미포함)
-  - `MilankovitchDriver` / `DriverOutput` — GaiaLoopConnector/FireEngine 연결용
-  - `make_fire_env_milank(connector, base_env, t_yr, ...)`
-    - obliquity, F0 보정, is_glacial 정보를 가진 `FireEnvSnapshot` 생성 헬퍼.
-- `milankovitch_demo.py`
-  - V1~V4 ALL PASS: 주기 범위, LGM vs 현재, Loop C 연결, 200 kyr 시계열 검증.
+- 세차(26 kyr), 경사(41 kyr), 이심률(100/413 kyr) 3주기를 합성해서  
+  **고위도 여름 일사량과 계절성 진폭**을 만들고, 빙하기/건기 강도를 장주기적으로 변조한다.  
+- `MilankovitchCycle`, `MilankovitchDriver`, `insolation_at`, `insolation_grid`,
+  `make_fire_env_milank` 등이 이 역할을 맡는다.
 
 > **Insolation 사용 규칙 / Usage rules**  
 > - 빙하기 판정(`is_glacial`) 은 **65°N 하지 일사량** `insolation_summer_solstice` (세차각 ψ 포함) 을 기준으로 한다.  
@@ -113,53 +84,22 @@ gaia_loop_connector.py — Loop A/B/C (산불 CO2, 알베도, obliquity)
 > - Loop C (장주기 건기/산불 변조) 에서는 직접적인 Q 값 대신  
 >   `obliquity_scale` / `season_amplitude` 와 같은 **무차원 스케일 포트**를 기본으로 사용한다.
 
-`day4/__init__.py` 에서 재export 되는 이름:
-
-- `MilankovitchCycle`, `MilankovitchState`
-- `make_earth_cycle`, `make_custom_cycle`
-- `insolation_at`, `insolation_grid`
-- `MilankovitchDriver`, `DriverOutput`, `make_earth_driver`
-
 ### 2.3 순환 3 — 중력-조석 주기 (`gravity_tides/`)
 
-**핵심 아이디어**:  
-달·태양 조석력이 해양을 섞어 심층 영양염을 끌어올리고,  
-그 결과 식물플랑크톤이 성장하여 **탄소를 심해로 격리**하는  
-“생물학적 탄소 펌프”를 모델링.
-
-- `tidal_mixing.py`
-  - `TidalField`, `TidalState`, `make_tidal_field`
-  - \(F_{\text{tidal}}(t) = F_{\text{moon}}(t) + F_{\text{sun}}(t)\)
-  - `mixing_depth = K_mix × F_total` → `nutrient_upwelling_uM` 계산.
-- `ocean_nutrients.py`
-  - `OceanNutrients`, `OceanState`, `make_ocean_nutrients`
-  - \(C_{\text{surface}}\) (표층 영양염) + phyto biomass 동역학
-  - `CO2_sink_ppm` 으로 대기 CO₂ 격리량 [ppm/yr] 출력.
-- `gravity_tides_demo.py`
-  - 사리/조금, C_surface ODE, 닫힌 루프, 1 yr 적분 등 V1~V4 ALL PASS.
-
-`day4/__init__.py` 에서 재export 되는 이름:
-
-- `TidalField`, `TidalState`, `make_tidal_field`
-- `OceanNutrients`, `OceanState`, `make_ocean_nutrients`
+- 달·태양 조석력이 해양을 섞어 심층 영양염을 끌어올리고,  
+  그 결과 식물플랑크톤이 성장하여 **탄소를 심해로 격리하는 생물학적 탄소 펌프**를 만든다.  
+- `TidalField`, `OceanNutrients` 가 조석 forcing → 영양염 → CO₂ sink 흐름을 담당한다.
 
 ### 2.4 보조 순환 — SeasonEngine (계절 리듬 드라이버)
 
-계절성은 이미 fire_risk 의 dry_season_modifier 등에서 암묵적으로 쓰이고 있지만,  
-넷째날에서는 이를 **독립 엔진(SeasonEngine)** 으로 분리해 재사용 가능하게 만든다.
+- 계절성은 이미 fire_risk 의 dry_season_modifier 등에서 암묵적으로 쓰이고 있었지만,  
+  넷째날에서는 이를 **독립 SeasonEngine** 으로 분리해 재사용 가능하게 한다.  
+- 상태는 `t_in_year ∈ [0,1)` 또는 `phase ∈ [0,2π)` (봄·여름·가을·겨울 위상) 이며,  
+  위도별로 `delta_T`(계절 온도 편차), `dry_season_modifier`(건기 강도)를 제공한다.  
+- 향후 Milankovitch 의 `obliquity_scale` / `season_amplitude` 를 입력으로 받아  
+  장주기적으로 계절 진폭을 조절할 수 있는 포트로 확장된다.
 
-- `season_engine.py`
-  - `SeasonEngine`, `SeasonState`
-  - 상태:
-    - `t_in_year ∈ [0,1)` 또는 `phase ∈ [0,2π)` — 봄·여름·가을·겨울 위상
-  - 위도별 출력:
-    - `delta_T` — 계절 온도 편차 [K]
-    - `dry_season_modifier` — 건기 강도 계수 (1 = 기준, >1 = 더 건조)
-  - 입력:
-    - 향후 Milankovitch 의 `obliquity_scale` / `season_amplitude` 를
-      amplitude 파라미터로 받아, 장주기적으로 계절 강도를 조절할 수 있다.
-
-SeasonEngine 결과는 Day2~Day3 레이어(Atmosphere/Biosphere/Fire)가  
+SeasonEngine 출력은 Day2~Day3 레이어(Atmosphere/Biosphere/Fire)가  
 **“지금이 연중 어느 시점인지, 계절 진폭이 얼마나 큰지”** 를 공유하는 공통 리듬 포트로 쓰인다.
 
 ---

@@ -33,12 +33,8 @@
 - `Magnetosphere`, `MagnetosphereState`  
   - 자기장 vs 태양풍 동압 균형 → 마그네토포즈 \(r_{\text{mp}}\), 차폐율.
 
-실제 구현 파일은 여기(day1/em) 아래에 있다:
-
-- `solar/day1/em/solar_luminosity.py`
-- `solar/day1/em/magnetic_dipole.py`
-- `solar/day1/em/solar_wind.py`
-- `solar/day1/em/magnetosphere.py`
+실제 구현은 `solar/day1/em/` 패키지 전체에 모여 있으며,  
+이 README에서는 개념과 주요 클래스만 설명한다.
 
 ---
 

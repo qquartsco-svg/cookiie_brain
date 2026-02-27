@@ -28,11 +28,8 @@
 - `AtmosphereComposition` — CO₂ / H₂O / O₂ / CH₄ / column_mass  (모두 mol fraction 기반)
 - `GreenhouseParams` — 온실 파라미터 구조체
 
-실제 구현 파일:
-
-- `solar/day2/atmosphere/greenhouse.py`
-- `solar/day2/atmosphere/column.py`
-- `solar/day2/atmosphere/_constants.py`
+실제 구현은 `solar/day2/atmosphere/` 패키지 전체에 모여 있으며,  
+여기서는 개념과 공개 인터페이스만 다룬다.
 
 ---
 
