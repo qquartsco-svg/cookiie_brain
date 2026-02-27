@@ -115,13 +115,23 @@ class FoodWeb:
             co2_resp_yr = co2_rate,
         )
 
-    def net_co2_flux(self, state: TrophicState, gpp: float) -> float:
+    def net_co2_flux(self, state: TrophicState, gpp: float | None = None) -> float:
         """Loop H: net CO₂ 플럭스 [상대값].
 
-        음수 = 흡수, 양수 = 방출
-        co2_abs = ALPHA_CO2_ABS * phyto
+        음수 = 흡수, 양수 = 방출.
+
+        Args
+        ----
+        state: TrophicState
+            현재 먹이망 상태.
+        gpp: Optional[float]
+            1차 생산(GPP) [상대값]. 주어지면 CO₂ 흡수 항을
+            GPP와 phyto 둘 다에 비례하도록 스케일링한다.
         """
-        co2_abs = ALPHA_CO2_ABS * state.phyto
+        if gpp is None:
+            co2_abs = ALPHA_CO2_ABS * state.phyto
+        else:
+            co2_abs = ALPHA_CO2_ABS * state.phyto * gpp
         return state.co2_resp_yr - co2_abs
 
 
