@@ -1,5 +1,68 @@
 # solar/ 버전 로그 / Version Log
 
+## v2.4.0 — 셋째날 완성: 3개 열린 루프 닫힘 + 뉴런-Gaia 연결 (Phase 8 + 8.5)
+
+**날짜**: 2026-02-27 (session 8)
+**작업**: 항상성 순환 루프 연결 완성 + 뉴런-행성 브리지
+
+| 파일 | 설명 |
+|------|------|
+| `solar/gaia_loop_connector.py` | **신규** — Loop A/B/C 3개 루프 연결기 (GaiaLoopConnector) |
+| `solar/gaia_bridge.py`         | **신규** — CookiieBrainEngine → StressAccumulator → FireEngine 브리지 |
+| `solar/__init__.py`            | v2.4.0 공개 API 등록 |
+
+**Loop A: 산불 CO₂ → 대기 CO₂**
+```
+fire_co2_source_kgC [kg C/m²/yr]
+→ ΔCO₂ [mol/mol] = co2_total_kgC × K_KGC_TO_CO2_FRAC
+→ atmosphere.composition.CO2 갱신
+→ 온실 강화 → T↑ → 건조↑ → 산불↑ (양의 피드백)
++ O₂ attractor 반대 방향 작동 (음의 피드백)
+검증: CO₂ 400 → 427 ppm (50yr 산불 누적) ✓
+```
+
+**Loop B: 식생 알베도 → 대기 온도**
+```
+biosphere.delta_albedo_land
+→ EMA smoothing → atmosphere.albedo 갱신
+→ T 변화 → GPP 변화 → 식생 변화 (음의 피드백 attractor)
+검증: 식생↑ → albedo 0.306 → 0.292 ✓
+      식생↓ → albedo 0.306 → 0.317 ✓
+```
+
+**Loop C: 세차 obliquity → 계절성 진폭**
+```
+obliquity_deg → scale = 1.0 + K_OBLIQ × (obliq - 23.5°)/23.5°
+→ dry_season_modifier 진폭 × scale
+→ 건기 강도 변화 → fire_risk 변화 (kyr 주기)
+검증: 22.1°→23.5°→24.5° → scale 0.952→1.000→1.034 ✓
+     열대 건기 수분: obliq22.1°=0.429 < obliq24.5°=0.380 ✓
+```
+
+**GaiaBridge (Phase 8): 뉴런 → 행성**
+```
+CookiieBrainEngine.energy → atp_consumed (sigmoid)
+‖state_vector 속도‖       → heat_mw
+→ StressAccumulator 3단계 → FireEnvSnapshot patch
+검증: 정상(GFI=0.0039) vs 과활성(GFI=0.0041, O2+0.0018) ✓
+```
+
+**V4 통합 결과**:
+```
+초기: O₂=30%(과잉), CO₂=400ppm
+20yr 후: O₂=29.98% (산불 소비), CO₂=448ppm (산불 방출), T=288.6K
+→ 항상성 attractor 동작 확인
+```
+
+**셋째날 완성도: 10/13 루프 (77%)**
+```
+완성: 탄소순환, 산불-O₂, 생명주기, 온실-복사, 수순환,
+      뉴런-행성 번역, 뇌-Gaia, Loop A, Loop B, Loop C
+미완(넷째날): 토양수분-증산, 자기권-방사선, 질소루프
+```
+
+---
+
 ## v2.3.0 — StressAccumulator + 확장성 개선 + 인지-Gaia 브리지 (Phase 7f 완성)
 
 **날짜**: 2026-02-27 (session 7)
