@@ -19,7 +19,7 @@ Phase Gate 흐름:
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from solar.biosphere.column import BiosphereColumn
+from solar.day3.biosphere.column import BiosphereColumn
 
 # ── 시뮬레이션 설정 ──────────────────────────────────────────────────────────
 

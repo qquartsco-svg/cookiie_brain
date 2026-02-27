@@ -34,9 +34,9 @@ import numpy as np
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from solar.core import EvolutionEngine, Body3D
-from solar.em import SolarLuminosity, SolarWind, Magnetosphere, MagneticDipole
-from solar.data import PLANETS, SUN_DATA
+from solar.day4.core import EvolutionEngine, Body3D
+from solar.day1.em import SolarLuminosity, SolarWind, Magnetosphere, MagneticDipole
+from solar.day4.data import PLANETS, SUN_DATA
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

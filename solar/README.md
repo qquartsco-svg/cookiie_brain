@@ -9,20 +9,21 @@ NASA/JPL 실측 데이터 기반 10-body 심플렉틱 엔진.
 
 ---
 
-## 개념 레이어 (폴더 구조로 보는 흐름)
+## 개념 레이어 (Creation Days · 폴더 구조)
 
-환경 설정이 **우주필드 → 태양 → 태양계 → 달 → 지구** 다음, **지구 환경 1일~7일** 순서로 쌓인다고 보면 된다.
+환경 설정이 **우주필드 → 태양계 중력장 → 빛 → 궁창 → 땅/바다/생명 → 넷째날 장주기 순환** 순서로 쌓인다고 보면 된다.
 
-| 순서 | 개념 | 구현 폴더 |
-|------|------|-----------|
-| 0 | 우주필드·태양·태양계·달·지구 | `core/`, `data/` |
-| 1 | 빛이 있으라 | `em/` |
-| 2 | 궁창 (바다-하늘) | `atmosphere/` |
-| 3 | 땅과 바다 | `surface/` |
-| 4~ | 해·달·별, 생명·인지 | `core/`, `em/`, `cognitive/` |
+| 순서 | 개념 | 구현 폴더 (현재 구조) |
+|------|------|------------------------|
+| 0 | 우주필드·태양·태양계·달·지구 | `day4/core/`, `day4/data/` |
+| 1 | 빛이 있으라 (EM 레이어) | `day1/` (`day1/em/*`) |
+| 2 | 궁창 (대기/수순환) | `day2/` (`day2/atmosphere/*`) |
+| 3 | 땅·바다·토양·식생·산불 Gaia | `day3/` (`day3/surface/*`, `day3/biosphere/*`, `day3/fire/*`, `bridge/gaia_loop_connector.py`) |
+| 4 | 해·달·별·질소·Milankovitch·조석 | `day4/` (`day4/nitrogen/*`, `day4/cycles/*`, `day4/gravity_tides/*`) |
+| 5~ | 인지·BrainCore 브리지 | `cognitive/`, `bridge/` |
 
-**직관용**: `concept/` 아래에 00_system → 01_light → 02_firmament → 03_surface → 04_onward 순으로 README만 둠.  
-**정의**: [`LAYERS.md`](LAYERS.md) 참고.
+**직관용**: `concept/` 아래에 00_system → 01_light → 02_firmament → 03_surface → 04_onward 순으로 README만 둠 (Creation Days 개념 지도).  
+**정의**: [`LAYERS.md`](LAYERS.md) 와 각 `dayN/README.md` 참고.
 
 ---: 작동 원리 / From Point Mass to Precession
 
@@ -197,75 +198,60 @@ NumPy만 필요.
 
 ## 아키텍처 / Architecture
 
-### 파일 구조 (v1.0.0 — 기어 분리)
+### 파일 구조 (v2.x — Creation Days 기준)
 
-```
+```text
 solar/
-├── __init__.py              ← 공개 API + 의존 방향 규칙
-├── README.md                ← 지금 보고 있는 파일
+├── __init__.py          ← 공개 API (Creation Days 인덱스 + legacy shim)
+├── README.md            ← 지금 보고 있는 파일
+├── LAYERS.md            ← 개념 레이어 정의
 │
-├── core/                    ← 물리 코어 (절대 상위를 import하지 않음)
-│   ├── __init__.py
-│   ├── evolution_engine.py  ← 3D N-body + 스핀-궤도 토크 + 표면 해양
-│   ├── central_body.py      ← 태양 (1/r 중력 우물)
-│   ├── orbital_moon.py      ← 달 (타원 공전 + 조석)
-│   └── tidal_field.py       ← 힘 합성기 (태양 + 달)
+├── day1/                ← 첫째날: 빛이 있으라 (EM 레이어)
+│   ├── __init__.py      ← `solar/em/*` 재export
+│   └── em/              ← SolarLuminosity, MagneticDipole, SolarWind, Magnetosphere
 │
-├── data/                    ← 데이터 층 (NASA/JPL 실측 상수)
-│   ├── __init__.py
-│   └── solar_system_data.py ← 8행성+태양+달 질량/궤도/스핀 + 빌더
+├── day2/                ← 둘째날: 궁창 / Atmosphere
+│   ├── __init__.py      ← AtmosphereColumn, AtmosphereComposition …
+│   └── atmosphere/      ← greenhouse, column, water_cycle, _constants
 │
-├── em/                      ← 전자기 레이어 (core/만 참조)
-│   ├── __init__.py
-│   ├── _constants.py        ← EPS_ZERO, EPS_GEOM 중앙 관리
-│   ├── solar_luminosity.py  ← 태양 광도 L=M^α, 조도, 온도 [Phase 5]
-│   ├── magnetic_dipole.py   ← 자기쌍극자장 B(x,t) [Phase 2]
-│   ├── solar_wind.py        ← 태양풍 플라즈마 1/r² [Phase 3]
-│   ├── magnetosphere.py     ← 자기권 경계 dipole vs P_sw [Phase 4]
-│   ├── README.md            ← EM 물리+엔지니어링 참조
-│   └── light/                ← "빛이 있으라" 기록
-│       └── README.md
+├── day3/                ← 셋째날: 땅·바다·토양·식생·산불 Gaia
+│   ├── __init__.py      ← SurfaceSchema, BiosphereColumn, FireEngine, GaiaLoopConnector …
+│   ├── surface/         ← land_fraction, effective_albedo
+│   ├── biosphere/       ← 토양 ODE, 생애주기, planet_bridge
+│   └── fire/            ← FireEngine, FireEnvSnapshot, StressAccumulator
 │
-├── surface/                ← 표면 레이어 (독립) [Phase 7 / 셋째날]
-│   ├── __init__.py
-│   ├── surface_schema.py   ← SurfaceSchema, effective_albedo (땅-바다)
-│   └── README.md
+├── day4/                ← 넷째날: 중력장 + 질소 + Milankovitch + 조석
+│   ├── __init__.py      ← EvolutionEngine, PlanetData, NitrogenCycle, MilankovitchCycle …
+│   ├── core/            ← 3D N-body + 스핀·세차·조석 (중력 필드)
+│   ├── data/            ← 태양계 상수 세트 (PLANETS, SUN_DATA)
+│   ├── nitrogen/        ← NitrogenFixation, NitrogenCycle
+│   ├── cycles/          ← Milankovitch 3-cycle + insolation driver
+│   └── gravity_tides/   ← tidal mixing + ocean nutrients (탄소 펌프)
 │
-├── atmosphere/              ← 대기 레이어 (em/, surface/ 읽기) [Phase 6a/6b]
-│   ├── __init__.py
-│   ├── _constants.py        ← SIGMA_SB, K_BOLTZ, AU_M, YR_S …
-│   ├── greenhouse.py        ← τ(조성) → ε_a → T_surface (1-layer)
-│   ├── column.py            ← AtmosphereColumn: 열적 관성 + 대기압 + 물 상태
-│   ├── water_cycle.py       ← Clausius-Clapeyron, 증발, 잠열 [Phase 6b]
-│   └── README.md
+├── bridge/              ← BrainCore·Gaia 브리지 및 legacy 루프
+│   ├── gaia_bridge.py           ← 뉴런 ↔ Gaia 환경 브리지
+│   ├── gaia_loop_connector.py   ← Loop A/B/C (CO2, albedo, obliquity)
+│   └── brain_core_bridge.py     ← BrainCore 환경 extension
 │
-├── cognitive/               ← 인지 레이어 (core/만 참조)
-│   ├── __init__.py
-│   ├── ring_attractor.py    ← 관성 기억 엔진 (Mexican-hat bump)
-│   └── spin_ring_coupling.py← 물리↔인지 필드 연결
+├── cognitive/           ← 인지 레이어 (ring attractor, spin–ring coupling)
+│   └── spin_ring_coupling.py
 │
-├── evolution_engine.py      ← backward-compat shim → core/
-├── central_body.py          ← backward-compat shim → core/
-├── orbital_moon.py          ← backward-compat shim → core/
-├── tidal_field.py           ← backward-compat shim → core/
-├── ring_attractor.py        ← backward-compat shim → cognitive/
-├── spin_ring_coupling.py    ← backward-compat shim → cognitive/
-├── tidal.py                 ← 하위 호환 re-export
-└── ocean_simulator.py       ← 하위 호환 re-export → analysis/
+├── legacy/              ← 옛 파일 (central_body, tidal_field, orbital_moon …)
+└── concept/, docs/, blockchain/ …
 ```
 
-**의존 방향 규칙 (엄격)**:
+**의존 방향 규칙 (현재 구조)**:
+
+```text
+day4/data → day4/core ← cognitive/
+                      ← day1/em
+                      ← day2/atmosphere
+                      ← day3/surface, day3/biosphere, day3/fire
+                      ← bridge/* (Gaia, BrainCore)
 ```
-data/ → core/ ← cognitive/
-              ← em/
-              ← atmosphere/  (em/, surface/ 읽기)
-              ← surface/     (독립)
-```
-- `core/`는 상위 레이어(cognitive/, em/, atmosphere/)를 **절대** import하지 않음
-- `em/`과 `cognitive/`는 서로 참조하지 않음
-- `surface/`는 의존 없음. `atmosphere/`가 effective_albedo 읽음
-- `atmosphere/`는 `em/`(조도 F), `surface/`(알베도), `core/`(질량·반지름) 읽기 전용
-- 상호 참조 금지 — 각 레이어는 독립 기어
+- `day4/core` 는 상위 레이어를 **직접 import 하지 않음** (데이터/파라미터만 입력으로 받음).  
+- `day1~day3` 레이어는 서로의 출력(env dict, driver output)만 읽고, 구현 세부는 숨김.  
+- `bridge/` 는 Creation Days를 잇는 **관찰자/브리지 계층**으로, 물리 엔진을 수정하지 않고 상태만 읽어간다.
 
 ### 주요 클래스
 

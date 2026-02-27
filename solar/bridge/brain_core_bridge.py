@@ -13,11 +13,11 @@ from typing import Dict, Any, Optional
 import numpy as np
 
 # solar 내부 import
-from .core import EvolutionEngine, Body3D
-from .data import build_solar_system
-from .em import SolarLuminosity
-from .atmosphere import AtmosphereColumn, AtmosphereComposition
-from .surface import SurfaceSchema
+from solar.day4.core import EvolutionEngine, Body3D
+from solar.day4.data import build_solar_system
+from solar.day1.em import SolarLuminosity
+from solar.day2.atmosphere import AtmosphereColumn, AtmosphereComposition
+from solar.day3.surface import SurfaceSchema
 
 
 def get_solar_environment_extension(
@@ -70,7 +70,7 @@ def get_solar_environment_extension(
 
             extra_latent = 0.0
             if biospheres and body.name in biospheres:
-                from .biosphere.planet_bridge import biosphere_feedback_to_atmosphere
+                from solar.day3.biosphere.planet_bridge import biosphere_feedback_to_atmosphere
                 bio = biospheres[body.name]
                 fb = bio.step(env, dt_yr)
                 converted = biosphere_feedback_to_atmosphere(
@@ -174,7 +174,7 @@ def create_default_environment(
     if not use_biosphere:
         return engine, sun, atmospheres
 
-    from .biosphere import BiosphereColumn
+    from solar.day3.biosphere import BiosphereColumn
     biospheres = {}
     if sfc is not None:
         biospheres["Earth"] = BiosphereColumn(

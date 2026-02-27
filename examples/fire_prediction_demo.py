@@ -21,7 +21,7 @@ fire_prediction_demo.py — 전지구 산불 발생 예측 데모
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from solar.fire import FireEngine, FireEnvSnapshot, f_O2_fire
+from solar.day3.fire import FireEngine, FireEnvSnapshot, f_O2_fire
 
 engine = FireEngine()
 

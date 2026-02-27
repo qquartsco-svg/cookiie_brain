@@ -63,11 +63,11 @@ from dataclasses import dataclass, field
 from typing import List, Optional, Dict, Any, TYPE_CHECKING
 
 # 대기 모듈
-from .atmosphere import AtmosphereColumn
+from solar.day2.atmosphere import AtmosphereColumn
 
 # 산불 모듈
-from .fire import FireEnvSnapshot, FireEngine
-from .fire.fire_engine import FireBandResult, BAND_WEIGHTS
+from solar.day3.fire import FireEnvSnapshot, FireEngine
+from solar.day3.fire.fire_engine import FireBandResult, BAND_WEIGHTS
 
 # ── 물리 상수 ─────────────────────────────────────────────────────────────────
 

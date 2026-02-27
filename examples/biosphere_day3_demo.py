@@ -10,7 +10,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from solar.brain_core_bridge import get_solar_environment_extension, create_default_environment
+from solar.bridge.brain_core_bridge import get_solar_environment_extension, create_default_environment
 
 
 def main():

@@ -22,7 +22,7 @@ import numpy as np
 from dataclasses import dataclass
 from typing import Optional, List
 
-from ..core.evolution_engine import EvolutionEngine, Body3D
+from solar.day4.core.evolution_engine import EvolutionEngine, Body3D
 from .ring_attractor import RingAttractorEngine, RingState
 
 

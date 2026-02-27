@@ -16,7 +16,7 @@
 
 from __future__ import annotations
 
-from ..atmosphere import (
+from .atmosphere import (
     AtmosphereColumn,
     AtmosphereState,
     AtmosphereComposition,

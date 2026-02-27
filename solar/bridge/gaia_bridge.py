@@ -32,7 +32,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any
 
 # solar/fire 의존
-from .fire import (
+from solar.day3.fire import (
     StressAccumulator,
     NeuronEvent,
     FireEnvSnapshot,
@@ -41,7 +41,7 @@ from .fire import (
 
 # forget_engine은 선택적 (ForgetEngine이 없으면 CBI만 생략)
 try:
-    from .fire.stress_accumulator import (
+    from solar.day3.fire.stress_accumulator import (
         CognitiveBrainSnapshot,
         OrganFatigueState,
         PlanetStressIndex,

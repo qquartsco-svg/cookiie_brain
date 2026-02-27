@@ -20,9 +20,9 @@ import math
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from solar.atmosphere import AtmosphereColumn, AtmosphereComposition
-from solar.fire import FireEngine, FireEnvSnapshot
-from solar.gaia_loop_connector import GaiaLoopConnector, LoopState, make_connector
+from solar.day2.atmosphere import AtmosphereColumn, AtmosphereComposition
+from solar.day3.fire import FireEngine, FireEnvSnapshot
+from solar.bridge.gaia_loop_connector import GaiaLoopConnector, LoopState, make_connector
 
 PASS = "✅ PASS"
 FAIL = "❌ FAIL"

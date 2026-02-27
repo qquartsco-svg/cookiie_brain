@@ -14,8 +14,8 @@ fire_feedback_test.py — 산불 피드백 O₂ attractor 검증
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from solar.biosphere._constants import O2_FIRE_TH, K_FIRE
-from solar.biosphere.latitude_bands import LatitudeBands
+from solar.day3.biosphere._constants import O2_FIRE_TH, K_FIRE
+from solar.day3.biosphere.latitude_bands import LatitudeBands
 
 print("=" * 80)
 print("  산불 피드백 O₂ Attractor 검증")

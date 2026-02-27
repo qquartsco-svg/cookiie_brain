@@ -23,7 +23,7 @@ for _p in (_HERE, _PARENT, _ROOT):
         sys.path.insert(0, _p)
 
 try:
-    from solar.nitrogen import (        # CookiieBrain 패키지 구조
+    from solar.day4.nitrogen import (        # CookiieBrain 패키지 구조
         NitrogenFixation, make_fixation_engine,
         NitrogenCycle, make_nitrogen_cycle,
     )

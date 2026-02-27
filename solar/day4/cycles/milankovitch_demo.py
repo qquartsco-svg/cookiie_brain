@@ -12,12 +12,12 @@ import math
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
-from solar.cycles import (
+from solar.day4.cycles import (
     MilankovitchCycle, make_earth_cycle,
     MilankovitchDriver, make_earth_driver,
     insolation_at,
 )
-from solar.gaia_loop_connector import make_connector
+from solar.bridge.gaia_loop_connector import make_connector
 
 PASS = "✅ PASS"
 FAIL = "❌ FAIL"
@@ -107,7 +107,7 @@ def run_milankovitch_demo():
 
     driver = make_earth_driver()
     _, connector = make_connector(T_init=288.0, CO2_ppm=400.0)
-    from solar.fire import FireEngine, FireEnvSnapshot
+    from solar.day3.fire import FireEngine, FireEnvSnapshot
 
     fire_engine = FireEngine()
 

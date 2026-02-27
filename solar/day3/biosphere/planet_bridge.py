@@ -9,7 +9,7 @@ Atmosphere expects: composition mixing ratio [mol/mol] increment per dt_yr.
 from typing import Dict, Any
 
 # Use atmosphere constants for consistency
-from ..atmosphere._constants import MU_AIR, YR_S
+from solar.day2.atmosphere._constants import MU_AIR, YR_S
 
 M_C = 12.010e-3   # kg/mol carbon
 M_O2 = 31.998e-3  # kg/mol O2

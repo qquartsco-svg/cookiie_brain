@@ -3,25 +3,25 @@
 
 구조 (기어 분리 — 상호 참조 금지):
 
-  core/ (물리 층):
+  day4/core/ (물리 층):
     evolution_engine.py  → EvolutionEngine, Body3D, SurfaceOcean
     central_body.py      → CentralBody
     orbital_moon.py      → OrbitalMoon
     tidal_field.py       → TidalField
 
-  data/ (데이터 층):
+  day4/data/ (데이터 층):
     solar_system_data.py → PlanetData, PLANETS, build_solar_system()
 
-  em/ (전자기 층):
+  day1/em/ (전자기 층):
     magnetic_dipole.py   → MagneticDipole, DipoleFieldPoint
     solar_wind.py        → SolarWind, SolarWindState
     magnetosphere.py     → Magnetosphere, MagnetosphereState
     solar_luminosity.py  → SolarLuminosity, IrradianceState  (빛이 있으라)
 
-  surface/ (표면 층) [Phase 7 / 셋째날]:
+  day3/surface/ (표면 층) [Phase 7 / 셋째날]:
     surface_schema.py    → SurfaceSchema, effective_albedo (땅-바다 분리)
 
-  atmosphere/ (대기 층):
+  day2/atmosphere/ (대기 층):
     greenhouse.py        → optical_depth, effective_emissivity, GreenhouseParams
     column.py            → AtmosphereColumn, AtmosphereState, AtmosphereComposition
 
@@ -29,17 +29,17 @@
     ring_attractor.py    → RingAttractorEngine, RingState
     spin_ring_coupling.py→ SpinRingCoupling, CouplingState
 
-의존 방향:
-  data/ → core/ ← cognitive/
-               ← em/
-               ← atmosphere/ (em/, surface/ 읽기)
-               ← surface/ (독립)
+의존 방향 (폴더 이동 후 개념적 구조는 동일):
+  day4/data/ → day4/core/ ← cognitive/
+                        ← day1/em/
+                        ← day2/atmosphere/ (em/, surface/ 읽기)
+                        ← day3/surface/ (독립)
   core/는 상위를 import하지 않음
   surface/는 의존 없음. atmosphere/가 effective_albedo 읽음
 """
 
 # ── core (물리) ───────────────────────────────────
-from .core import (
+from .day4.core import (
     EvolutionEngine,
     Body3D,
     SurfaceOcean,
@@ -49,7 +49,7 @@ from .core import (
 )
 
 # ── data (NASA 실측) ──────────────────────────────
-from .data import (
+from .day4.data import (
     PLANETS,
     SUN_DATA,
     MOON_DATA,
@@ -58,7 +58,7 @@ from .data import (
 )
 
 # ── em (전자기) ───────────────────────────────────
-from .em import (
+from .day1.em import (
     MagneticDipole,
     DipoleFieldPoint,
     SolarWind,
@@ -70,10 +70,10 @@ from .em import (
 )
 
 # ── surface (표면/땅-바다) [Phase 7] ───────────────
-from .surface import SurfaceSchema, effective_albedo
+from .day3.surface import SurfaceSchema, effective_albedo
 
 # ── atmosphere (대기/궁창) ────────────────────────
-from .atmosphere import (
+from .day2.atmosphere import (
     AtmosphereColumn,
     AtmosphereState,
     AtmosphereComposition,
@@ -127,7 +127,7 @@ __all__ = [
 ]
 
 # ── gaia_bridge (Phase 8: 뉴런-Gaia 연결) ───────────────
-from .gaia_bridge import (
+from .bridge.gaia_bridge import (
     GaiaBridge,
     GaiaBridgeConfig,
     BrainGaiaState,
@@ -135,7 +135,7 @@ from .gaia_bridge import (
 )
 
 # ── gaia_loop_connector (Phase 8.5: 3개 루프 연결, 항상성 순환) ──
-from .gaia_loop_connector import (
+from .bridge.gaia_loop_connector import (
     GaiaLoopConnector,
     LoopState,
     make_connector,
@@ -154,7 +154,7 @@ __all__ += [
 ]
 
 # ── cycles (넷째날 순환 2: Milankovitch 장주기 드라이버) ──────────────────────
-from .cycles import (
+from .day4.cycles import (
     MilankovitchCycle,
     MilankovitchState,
     make_earth_cycle,
@@ -180,7 +180,7 @@ __all__ += [
 ]
 
 # ── nitrogen (넷째날 순환 1: 질소 순환) ───────────────────────────────────────
-from .nitrogen import (
+from .day4.nitrogen import (
     NitrogenFixation,
     FixationResult,
     make_fixation_engine,
@@ -200,7 +200,7 @@ __all__ += [
 ]
 
 # ── gravity_tides (넷째날 순환 3: 조석-해양 탄소 펌프) ────────────────────────
-from .gravity_tides import (
+from .day4.gravity_tides import (
     TidalField,
     TidalState,
     make_tidal_field,

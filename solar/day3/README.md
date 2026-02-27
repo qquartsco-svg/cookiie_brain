@@ -27,12 +27,12 @@
 - `FireEngine`, `FireEnvSnapshot` (`fire/`)  
 - `GaiaLoopConnector`, `LoopState`, `make_connector` (`gaia_loop_connector.py`)
 
-실제 구현 위치는 그대로:
+실제 구현 위치 (현재 구조):
 
-- `solar/surface/*`
-- `solar/biosphere/*`
-- `solar/fire/*`
-- `solar/gaia_loop_connector.py`
+- `solar/day3/surface/*`
+- `solar/day3/biosphere/*`
+- `solar/day3/fire/*`
+- `solar/bridge/gaia_loop_connector.py`
 
 ---
 

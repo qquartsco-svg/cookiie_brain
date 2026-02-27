@@ -16,9 +16,9 @@
 
 from __future__ import annotations
 
-from ..surface import SurfaceSchema, effective_albedo
+from .surface import SurfaceSchema, effective_albedo
 
-from ..biosphere import (
+from .biosphere import (
     BiosphereColumn,
     BiosphereState,
     LatitudeBands,
@@ -26,9 +26,9 @@ from ..biosphere import (
     BAND_WEIGHTS,
 )
 
-from ..fire import FireEngine, FireEnvSnapshot
+from .fire import FireEngine, FireEnvSnapshot
 
-from ..gaia_loop_connector import GaiaLoopConnector, LoopState, make_connector
+from ..bridge.gaia_loop_connector import GaiaLoopConnector, LoopState, make_connector
 
 __all__ = [
     # surface

@@ -22,10 +22,10 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from solar.biosphere.pioneer import (
+from solar.day3.biosphere.pioneer import (
     d_pioneer_dt, lambda_decay, carrying_capacity,
 )
-from solar.biosphere._constants import (
+from solar.day3.biosphere._constants import (
     ORGANIC_THRESHOLD, R_PIONEER, M_PIONEER,
     K0_CARRYING, K_SOIL_FEEDBACK,
     W_WEATHERING, W_MINERAL_HUMUS,

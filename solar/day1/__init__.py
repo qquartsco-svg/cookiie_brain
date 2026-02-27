@@ -18,7 +18,7 @@
 
 from __future__ import annotations
 
-from ..em import (
+from .em import (
     SolarLuminosity,
     IrradianceState,
     MagneticDipole,

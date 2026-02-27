@@ -24,7 +24,7 @@ for _p in (_HERE, _PARENT, _ROOT):                     # 세 경로 모두 등�
         sys.path.insert(0, _p)
 
 try:
-    from solar.gravity_tides import (        # CookiieBrain 패키지 구조
+    from solar.day4.gravity_tides import (        # CookiieBrain 패키지 구조
         TidalField, make_tidal_field,
         OceanNutrients, make_ocean_nutrients,
     )

@@ -26,11 +26,11 @@
 from __future__ import annotations
 
 # 중력 필드 — 태양계 N-body (EvolutionEngine + PlanetData)
-from ..core import EvolutionEngine, Body3D
-from ..data import PlanetData, PLANETS, build_solar_system
+from .core import EvolutionEngine, Body3D
+from .data import PlanetData, PLANETS, build_solar_system
 
 # 순환 1 — 질소 루프 (nitrogen/)
-from ..nitrogen import (
+from .nitrogen import (
     NitrogenFixation,
     FixationResult,
     make_fixation_engine,
@@ -40,7 +40,7 @@ from ..nitrogen import (
 )
 
 # 순환 2 — 장주기 Milankovitch 드라이버 (cycles/)
-from ..cycles import (
+from .cycles import (
     MilankovitchCycle,
     MilankovitchState,
     make_earth_cycle,
@@ -53,7 +53,7 @@ from ..cycles import (
 )
 
 # 순환 3 — 조석-해양 탄소 펌프 (gravity_tides/)
-from ..gravity_tides import (
+from .gravity_tides import (
     TidalField,
     TidalState,
     make_tidal_field,
@@ -61,9 +61,6 @@ from ..gravity_tides import (
     OceanState,
     make_ocean_nutrients,
 )
-
-# 셋째날 Gaia 루프와의 연결점 (참고용 re-export)
-from ..gaia_loop_connector import GaiaLoopConnector, LoopState, make_connector
 
 __all__ = [
     # core/data — 중력 필드 기반
@@ -96,10 +93,6 @@ __all__ = [
     "OceanNutrients",
     "OceanState",
     "make_ocean_nutrients",
-    # GaiaLoopConnector — 넷째날 루프가 연결되는 지점
-    "GaiaLoopConnector",
-    "LoopState",
-    "make_connector",
 ]
 
 __version__ = "1.0.0"

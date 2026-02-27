@@ -145,13 +145,9 @@ gaia_loop_connector.py — Loop A/B/C (산불 CO2, 알베도, obliquity)
                              └→ atmosphere.composition.CO2 (미래 연결)
 ```
 
-`day4/__init__.py` 는 편의를 위해 Gaia 쪽 핵심도 같이 re-export 한다:
+Gaia 루프 자체 구현은:
 
-- `GaiaLoopConnector`, `LoopState`, `make_connector`
-
-실제 루프를 닫는 코드는:
-
-- `solar/gaia_loop_connector.py` — Loop A/B/C (셋째날)
+- `solar/bridge/gaia_loop_connector.py` — Loop A/B/C (셋째날)
 - `docs/DAY4_DESIGN.md` — `day4_loop_connector.py` 설계 (넷째날 확장 안)
 
 ---
