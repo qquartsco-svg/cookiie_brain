@@ -151,7 +151,7 @@ PlanetRunner = 세 개의 12가 교차하는 지점
 
 ---
 
-## 5. 알려진 한계 — Day8 이후 개선 사항
+## 5. 알려진 한계 — 에덴 시스템에서 개선 예정
 
 ### ⚠️ Explicit Euler Ordering (현재)
 
@@ -175,9 +175,9 @@ for k in range(inner_iters):
 **지금은 문제 없음.** `dt_yr=1.0` 스케일에서 explicit ordering 오차는 수렴.
 장기 시뮬레이션(>1000yr) 또는 빠른 피드백 루프 구현 시 필요.
 
-### 메모: Day8 설계 포인트
-이 한계를 해결하는 것이 Day8의 핵심 과제가 될 수 있다.
-→ [`docs/DAY8_CONCEPT.md`](../../docs/DAY8_CONCEPT.md) 참고
+### 메모: 에덴 시스템 설계 포인트
+이 한계를 해결하는 것이 에덴(Eden) Observer/Controller 레이어의 핵심 과제다.
+→ [`docs/EDEN_CONCEPT.md`](../../docs/EDEN_CONCEPT.md) 참고
 
 ---
 
