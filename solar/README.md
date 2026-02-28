@@ -20,7 +20,9 @@ NASA/JPL 실측 데이터 기반 10-body 심플렉틱 엔진.
 | 2 | 궁창 (대기/수순환) | `day2/` (`day2/atmosphere/*`) |
 | 3 | 땅·바다·토양·식생·산불 Gaia | `day3/` (`day3/surface/*`, `day3/biosphere/*`, `day3/fire/*`, `bridge/gaia_loop_connector.py`) |
 | 4 | 해·달·별·질소·Milankovitch·조석 | `day4/` (`day4/nitrogen/*`, `day4/cycles/*`, `day4/gravity_tides/*`) |
-| 5~ | 인지·BrainCore 브리지 | `cognitive/`, `bridge/` |
+| 5 | 생물 이동·정보 네트워크 (새·물고기 transport) | `day5/` (`day5/mobility_engine`, `seed_transport`, `food_web`) |
+| 6 | 진화 상호작용 (경쟁·변이·종 다양성) | `day6/` (`day6/species_engine`, `mutation_engine`, `interaction_graph`, `niche_model`) |
+| 7~ | 인지·BrainCore 브리지 | `cognitive/`, `bridge/` |
 
 **직관용**: `concept/` 아래에 00_system → 01_light → 02_firmament → 03_surface → 04_onward 순으로 README만 둠 (Creation Days 개념 지도).  
 **정의**: [`LAYERS.md`](LAYERS.md) 와 각 `dayN/README.md` 참고.

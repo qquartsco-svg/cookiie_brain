@@ -30,6 +30,11 @@ GaiaLoopConnector 연결 포인트:
     → 관측 진폭 ±10% 오차 허용
     → 계산 속도 최우선 (매 yr 스텝에서 호출)
 
+주의:
+    이 모듈은 evolution_engine 이 토크를 적분해 얻은 세차/경사/이심률을
+    "읽어오는" 것이 아니라, Berger 계열 해석식으로 주어진
+    **외생 장주기 forcing** 을 생성하는 역할을 한다.
+
 v1.0 (넷째날 순환 2-A):
     MilankovitchCycle: 해석적 3주기 계산기
     MilankovitchState: 매 스텝 스냅샷

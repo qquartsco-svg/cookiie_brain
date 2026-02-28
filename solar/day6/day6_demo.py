@@ -1,6 +1,6 @@
 """day6_demo.py — Day6 검증 스위트
 
-V1~V22 ALL PASS 목표.
+V1~V24 ALL PASS 목표.
 
 V1  genome_state    recombine + mutate 기본 동작
 V2  genome_state    child traits 길이 = 부모 길이
@@ -24,6 +24,8 @@ V19 day5_coupling   bird_flux 클수록 k_encounter 증가
 V20 gaia_feedback   genome traits → CO₂/albedo 환경 수정
 V21 gaia_feedback   clamp: CO₂ 물리 한계 내 클램핑
 V22 selection       recombination_bonus: 분산 낮은 genome 이 더 높은 fitness
+V23 contact_engine  compute(..., k_encounter_override) → scalar 반영
+V24 integration    evolution_step → n_offspring 자손 반환, from_contact_result 그래프
 """
 
 from __future__ import annotations
@@ -49,6 +51,8 @@ from day6.niche_model import NicheModel, NicheState, make_niche_model
 from day6.interaction_graph import InteractionGraph, make_interaction_graph
 from day6.day5_coupling import Day5Coupler, make_day5_coupler
 from day6.gaia_feedback import GaiaFeedbackEngine, make_gaia_feedback_engine
+from day6.integration import evolution_step
+from day6.interaction_graph import from_contact_result
 
 
 # ── 헬퍼 ────────────────────────────────────────────────────────────────────
@@ -351,6 +355,41 @@ fit_chaotic = sel_conv.fitness(genome_chaotic, {})
 ok("V22 recombination_bonus: 수렴(저분산) genome > 혼돈(고분산) genome",
    fit_stable > fit_chaotic,
    f"stable={fit_stable:.4f}, chaotic={fit_chaotic:.4f}")
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# V23 ~ V24  확장 API (k_encounter_override, evolution_step, from_contact_result)
+# ════════════════════════════════════════════════════════════════════════════
+print("\n── V23~V24  확장 API (Contact override / integration) ───────────────")
+
+# V23: ContactEngine.compute(..., k_encounter_override) → scalar 반영
+ce_ov = make_contact_engine(k_encounter=1.0, V_cell=1.0)
+rho_v = [2.0, 3.0]
+cr_default = ce_ov.compute(rho_v)
+cr_override = ce_ov.compute(rho_v, k_encounter_override=10.0)
+ok("V23 k_encounter_override=10 → scalar 약 10배",
+   cr_override.p_contact_scalar > cr_default.p_contact_scalar * 5,
+   f"default={cr_default.p_contact_scalar:.4f}, override={cr_override.p_contact_scalar:.4f}")
+
+# V24: evolution_step + from_contact_result
+pop_ev = [GenomeState(traits=[1.0, 2.0]), GenomeState(traits=[3.0, 4.0])]
+band_d = [[1.0, 1.0]]
+ce24 = make_contact_engine(k_encounter=0.1, V_cell=1.0)
+me24 = make_mutation_engine(base_mutation_rate=1e-6)
+rep24 = make_reproduction_engine(crossover_rate=0.5, mutation_rate=0.0)
+sel24 = make_selection_engine(fitness_fn=lambda g, e: 1.0)
+offspring = evolution_step(
+    pop_ev, {"GPP_scale": 1.0}, band_d, ce24, me24, rep24, sel24,
+    n_offspring=2, rng=random.Random(123),
+)
+ok("V24 evolution_step 반환 길이 = n_offspring", len(offspring) == 2, str(len(offspring)))
+ok("V24 자손 GenomeState, traits 길이 유지",
+   all(isinstance(o, GenomeState) and len(o.traits) == 2 for o in offspring),
+   str([len(o.traits) for o in offspring]))
+g_from_contact = from_contact_result(cr_default, competition_scale=0.02)
+ok("V24 from_contact_result → InteractionGraph, n_species=2",
+   g_from_contact.n_species == 2 and len(g_from_contact.competition) == 2,
+   f"n_species={g_from_contact.n_species}")
 
 
 # ════════════════════════════════════════════════════════════════════════════

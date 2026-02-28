@@ -7,7 +7,10 @@ ContactEngine 의 P_contact(i,j) 와 연동하여 상호작용 강도 제공.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Dict, Tuple, Optional
+from typing import List, Dict, Tuple, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .contact_engine import ContactResult
 
 
 @dataclass
@@ -50,4 +53,29 @@ def make_interaction_graph(
     return InteractionGraph(n_species=n_species, predation=predation, competition=competition)
 
 
-__all__ = ["InteractionGraph", "make_interaction_graph"]
+def from_contact_result(
+    contact_result: "ContactResult",
+    competition_scale: float = 0.01,
+    predation: Optional[List[List[float]]] = None,
+) -> InteractionGraph:
+    """ContactResult(조우 행렬)에서 경쟁 행렬 C를 유도해 InteractionGraph 생성.
+
+    C[i][j] = competition_scale * P_contact(i,j), 대각선 0.
+    포식 행렬은 predation 인자로 주거나 None이면 0 행렬.
+
+    확장: Day5 transport → ContactEngine → 여기 → SpeciesEngine.graph 로 연결 가능.
+    """
+    n = len(contact_result.p_contact_matrix)
+    if n == 0:
+        return make_interaction_graph(n_species=0)
+    P = contact_result.p_contact_matrix
+    comp = [
+        [0.0 if i == j else competition_scale * P[i][j] for j in range(n)]
+        for i in range(n)
+    ]
+    if predation is None:
+        predation = [[0.0] * n for _ in range(n)]
+    return InteractionGraph(n_species=n, predation=predation, competition=comp)
+
+
+__all__ = ["InteractionGraph", "make_interaction_graph", "from_contact_result"]

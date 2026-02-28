@@ -47,6 +47,7 @@ class ContactEngine:
         self,
         rho: List[float],
         band_idx: Optional[int] = None,
+        k_encounter_override: Optional[float] = None,
     ) -> ContactResult:
         """밀도 벡터 ρ (종별) 로 조우 확률 행렬 및 스칼라 요약 계산.
 
@@ -56,28 +57,31 @@ class ContactEngine:
             종별 밀도 [개체/m²] (또는 바이오매스).
         band_idx : Optional[int]
             밴드 인덱스 (로깅용).
+        k_encounter_override : Optional[float]
+            이 밴드만 사용할 k_encounter (Day5Coupler 연동 시 사용).
+            None 이면 self.k_encounter 사용.
 
         Returns
         -------
         ContactResult
             p_contact_matrix[i][j] = P_contact(i,j), p_contact_scalar = Σ_ij P(i,j) 또는 평균.
         """
+        k = (k_encounter_override if k_encounter_override is not None else self.k_encounter)
+        k = max(1e-12, k)
         n = len(rho)
         matrix: List[List[float]] = [[0.0] * n for _ in range(n)]
         total = 0.0
         for i in range(n):
             for j in range(n):
-                p = self.p_contact_pair(rho[i], rho[j])
+                p = rho[i] * rho[j] * k / self.V_cell
                 matrix[i][j] = p
                 total += p
-        # 스칼라: 전체 조우 강도의 정규화 평균 = total / n²
-        # (mutation_engine.step()에 p_contact로 직접 전달 가능한 [0,∞) 범위)
         scalar = total / max(1, n * n)
         return ContactResult(p_contact_matrix=matrix, p_contact_scalar=scalar)
 
-    def p_contact_scalar_for_mutation(self, rho: List[float]) -> float:
+    def p_contact_scalar_for_mutation(self, rho: List[float], k_encounter_override: Optional[float] = None) -> float:
         """mutation_engine.step() 에 넣을 단일 스칼라."""
-        r = self.compute(rho)
+        r = self.compute(rho, k_encounter_override=k_encounter_override)
         return r.p_contact_scalar
 
 

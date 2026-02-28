@@ -25,10 +25,11 @@ from .contact_engine import ContactEngine, ContactResult, make_contact_engine
 from .genome_state import GenomeState, recombine, mutate
 from .reproduction_engine import ReproductionEngine, ReproductionResult, make_reproduction_engine
 from .selection_engine import SelectionEngine, SelectionResult, make_selection_engine
-from .interaction_graph import InteractionGraph, make_interaction_graph
+from .interaction_graph import InteractionGraph, make_interaction_graph, from_contact_result
 from .niche_model import NicheModel, NicheState, make_niche_model
 from .day5_coupling import Day5Coupler, CouplingResult, make_day5_coupler
 from .gaia_feedback import GaiaFeedbackEngine, GaiaFeedbackResult, make_gaia_feedback_engine
+from .integration import evolution_step
 
 __all__ = [
     "SpeciesEngine",
@@ -51,6 +52,7 @@ __all__ = [
     "make_selection_engine",
     "InteractionGraph",
     "make_interaction_graph",
+    "from_contact_result",
     "NicheModel",
     "NicheState",
     "make_niche_model",
@@ -62,4 +64,5 @@ __all__ = [
     "GaiaFeedbackEngine",
     "GaiaFeedbackResult",
     "make_gaia_feedback_engine",
+    "evolution_step",
 ]

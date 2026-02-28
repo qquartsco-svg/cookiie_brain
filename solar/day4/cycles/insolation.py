@@ -6,6 +6,10 @@
       2) insolation(t, φ) → FireEnvSnapshot.F0 보정
       3) is_glacial(t) → ice_albedo.py 트리거 (구현 예정)
 
+    여기서 사용되는 obliquity/eccentricity/insolation 값들은
+    evolution_engine 의 N-body 토크 적분 결과가 아니라,
+    milankovitch.MilankovitchCycle 가 생성하는 **해석적 장주기 forcing** 이다.
+
 핵심 함수:
     insolation_at(cycle, t_yr, phi_deg)        — 특정 위도 연평균 일사량(단순 근사, ψ 미포함)
     make_fire_env_milank(connector, ...)       — Milankovitch 반영 FireEnvSnapshot
