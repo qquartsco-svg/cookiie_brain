@@ -96,6 +96,10 @@ class PlanetRunner:
         니치 모델의 종 수.
     seed : int
         난수 시드 (재현성).
+    initial_conditions : dict, optional
+        InitialConditions.to_runner_kwargs() 결과를 넘기면
+        CO2, O2, albedo, f_land, mutation_factor 등이 동역학 계산값으로 초기화된다.
+        None이면 대홍수 이후(postdiluvian) 기본값 사용.
     """
 
     def __init__(
@@ -103,19 +107,44 @@ class PlanetRunner:
         n_bands: int = BAND_COUNT,
         n_species: int = 4,
         seed: int = 42,
+        initial_conditions: Optional[Dict] = None,
     ) -> None:
         self.n_bands = n_bands
         self.rng = random.Random(seed)
         self.time_yr = 0.0
 
+        # ── 초기조건 파싱 ─────────────────────────────────────────────────────
+        ic = initial_conditions or {}
+        _CO2_ppm        = ic.get('CO2_ppm_init',       400.0)
+        _O2_frac        = ic.get('O2_frac_init',        0.21)
+        _albedo         = ic.get('albedo_init',         0.306)
+        _f_land         = ic.get('f_land_init',         0.29)
+        _mutation_factor= ic.get('mutation_factor',     1.0)
+        _precip_mode    = ic.get('precip_mode',         'rain')
+        _T_surface_init = ic.get('T_surface_K_init',    None)  # None → 대기 계산
+        _pole_eq_delta  = ic.get('pole_eq_delta_K',     48.0)
+        _pressure_atm   = ic.get('pressure_atm',        1.0)
+
+        # 초기조건 메타 저장 (스냅샷/문서화용)
+        self._ic_phase   = ic.get('phase', 'postdiluvian') if ic else 'postdiluvian'
+        self._ic_summary = ic  # 원본 보존
+
         # ── 1. 리듬 엔진 (Day4 Milankovitch) ────────────────────────────────
         self.rhythm = MilankovitchCycle()
 
         # ── 2. 대기 엔진 (Day2) ──────────────────────────────────────────────
-        self.atmosphere = AtmosphereColumn()
+        from ..day2.atmosphere.column import AtmosphereComposition
+        comp = AtmosphereComposition(CO2=_CO2_ppm * 1e-6, O2=_O2_frac)
+        atm_kwargs: Dict[str, Any] = dict(
+            albedo      = _albedo,
+            composition = comp,
+        )
+        if _T_surface_init is not None:
+            atm_kwargs['T_surface_init'] = _T_surface_init
+        self.atmosphere = AtmosphereColumn(**atm_kwargs)
 
         # ── 3. 생물권 밴드 (Day3) ────────────────────────────────────────────
-        self.biosphere = LatitudeBands()
+        self.biosphere = LatitudeBands(CO2_ppm=_CO2_ppm, O2_frac=_O2_frac)
 
         # ── 4. 계절 엔진 (Day4) ──────────────────────────────────────────────
         self.season = SeasonEngine(obliquity_deg=23.44)
@@ -134,19 +163,20 @@ class PlanetRunner:
         ]
 
         # ── 8. 수송 엔진 (Day5) ──────────────────────────────────────────────
-        # 인접 밴드 이웃 연결 (선형 체인)
         neighbors = self._make_linear_neighbors(n_bands)
         rates = [0.05] * n_bands
         kernel = TransportKernel(n_bands=n_bands, neighbors=neighbors, rates=rates)
         self.transport = SeedTransport(kernel)
-        self.band_seed = [1.0] * n_bands   # 초기 씨드 분포
+        self.band_seed = [1.0] * n_bands
 
         # ── 9. 변이 엔진 (Day6) ──────────────────────────────────────────────
-        self.mutation = make_mutation_engine(base_mutation_rate=0.01)
+        # mutation_factor: 에덴=0.01, 현재=1.0 → base_rate에 곱셈
+        _base_mut = 0.01 * _mutation_factor
+        self.mutation = make_mutation_engine(base_mutation_rate=_base_mut)
+        self._mutation_factor = _mutation_factor   # 스냅샷 기록용
 
         # ── 10. 피드백 엔진 (Day6) ───────────────────────────────────────────
         self.feedback = make_gaia_feedback_engine()
-        # 기본 genome: 각 종 균등 traits
         self._genomes = [
             GenomeState(traits=[0.5, 0.5, 0.5, 0.5])
             for _ in range(n_species)
@@ -155,11 +185,14 @@ class PlanetRunner:
 
         # ── 11. 니치 엔진 (Day6) — 밴드별 ──────────────────────────────────
         self.niche_engine = make_niche_model(n_bands=n_bands, n_species=n_species)
+        # f_land: 에덴=0.40, 현재=0.29
+        # resource_capacity: f_land에 비례 확장
+        _cap = 100.0 * (_f_land / 0.29)
         self.niche_states = [
             NicheState(
                 band_idx=i,
-                land_fraction=0.29,
-                resource_capacity=100.0,
+                land_fraction=_f_land,
+                resource_capacity=_cap,
                 occupancy=[1.0] * n_species,
             )
             for i in range(n_bands)
@@ -167,6 +200,11 @@ class PlanetRunner:
 
         # ── 12. 스트레스 엔진 (Day3) ─────────────────────────────────────────
         self.stress = StressAccumulator()
+
+        # ── 스트레스 기준점 저장 (초기조건 기준) ────────────────────────────
+        # 에덴에서 35°C, 250ppm은 "정상" → 기준점을 초기값으로
+        self._stress_T_ref   = _T_surface_init if _T_surface_init else 288.0
+        self._stress_CO2_ref = _CO2_ppm
 
     # ── 내부 헬퍼 ─────────────────────────────────────────────────────────────
 
@@ -239,7 +277,7 @@ class PlanetRunner:
                 dt=dt_yr,
                 B_pioneer=gpp,
                 GPP_rate=gpp,
-                O2_frac=0.21,
+                O2_frac=self.biosphere.O2_frac if hasattr(self.biosphere, 'O2_frac') else 0.21,
                 T_K=T_K,
                 W_moisture=W,
             )
@@ -300,13 +338,20 @@ class PlanetRunner:
         )
 
         # ── STEP 12: 스트레스 누적 ───────────────────────────────────────────
-        # CO2 이상·온도 이상을 스트레스 이벤트로 변환
-        stress_magnitude = max(0.0, (CO2_ppm - 400.0) / 400.0 + (T_surface - 288.0) / 50.0)
+        # CO2 이상·온도 이상: 초기조건 기준점에서의 편차로 계산
+        # (에덴: 기준=250ppm/308K, 현재: 기준=400ppm/288K)
+        stress_magnitude = max(0.0,
+            (CO2_ppm - self._stress_CO2_ref) / max(self._stress_CO2_ref, 1.0) +
+            (T_surface - self._stress_T_ref) / 50.0
+        )
         if stress_magnitude > 0.01:
+            _atp = min(1.0, stress_magnitude)
             event = NeuronEvent(
-                neuron_id="planet_co2_T",
-                intensity=min(1.0, stress_magnitude),
-                source="runner",
+                time_ms=self.time_yr * 365.25 * 24.0 * 3600.0 * 1000.0,
+                co2_umol_s=max(0.0, (CO2_ppm - self._stress_CO2_ref) * 0.1),
+                heat_mw=max(0.0, (T_surface - self._stress_T_ref) * 0.5),
+                atp_consumed=_atp,
+                neuron_id=0,
             )
             self.stress.push_neuron_event(event)
         stress_summary = self.stress.summary()
@@ -341,9 +386,32 @@ def make_planet_runner(
     n_bands: int = BAND_COUNT,
     n_species: int = 4,
     seed: int = 42,
+    initial_conditions: Optional[Dict] = None,
 ) -> PlanetRunner:
-    """기본 PlanetRunner 생성 helper."""
-    return PlanetRunner(n_bands=n_bands, n_species=n_species, seed=seed)
+    """PlanetRunner 생성 helper.
+
+    Parameters
+    ----------
+    initial_conditions : dict, optional
+        InitialConditions.to_runner_kwargs() 결과.
+        None이면 대홍수 이후(postdiluvian) 기본값.
+
+    Examples
+    --------
+    # 에덴 환경으로 시작:
+    from solar.eden.initial_conditions import make_antediluvian
+    ic = make_antediluvian()
+    runner = make_planet_runner(initial_conditions=ic.to_runner_kwargs())
+
+    # 현재 지구(기본):
+    runner = make_planet_runner()
+    """
+    return PlanetRunner(
+        n_bands=n_bands,
+        n_species=n_species,
+        seed=seed,
+        initial_conditions=initial_conditions,
+    )
 
 
 __all__ = ["PlanetRunner", "PlanetSnapshot", "make_planet_runner"]

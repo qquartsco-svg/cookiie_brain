@@ -42,6 +42,13 @@ from .flood import (
     FloodSnapshot,
     make_flood_engine,
 )
+from .initial_conditions import (
+    InitialConditions,
+    EarthBandState,
+    make_antediluvian,
+    make_postdiluvian,
+    make_flood_peak,
+)
 
 __version__ = "0.1.0"
 
@@ -55,4 +62,10 @@ __all__ = [
     "FloodEngine",
     "FloodSnapshot",
     "make_flood_engine",
+    # initial_conditions
+    "InitialConditions",
+    "EarthBandState",
+    "make_antediluvian",
+    "make_postdiluvian",
+    "make_flood_peak",
 ]
