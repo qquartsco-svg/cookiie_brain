@@ -119,7 +119,7 @@
 | 엔진 | 역할 |
 |------|------|
 | **GaiaLoopConnector** | Loop A/B/C — biosphere/fire/cycles → CO2, albedo, obliquity scaling |
-| (확장) **통합 러너** | Day1~6 step 순서 호출, 포트만 연결 (Day7 완성/안식 레이어 후보) |
+| **CompletionEngine** (Day7) | Day1~6 step 순서 호출, 포트만 연결 — `solar/day7/completion_engine.py` |
 
 ---
 
@@ -133,4 +133,4 @@
 - **브리지/결선**: GaiaLoopConnector  
 
 이렇게 보면 **1~6은 이미 “엔진화” 가능한 모듈이 많고**, 독립성이 가장 강한 것은 **Day1, Day4(리듬), Day6** 이다.  
-실제 코드에서 **이름 변경(Column→Engine, Model→Engine)** 이나 **engines/ 추출**은 별도 작업으로 진행하면 되며, 이 문서는 **무엇을 독립 엔진으로 볼지**에 대한 확정 목록이다.
+실제 코드에서 **이름 변경(Column→Engine, Model→Engine)** 이나 **engines/ 추출**은 별도 작업으로 진행하면 되며, 이 문서는 **무엇을 독립 엔진으로 볼지**에 대한 확정 목록이다. **Day7** CompletionEngine·12의 의미는 각각 `solar/day7/`, **docs/WHY_12_SYSTEMIC.md** 참고.
