@@ -124,6 +124,9 @@ class PlanetRunner:
         _T_surface_init = ic.get('T_surface_K_init',    None)  # None → 대기 계산
         _pole_eq_delta  = ic.get('pole_eq_delta_K',     48.0)
         _pressure_atm   = ic.get('pressure_atm',        1.0)
+        # 자기장 보호 강도 (밴드별, geography.py에서 주입 가능)
+        # 기본: 위도 함수로 자동 계산 / IC에서 override 가능
+        _mag_protection = ic.get('mag_protection_bands', None)
 
         # 초기조건 메타 저장 (스냅샷/문서화용)
         self._ic_phase   = ic.get('phase', 'postdiluvian') if ic else 'postdiluvian'
@@ -170,8 +173,19 @@ class PlanetRunner:
         self.band_seed = [1.0] * n_bands
 
         # ── 9. 변이 엔진 (Day6) ──────────────────────────────────────────────
-        # mutation_factor: 에덴=0.01, 현재=1.0 → base_rate에 곱셈
-        _base_mut = 0.01 * _mutation_factor
+        # mutation = base × UV_factor × magnetic_protection[band]
+        # UV_factor  : InitialConditions.mutation_factor (UV차폐 기반)
+        # mag_protect: geography.band_protection() (자기장 기반)
+        # 전 지구 평균 자기 보호값으로 base_rate 초기화
+        from ..eden.geography import magnetic_protection_factor
+        _BAND_LATS = [-82.5, -67.5, -52.5, -37.5, -22.5, -7.5,
+                        7.5,  22.5,  37.5,  52.5,  67.5,  82.5]
+        if _mag_protection is None:
+            _mag_protection = [magnetic_protection_factor(lat) for lat in _BAND_LATS]
+        self._mag_protection = list(_mag_protection[:n_bands])
+        _avg_mag = sum(self._mag_protection) / len(self._mag_protection)
+        # base_rate = 0.01 × UV_factor × avg_mag_protection
+        _base_mut = 0.01 * _mutation_factor * _avg_mag
         self.mutation = make_mutation_engine(base_mutation_rate=_base_mut)
         self._mutation_factor = _mutation_factor   # 스냅샷 기록용
 

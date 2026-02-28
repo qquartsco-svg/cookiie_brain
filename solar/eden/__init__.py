@@ -58,6 +58,18 @@ from .geography import (
     make_postdiluvian_geography,
     magnetic_protection_factor,
 )
+from .search import (
+    EdenCriteria,
+    EdenCandidate,
+    SearchSpace,
+    SearchResult,
+    EdenSearchEngine,
+    compute_eden_score,
+    make_eden_search,
+    make_antediluvian_space,
+    make_postdiluvian_space,
+    make_exoplanet_space,
+)
 
 __version__ = "0.1.0"
 
@@ -85,4 +97,15 @@ __all__ = [
     "make_eden_geography",
     "make_postdiluvian_geography",
     "magnetic_protection_factor",
+    # search
+    "EdenCriteria",
+    "EdenCandidate",
+    "SearchSpace",
+    "SearchResult",
+    "EdenSearchEngine",
+    "compute_eden_score",
+    "make_eden_search",
+    "make_antediluvian_space",
+    "make_postdiluvian_space",
+    "make_exoplanet_space",
 ]
