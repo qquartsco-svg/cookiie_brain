@@ -2,6 +2,7 @@
 
 핵심 철학:
   "하드코딩이 아니라 물리 인과관계로 초기조건을 결정한다."
+  상수/계수는 EDEN_IC_CONFIG로 모아 override 가능 (규약 준수).
 
   초기조건(IC)은 6개 독립 파라미터:
     CO2, H2O_atm, O2, albedo, f_land, precip_mode
@@ -21,19 +22,43 @@
 참조:
   - docs/ANTEDILUVIAN_ENV.md
   - solar/eden/firmament.py
+  - docs/EDEN_ENGINEERING_FINAL.md (τ/알베도/ΔT 중복 방지 규칙)
 """
 
 from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from typing import Dict, Literal, Optional
+from typing import Dict, Literal, Optional, Any
 
 import numpy as np
 
-# 물리 상수
+# 물리 상수 (EDEN_IC_CONFIG에서 읽음, 하위 호환용 모듈 상수 유지)
 F_SOLAR = 1361.0       # W/m²
 SIGMA   = 5.6704e-8    # W/(m²·K⁴)
+
+# 규약: 모든 상수/계수는 이 dict로 모아 override 가능 (docs/EDEN_ENGINEERING_FINAL.md)
+EDEN_IC_CONFIG: Dict[str, Any] = {
+    "F_SOLAR": F_SOLAR,
+    "SIGMA": SIGMA,
+    "tau_base": 0.12,
+    "alpha_CO2": 0.462,
+    "CO2_ref": 280e-6,
+    "alpha_H2O": 0.940,
+    "H2O_ref": 0.01,
+    "alpha_CH4": 0.056,
+    "CH4_ref": 0.7e-6,
+    "pole_eq_delta_now_K": 48.0,
+    "pole_eq_delta_eden_K": 15.0,
+    "H2O_canopy_ref": 0.05,
+    "P_MAX": 2.0,
+    "F_HALF": 100.0,
+    "K_C": 40e-6,
+    "T_OPT": 298.0,
+    "SIG_T": 15.0,
+    "f_I": 0.6,
+    "mutation_uv_floor": 0.01,
+}
 
 # 위도 밴드 중심 (12개)
 _BAND_LATS = np.array([
@@ -47,12 +72,16 @@ PrecipMode  = Literal['mist', 'drizzle', 'rain']
 
 # ── 동역학 계산 함수들 ─────────────────────────────────────
 
-def _optical_depth(CO2: float, H2O: float, CH4: float = 1.8e-6) -> float:
-    """greenhouse.py 동일 공식."""
-    alpha_CO2, CO2_ref  = 0.462, 280e-6
-    alpha_H2O, H2O_ref  = 0.940, 0.01
-    alpha_CH4, CH4_ref  = 0.056, 0.7e-6
-    tau_base = 0.12
+def _optical_depth(
+    CO2: float, H2O: float, CH4: float = 1.8e-6,
+    config: Optional[Dict[str, Any]] = None,
+) -> float:
+    """greenhouse.py 동일 공식. config 없으면 EDEN_IC_CONFIG 사용."""
+    c = config or EDEN_IC_CONFIG
+    tau_base = c["tau_base"]
+    alpha_CO2, CO2_ref  = c["alpha_CO2"], c["CO2_ref"]
+    alpha_H2O, H2O_ref  = c["alpha_H2O"], c["H2O_ref"]
+    alpha_CH4, CH4_ref  = c["alpha_CH4"], c["CH4_ref"]
 
     tau = tau_base
     if CO2 > 1e-12:
@@ -64,22 +93,34 @@ def _optical_depth(CO2: float, H2O: float, CH4: float = 1.8e-6) -> float:
     return max(tau, 0.0)
 
 
-def _T_surface(tau: float, albedo: float) -> float:
-    """1-layer 온실 평형온도."""
+def _T_surface(
+    tau: float, albedo: float,
+    config: Optional[Dict[str, Any]] = None,
+) -> float:
+    """1-layer 온실 평형온도. config 없으면 EDEN_IC_CONFIG 사용."""
+    c = config or EDEN_IC_CONFIG
+    F_SOLAR, SIGMA = c["F_SOLAR"], c["SIGMA"]
     eps_a = 1.0 - math.exp(-tau)
     F_abs = F_SOLAR * (1.0 - albedo) / 4.0
     denom = 1.0 - eps_a / 2.0
     return (F_abs / (SIGMA * max(denom, 1e-6))) ** 0.25
 
 
-def _pole_eq_delta(H2O_canopy: float) -> float:
+def _pole_eq_delta(
+    H2O_canopy: float,
+    config: Optional[Dict[str, Any]] = None,
+) -> float:
     """궁창 수증기량 → 극적도 온도차.
 
     H2O_canopy=0.00 → delta=48K (현재)
     H2O_canopy=0.05 → delta=15K (에덴)
-    선형 보간.
+    선형 보간. config 없으면 EDEN_IC_CONFIG 사용.
     """
-    return 48.0 - 33.0 * min(H2O_canopy / 0.05, 1.0)
+    c = config or EDEN_IC_CONFIG
+    now_K = c["pole_eq_delta_now_K"]
+    eden_K = c["pole_eq_delta_eden_K"]
+    ref = c["H2O_canopy_ref"]
+    return now_K - (now_K - eden_K) * min(H2O_canopy / ref, 1.0)
 
 
 def _band_temperatures(T_mean: float, pole_eq_delta: float) -> np.ndarray:
@@ -112,43 +153,38 @@ def _gpp_per_band(
     CO2: float,
     O2: float,
     pressure_atm: float = 1.0,
+    config: Optional[Dict[str, Any]] = None,
 ) -> np.ndarray:
     """위도별 GPP 추정 (BiosphereColumn 동일 공식).
 
     GPP = P_MAX · f_I · f_C(CO2) · f_T(T) · f_W(W)
-
-    T_OPT는 에덴에서도 물리적으로 25°C에 맞춰져있으나
-    고기압(pressure_atm)이 O2 분압을 높이므로 f_I 보정.
+    config 없으면 EDEN_IC_CONFIG 사용.
     """
-    P_MAX  = 2.0          # kg C/m²/yr
-    F_HALF = 100.0        # W/m² (광 포화점) — F는 밴드 독립
-    K_C    = 40e-6        # CO2 반포화 (mol/mol)
-    T_OPT  = 298.0        # K — 광합성 최적온도
-    SIG_T  = 15.0         # K — 온도 허용도
+    c = config or EDEN_IC_CONFIG
+    P_MAX  = c["P_MAX"]
+    K_C    = c["K_C"]
+    T_OPT  = c["T_OPT"]
+    SIG_T  = c["SIG_T"]
+    f_I    = c["f_I"]
 
-    f_I = 0.6             # 평균 일조 (실제는 밴드 F에서 계산)
     f_C = CO2 / (CO2 + K_C)
     f_T = np.exp(-0.5 * ((band_T_K - T_OPT) / SIG_T) ** 2)
     f_W = np.minimum(soil_W, 1.0)
 
-    # 고기압(O2 분압↑) → 광합성 보정 (Warburg 효과 반대 방향)
-    # O2 높으면 광호흡 증가 → GPP 다소 감소 (oxygenase 경쟁)
-    # 그러나 압력↑ → CO2 용해도↑ → 보상
-    # 단순화: 알짜 효과 약간 양수
-    o2_pressure = O2 * pressure_atm  # atm
+    o2_pressure = O2 * pressure_atm
     f_O2 = 1.0 + 0.2 * max(0, o2_pressure - 0.21) / 0.21
 
     return P_MAX * f_I * f_C * f_T * f_W * f_O2
 
 
-def _mutation_factor(UV_shield: float) -> float:
-    """UV 차폐율 → mutation_rate 배수.
-
-    UV_shield=0.0 → factor=1.0 (현재)
-    UV_shield=0.95 → factor=0.01 (에덴)
-    """
-    # UV는 노화 요인의 15%, mutation 요인의 ~85%를 포함 (UV 직접 손상 기준)
-    return max(1.0 - UV_shield * 0.99, 0.01)
+def _mutation_factor(
+    UV_shield: float,
+    config: Optional[Dict[str, Any]] = None,
+) -> float:
+    """UV 차폐율 → mutation_rate 배수. config 없으면 EDEN_IC_CONFIG 사용."""
+    c = config or EDEN_IC_CONFIG
+    floor = c["mutation_uv_floor"]
+    return max(1.0 - UV_shield * 0.99, floor)
 
 
 # ── InitialConditions 데이터 클래스 ──────────────────────
