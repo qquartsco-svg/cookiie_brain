@@ -1,7 +1,41 @@
-# day4/ — 넷째날 순환 레이어 집합 (core gravity · nitrogen · cycles · gravity_tides)
+# day4/ — 넷째날: 해·달·별 (하늘 시계 / 순환 레이어)
 
-**역할**: `day4/core/ + day4/data/` 가 만든 **태양계 중력필드** 위에,  
-셋째날까지 완성된 `day3/surface/` + `day2/atmosphere/` + `day3/biosphere/` + `day3/fire/` 를 올리고,  
+> *"하늘의 궁창에 광명체들이 있어 낮과 밤을 나누고,*
+> *징조와 계절과 날과 해를 이루라."*
+> — 창세기 1:14
+
+## 0. 넷째날의 정체 — 하늘 시계 (Global Clock)
+
+창세기 1:14는 해·달·별을 **빛**이 아니라 **시간 측정 도구**로 먼저 정의한다.
+`징조(sign) · 계절(season) · 날(day) · 해(year)` — 전부 시간 단위다.
+
+```
+고대 황도 12궁 = 이 절에서 나온 시스템
+  태양의 1년 경로(Ecliptic) 360° → 30°씩 12구간
+  time_index = int(solar_longitude_deg / 30)   # 0 ~ 11
+
+Day4 RhythmEngine = 황도궁의 코드 구현
+  obliquity_deg  → 현재 축 기울기 (계절 진폭)
+  insolation_scale → 현재 일사량 (에너지 입력)
+```
+
+| 고대 (황도궁) | Day4 코드 | 역할 |
+|--------------|-----------|------|
+| 별 위치 관측 | `RhythmEngine.obliquity(t_yr)` | 지금 몇 월인가 |
+| 30° 구간 인덱스 | `int(solar_lon / 30)` | 계절 phase |
+| 12궁 1년 완주 | `window=12` (SabbathJudge) | 전 사이클 관측 완료 |
+| 나일강 범람 예측 | `SeasonEngine` | 계절 편차 계산 |
+| 농사 타이밍 | `LatitudeBands.step(T, lat)` | 밴드별 생물권 반응 |
+
+> **황도궁은 신비 체계가 아니라 지구 운영을 위한 최초의 Global Clock UI였다.**
+> `Day4`는 그것을 물리 엔진으로 재구현한 챕터다.
+
+자세한 분석 → [`docs/WHY_12_SYSTEMIC.md`](../../docs/WHY_12_SYSTEMIC.md)
+
+---
+
+**역할**: `day4/core/ + day4/data/` 가 만든 **태양계 중력필드** 위에,
+셋째날까지 완성된 `day3/surface/` + `day2/atmosphere/` + `day3/biosphere/` + `day3/fire/` 를 올리고,
 그 위에서 동작하는 넷째날 3개 순환 레이어를 **한 폴더에서 한눈에** 보이게 하는 집합 패키지.
 
 - **중력 필드 (`core/ + data/`)**: EvolutionEngine, Body3D, PlanetData, build_solar_system — 태양계 N-body / 지구·달 중력장 / 세차·조석  
