@@ -49,6 +49,15 @@ from .initial_conditions import (
     make_postdiluvian,
     make_flood_peak,
 )
+from .geography import (
+    EdenGeography,
+    ArcticBasinState,
+    MagneticFrameGeography,
+    ExposedRegion,
+    make_eden_geography,
+    make_postdiluvian_geography,
+    magnetic_protection_factor,
+)
 
 __version__ = "0.1.0"
 
@@ -68,4 +77,12 @@ __all__ = [
     "make_antediluvian",
     "make_postdiluvian",
     "make_flood_peak",
+    # geography
+    "EdenGeography",
+    "ArcticBasinState",
+    "MagneticFrameGeography",
+    "ExposedRegion",
+    "make_eden_geography",
+    "make_postdiluvian_geography",
+    "magnetic_protection_factor",
 ]
