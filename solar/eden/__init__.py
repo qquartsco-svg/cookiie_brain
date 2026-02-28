@@ -70,6 +70,15 @@ from .search import (
     make_postdiluvian_space,
     make_exoplanet_space,
 )
+from .biology import (
+    BiologyFactors,
+    EdenBiologyState,
+    compute_biology,
+    compare_biology,
+    make_biology,
+    LIFESPAN_PHYSICAL_MAX_YR,
+    BODY_SIZE_PHYS_MAX_RATIO,
+)
 
 __version__ = "0.1.0"
 
@@ -108,4 +117,12 @@ __all__ = [
     "make_antediluvian_space",
     "make_postdiluvian_space",
     "make_exoplanet_space",
+    # biology
+    "BiologyFactors",
+    "EdenBiologyState",
+    "compute_biology",
+    "compare_biology",
+    "make_biology",
+    "LIFESPAN_PHYSICAL_MAX_YR",
+    "BODY_SIZE_PHYS_MAX_RATIO",
 ]

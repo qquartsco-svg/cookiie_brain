@@ -24,7 +24,9 @@
 from __future__ import annotations
 
 import itertools
+import json
 import math
+import os
 import time
 from dataclasses import dataclass, field
 from typing import Callable, Dict, Iterator, List, Optional, Tuple
@@ -356,6 +358,112 @@ class SearchResult:
             lines.append(row)
         return "\n".join(lines)
 
+    def save(self, path: str = "docs/EDEN_SEARCH_RESULT.md",
+             also_json: bool = True) -> str:
+        """탐색 결과를 Markdown + JSON으로 저장.
+
+        Parameters
+        ----------
+        path : str
+            저장 경로 (Markdown).
+        also_json : bool
+            True면 .json도 함께 저장.
+
+        Returns
+        -------
+        str  실제 저장된 파일 경로.
+        """
+        import datetime
+        os.makedirs(os.path.dirname(path) if os.path.dirname(path) else '.', exist_ok=True)
+        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+
+        lines = [
+            f"# 에덴 탐색 결과 (Eden Search Result)",
+            f"",
+            f"생성: {now}  |  탐색: {self.total_tested}개  |  통과: {self.total_passed}개  "
+            f"|  소요: {self.elapsed_sec:.1f}초",
+            f"",
+            f"## 에덴 점수 기준",
+            f"",
+            f"| 기준 | 설명 |",
+            f"|------|------|",
+            f"| T_range | 지표 온도 15~45°C |",
+            f"| GPP | 전 지구 GPP ≥ 3.0 kg C/m²/yr |",
+            f"| ice_bands | 빙하 밴드 수 ≤ 0 |",
+            f"| mutation | mutation factor ≤ 10% |",
+            f"| hab_bands | 거주 가능 밴드 ≥ 10/12 |",
+            f"",
+            f"## 상위 후보",
+            f"",
+        ]
+
+        for c in self.top(10):
+            T_C = c.ic.T_surface_K - 273.15
+            b   = c.ic.band
+            lines += [
+                f"### Rank #{c.rank}  (score={c.score:.3f})",
+                f"",
+                f"| 파라미터 | 값 |",
+                f"|---------|-----|",
+                f"| phase | {c.ic.phase} |",
+                f"| CO2 | {c.ic.CO2_ppm:.0f} ppm |",
+                f"| H2O(대기) | {c.ic.H2O_atm_frac*100:.1f}% |",
+                f"| H2O(궁창) | {c.ic.H2O_canopy*100:.1f}% |",
+                f"| O2 | {c.ic.O2_frac*100:.1f}% |",
+                f"| albedo | {c.ic.albedo:.3f} |",
+                f"| f_land | {c.ic.f_land:.2f} |",
+                f"| UV_shield | {c.ic.UV_shield:.2f} |",
+                f"| T_surface | {T_C:.1f}°C |",
+                f"| GPP | {float(b.GPP.sum()):.2f} kg C/m²/yr |",
+                f"| 빙하 밴드 | {int(b.ice_mask.sum())}/12 |",
+                f"| mutation | {c.ic.mutation_factor:.4f}x |",
+                f"",
+                f"**밴드 점수:** `{' '.join(f'{s:.2f}' for s in c.band_eden_score)}`",
+                f"",
+            ]
+
+        # 히트맵 추가
+        lines += ["## 위도밴드 히트맵", "", "```", self.band_heatmap(), "```", ""]
+
+        md_text = "\n".join(lines)
+        with open(path, 'w', encoding='utf-8') as f:
+            f.write(md_text)
+
+        # JSON 저장
+        json_path = path.replace('.md', '.json')
+        if also_json:
+            data = {
+                "generated": now,
+                "total_tested": self.total_tested,
+                "total_passed": self.total_passed,
+                "elapsed_sec":  self.elapsed_sec,
+                "candidates": [
+                    {
+                        "rank":  c.rank,
+                        "score": round(c.score, 4),
+                        "phase": c.ic.phase,
+                        "CO2_ppm":      c.ic.CO2_ppm,
+                        "H2O_atm_frac": c.ic.H2O_atm_frac,
+                        "H2O_canopy":   c.ic.H2O_canopy,
+                        "O2_frac":      c.ic.O2_frac,
+                        "albedo":       c.ic.albedo,
+                        "f_land":       c.ic.f_land,
+                        "UV_shield":    c.ic.UV_shield,
+                        "T_C":          round(c.ic.T_surface_K - 273.15, 2),
+                        "GPP":          round(float(c.ic.band.GPP.sum()), 3),
+                        "ice_bands":    int(c.ic.band.ice_mask.sum()),
+                        "mutation_factor": round(c.ic.mutation_factor, 5),
+                        "band_eden_score": [round(s, 4) for s in c.band_eden_score],
+                        "criteria_detail": c.criteria_detail,
+                    }
+                    for c in self.candidates
+                ],
+            }
+            with open(json_path, 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+
+        return path
+
 
 class EdenSearchEngine:
     """에덴 상태 탐색 엔진.
@@ -528,6 +636,87 @@ class EdenSearchEngine:
             pv = post_detail.get(k, '-')
             print(f"  {k:15s}  에덴={'✅' if ev else '❌'}  "
                   f"현재={'✅' if pv else '❌'}")
+
+    def deep_validate(
+        self,
+        candidates: List[EdenCandidate],
+        n_steps: int = 20,
+        dt_yr: float = 1.0,
+        top_n: int = 5,
+    ) -> List[Dict]:
+        """상위 후보를 PlanetRunner로 2차 검증 (동역학 안정성).
+
+        IC 스크리닝은 정적 계산이므로
+        실제 PlanetRunner로 n_steps 동안 돌려서
+        CO2/T 안정성 + 스트레스 지속 여부를 확인.
+
+        Parameters
+        ----------
+        candidates : List[EdenCandidate]
+            1차 통과 후보 (score 내림차순).
+        n_steps : int
+            검증 스텝 수 (yr 단위).
+        dt_yr : float
+            스텝 크기.
+        top_n : int
+            검증할 상위 후보 수.
+
+        Returns
+        -------
+        List[Dict]  검증 결과 (rank, stable, final_T, final_CO2, stress)
+        """
+        try:
+            from ..day7.runner import make_planet_runner
+        except ImportError:
+            print("  [deep_validate] PlanetRunner import 실패 — 스킵")
+            return []
+
+        results = []
+        targets = candidates[:top_n]
+
+        print(f"\n  PlanetRunner 2차 검증 ({top_n}개 후보 × {n_steps}스텝)")
+        print("  " + "─" * 52)
+
+        for c in targets:
+            kwargs = c.ic.to_runner_kwargs()
+            runner = make_planet_runner(initial_conditions=kwargs)
+
+            snaps = []
+            for _ in range(n_steps):
+                snap = runner.step(dt_yr=dt_yr)
+                snaps.append(snap)
+
+            final = snaps[-1]
+            # CO2 안정성: 마지막 5스텝 표준편차
+            co2_vals = [s.CO2_ppm for s in snaps[-5:]]
+            co2_std  = (sum((x - sum(co2_vals)/len(co2_vals))**2
+                            for x in co2_vals) / len(co2_vals)) ** 0.5
+            # T 안정성
+            t_vals  = [s.T_surface_K for s in snaps[-5:]]
+            t_std   = (sum((x - sum(t_vals)/len(t_vals))**2
+                           for x in t_vals) / len(t_vals)) ** 0.5
+
+            stable = (co2_std < 10.0 and t_std < 1.0
+                      and final.planet_stress < self.criteria.stress_max)
+
+            row = {
+                "rank":       c.rank,
+                "ic_score":   round(c.score, 3),
+                "stable":     stable,
+                "final_T_C":  round(final.T_surface_K - 273.15, 1),
+                "final_CO2":  round(final.CO2_ppm, 1),
+                "stress":     round(final.planet_stress, 4),
+                "CO2_std":    round(co2_std, 2),
+                "T_std":      round(t_std, 3),
+            }
+            results.append(row)
+
+            flag = "✅ STABLE" if stable else "❌ UNSTABLE"
+            print(f"  rank #{c.rank:2d}  {flag}  "
+                  f"T={row['final_T_C']:.1f}°C  CO2={row['final_CO2']:.0f}ppm  "
+                  f"stress={row['stress']:.4f}")
+
+        return results
 
 
 # ── 팩토리 ────────────────────────────────────────────────────────────────────

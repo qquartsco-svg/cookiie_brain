@@ -11,6 +11,7 @@ from solar.eden.search import (
     EdenCriteria,
 )
 from solar.eden.initial_conditions import make_antediluvian, make_postdiluvian
+from solar.eden.biology import compute_biology, compare_biology
 
 BANNER = """
 ╔══════════════════════════════════════════════════════════════╗
@@ -95,6 +96,30 @@ def main():
                        7.5, 22.5, 37.5, 52.5, 67.5, 82.5]
         print(f"  최적 에덴 위도 밴드: {band_lats[best_band_idx]:+.1f}°  "
               f"(score={max(b.band_eden_score):.3f})")
+
+    # ── 5. 생물학 레이어 ──────────────────────────────────────────────────────
+    print("\n" + "=" * 60)
+    print("【5】 에덴 생물학 레이어 — 물리 환경 → 생물 특성\n")
+
+    ic_eden = make_antediluvian()
+    ic_post = make_postdiluvian()
+
+    print(compare_biology(ic_eden, ic_post))
+    print()
+
+    # 최적 에덴 후보 → 생물학 계산
+    if result_a.best:
+        print("  최적 에덴 후보 생물학 상세:")
+        bio = compute_biology(result_a.best.ic)
+        print(bio.summary())
+        print()
+        print("  위도밴드별 수명 분포:")
+        band_lats = [-82.5, -67.5, -52.5, -37.5, -22.5, -7.5,
+                       7.5,  22.5,  37.5,  52.5,  67.5,  82.5]
+        for i, (lat, ls) in enumerate(zip(band_lats, bio.band_lifespan)):
+            if ls > 0:
+                bar = "█" * int(ls / 10)
+                print(f"    {lat:+6.1f}°  {ls:5.0f}yr  {bar}")
 
     print()
     print("  에덴 탐색 완료.")
