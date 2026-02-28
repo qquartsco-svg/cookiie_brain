@@ -599,6 +599,7 @@ for _ in range(250_000):
 | 태양계 로그 | [`docs/FULL_SOLAR_SYSTEM_LOG.txt`](../docs/FULL_SOLAR_SYSTEM_LOG.txt) | 10-body 100년 검증 출력 |
 | 세차 로그 | [`docs/PRECESSION_VERIFICATION_LOG.txt`](../docs/PRECESSION_VERIFICATION_LOG.txt) | 3-body 세차 출력 |
 | 개념 문서 | [`docs/COGNITIVE_SOLAR_SYSTEM.md`](../docs/COGNITIVE_SOLAR_SYSTEM.md) | 인지 매핑 & 로드맵 |
+| 확장 가능성 | [`docs/CREATION_ENGINE_SCALE_UP.md`](../docs/CREATION_ENGINE_SCALE_UP.md) | ESM/GCM 코어 병렬, 스케일 업·마이크로 스텝 개념도 |
 | 블록체인 서명 | [`blockchain/pham_chain_evolution_engine.json`](../blockchain/pham_chain_evolution_engine.json) | PHAM A_HIGH (0.9999) |
 
 ---
@@ -649,4 +650,67 @@ for _ in range(250_000):
 
 ---
 
-*v1.3.1 · PHAM Signed · GNJz (Qquarts)*
+---
+
+## Eden 독립 탐색 엔진 / Eden Search Engine (v2.0)
+
+> **"에덴은 좌표가 아니라 파라미터 상태(state basin)이다"**
+
+Day1~7 물리 행성 위에 올라오는 **행성 거주 가능성 탐색 레이어**.
+지구뿐 아니라 외계 행성(Exoplanet) 탐사에도 즉시 투입 가능한 독립 엔진.
+
+### 구조
+
+```
+solar/eden/
+├── firmament.py          — 궁창(수증기 캐노피) 물리 모델
+├── flood.py              — 대홍수 전이 곡선 (4단계)
+├── initial_conditions.py — 6개 파라미터 → 전 지구 상태 동역학 생성
+├── geography.py          — 자기장 좌표계 + 시대별 지형
+├── search.py             — EdenSearchEngine (파라미터 공간 탐색)
+└── biology.py            — 물리 환경 → 수명/체형/생태계 안정성
+```
+
+### 탐색 결과 (antediluvian 기준)
+
+| 항목 | 에덴 | 현재 지구 |
+|------|------|-----------|
+| Eden Score | **1.000** | 0.000 |
+| 추정 수명 | **196~212yr** | 80yr |
+| 추정 신장 | **188~190cm** | 170cm |
+| 거대동물 | ✅ 가능 | ❌ |
+| 안정 생태계 | ✅ | ❌ |
+| 빙하 밴드 | 0/12 | 4/12 |
+
+### 탐색 공간 프리셋
+
+| 프리셋 | 용도 |
+|--------|------|
+| `make_antediluvian_space()` | 창세기 에덴 환경 |
+| `make_postdiluvian_space()` | 현재 지구 기준 |
+| `make_exoplanet_space()` | 외계 행성 거주 가능성 스크리닝 |
+
+### 빠른 실행
+
+```bash
+# 에덴 탐색 전체 데모 (5단계)
+python -m solar.eden.eden_search_demo
+
+# 에덴 환경 시뮬레이션 (궁창→대홍수→이후)
+python -m solar.eden.eden_demo
+```
+
+### 블록체인 서명 (PHAM)
+
+| 파일 | 블록 | 점수 |
+|------|------|------|
+| `initial_conditions.py` | A_HIGH | 1.0000 |
+| `search.py` | A_HIGH | 1.0000 |
+| `biology.py` | A_HIGH | 1.0000 |
+| `geography.py` | A_HIGH | 1.0000 |
+| `firmament.py` | A_HIGH | 1.0000 |
+| `flood.py` | A_HIGH | 1.0000 |
+
+---
+
+*v2.0.0 · PHAM Signed · GNJz (Qquarts)*
