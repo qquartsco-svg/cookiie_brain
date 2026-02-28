@@ -29,7 +29,7 @@ import math
 import os
 import time
 from dataclasses import dataclass, field
-from typing import Callable, Dict, Iterator, List, Optional, Tuple
+from typing import Callable, Dict, Iterator, List, Optional, Tuple, Any
 
 from .initial_conditions import InitialConditions, make_antediluvian, make_postdiluvian
 from .geography import (
@@ -326,6 +326,7 @@ class SearchResult:
     total_passed:    int
     elapsed_sec:     float
     best:            Optional[EdenCandidate] = None
+    grid_agent:      Optional[Any] = None   # Grid Engine 연동 시 위도축 에이전트 (선택)
 
     def summary(self) -> str:
         lines = [
@@ -527,6 +528,14 @@ class EdenSearchEngine:
             else:
                 space = make_exoplanet_space()
 
+        # 행성 탐사 확장: Grid Engine 연동 시 탐사 포커스로 후보 트림 성능 향상
+        exploration = None
+        try:
+            from .exploration import EdenExplorationGrid, trim_candidates_by_exploration
+            exploration = EdenExplorationGrid()
+        except Exception:
+            trim_candidates_by_exploration = None
+
         candidates: List[EdenCandidate] = []
         total_tested = 0
         t0 = time.time()
@@ -566,25 +575,44 @@ class EdenSearchEngine:
                 band_eden_score = band_scores,
             )
             candidates.append(c)
+            if exploration is not None:
+                exploration.update_from_candidate(c)
 
             if len(candidates) >= max_candidates * 3:
-                # 중간 정렬 + 트림
-                candidates.sort(key=lambda x: x.score, reverse=True)
-                candidates = candidates[:max_candidates]
+                if trim_candidates_by_exploration is not None and exploration is not None:
+                    candidates = trim_candidates_by_exploration(candidates, max_candidates, exploration)
+                else:
+                    candidates.sort(key=lambda x: x.score, reverse=True)
+                    candidates = candidates[:max_candidates]
 
-        # 최종 정렬 + 순위 부여
-        candidates.sort(key=lambda x: x.score, reverse=True)
-        candidates = candidates[:max_candidates]
+        # 최종 정렬 + 순위 부여 (탐사 그리드 있으면 포커스 밴드 반영)
+        if trim_candidates_by_exploration is not None and exploration is not None:
+            candidates = trim_candidates_by_exploration(candidates, max_candidates, exploration)
+        else:
+            candidates.sort(key=lambda x: x.score, reverse=True)
+            candidates = candidates[:max_candidates]
         for i, c in enumerate(candidates):
             c.rank = i + 1
 
         elapsed = time.time() - t0
+        grid_agent = None
+        if exploration is not None and getattr(exploration, '_grid_agent', None) is not None:
+            grid_agent = exploration._grid_agent
+        else:
+            try:
+                from solar.bridge import grid_engine_bridge
+                if grid_engine_bridge.is_available() and candidates:
+                    best_band = int(candidates[0].band_eden_score.index(max(candidates[0].band_eden_score)))
+                    grid_agent = grid_engine_bridge.create_latitude_grid_agent(initial_band=best_band)
+            except Exception:
+                pass
         result = SearchResult(
             candidates   = candidates,
             total_tested = total_tested,
             total_passed = len(candidates),
             elapsed_sec  = elapsed,
             best         = candidates[0] if candidates else None,
+            grid_agent   = grid_agent,
         )
 
         if self.verbose:

@@ -47,6 +47,20 @@ def main():
 
         print(result_a.band_heatmap())
 
+        # Grid Engine 연동 (있으면)
+        try:
+            from solar.bridge import grid_engine_bridge
+            if result_a.grid_agent is not None:
+                ag = result_a.grid_agent
+                band_lats = [-82.5,-67.5,-52.5,-37.5,-22.5,-7.5, 7.5, 22.5, 37.5, 52.5, 67.5, 82.5]
+                b = ag.get_band_index()
+                print("\n  [Grid Engine 연동] 에덴 최적 밴드 → Grid 2D 위도축 에이전트")
+                print(f"    포커스 밴드 = {b}  (위도 {band_lats[b]:+.1f}°)")
+                b1 = ag.step(velocity_lat=0.3)
+                print(f"    step(velocity_lat=0.3) 후 밴드 = {b1}  (위도 {band_lats[b1]:+.1f}°)")
+        except Exception:
+            pass
+
     # ── 3. 현재 지구 탐색 (비교용) ───────────────────────────────────────────
     print("\n" + "=" * 60)
     print("【3】 현재 지구 탐색 (postdiluvian) — 에덴 상태 가능한가?\n")
