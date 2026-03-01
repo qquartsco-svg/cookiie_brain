@@ -90,6 +90,7 @@ from .search import (
     make_antediluvian_space,
     make_postdiluvian_space,
     make_exoplanet_space,
+    make_antediluvian_exoplanet_space,
 )
 from .biology import (
     BiologyFactors,
@@ -157,6 +158,7 @@ __all__ = [
     "make_antediluvian_space",
     "make_postdiluvian_space",
     "make_exoplanet_space",
+    "make_antediluvian_exoplanet_space",
     # biology
     "BiologyFactors",
     "EdenBiologyState",

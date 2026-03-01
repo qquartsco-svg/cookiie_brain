@@ -665,11 +665,15 @@ Day1~7 물리 행성 위에 올라오는 **행성 거주 가능성 탐색 레이
 solar/eden/
 ├── firmament.py          — 궁창(수증기 캐노피) 물리 모델
 ├── flood.py              — 대홍수 전이 곡선 (4단계)
-├── initial_conditions.py — 6개 파라미터 → 전 지구 상태 동역학 생성
+├── initial_conditions.py — 6개 파라미터 → 전 지구 상태 동역학 (EDEN_IC_CONFIG)
 ├── geography.py          — 자기장 좌표계 + 시대별 지형
 ├── search.py             — EdenSearchEngine (파라미터 공간 탐색)
+├── exploration.py        — EdenExplorationGrid: 12밴드 탐사 + Grid Engine 포커스 연동
+├── eden_search_demo.py   — 에덴 탐색 전체 데모 (Grid 연동 출력)
 └── biology.py            — 물리 환경 → 수명/체형/생태계 안정성
 ```
+
+**Grid Engine 연동** (선택): `solar/bridge/grid_engine_bridge.py` — 2D~7D 확장, `create_latitude_grid_agent()`, `get_max_grid_dimension()`. 탐색 시 포커스 밴드 반영 트림 + 결과 `grid_agent`.
 
 ### 탐색 결과 (antediluvian 기준)
 
@@ -705,11 +709,13 @@ python -m solar.eden.eden_demo
 | 파일 | 블록 | 점수 |
 |------|------|------|
 | `initial_conditions.py` | A_HIGH | 1.0000 |
-| `search.py` | A_HIGH | 1.0000 |
+| `search.py` | A_HIGH | 0.9999 |
+| `exploration.py` | A_HIGH | 0.9993 |
 | `biology.py` | A_HIGH | 1.0000 |
 | `geography.py` | A_HIGH | 1.0000 |
 | `firmament.py` | A_HIGH | 1.0000 |
 | `flood.py` | A_HIGH | 1.0000 |
+| `bridge/grid_engine_bridge.py` | A_HIGH | 0.9996 |
 
 ---
 
