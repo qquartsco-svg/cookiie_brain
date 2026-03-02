@@ -106,5 +106,30 @@
     },
     "previous_hash": "8979fcf9d031f765ec9018916fee2848bda583bd7437a95208d5e6ff9672ae15",
     "hash": "3caa63a0bc8582b7c3bec44c6fc4599568f8a9317db104cebac44ab6f68f1da9"
+  },
+  {
+    "index": 5,
+    "timestamp": 1772418497.047982,
+    "data": {
+      "title": "__init__.py",
+      "author": "GNJz",
+      "timestamp": "2026-03-02 13:28:17",
+      "hash": "e77ec1a2125cfd99b1d7e58bbdc96849862bc9da56cf91f94d207dcb80de5d5e",
+      "cid": "CID-unavailable",
+      "description": "UnderWorld 패키지 진입점 — ConsciousnessSignal, HadesObserver",
+      "score": 0.7599,
+      "label": "B_MEDIUM",
+      "signals": {
+        "byte": 0.9712389380530974,
+        "text": 0.9542586750788643,
+        "ast": 0.35714285714285715,
+        "exec": 0.0
+      },
+      "exec_output": "",
+      "raw_bytes": "222222736f6c61722e756e646572776f726c6420e2809420eca780ed95982848616465732920eba088ec9db4ec96b40a0aeca780ec8381284564656e4f5329eab3bc20ebacbceba6ac20ecbd94ec96b428646179342f636f72652920ec82acec9db4ec9d9820eab1b0ec8b9c20eab090ec8b9cec9e902e0a4861646573203d20ec9db8eab2a9ed9994eb909c20ec9585ec97adec9db420ec9584eb8b8c2c20ed9689ec84b120eab79cebaaa820eba3b020eca791ed9689c2b7ec9d98ec8b9dec9d9820ebaaa9ec868ceba6ac28436f6e7363696f75736e6573735369676e616c2920eca084eb8bac2e0a0a2d2068616465732e6c697374656e282920e2869220eca780ec8381206f6273657276652829ec979020ed8faced95a8ed95a020ec8ba0ed98b80a2d20646565705f6d6f6e69746f723a20646179342f636f726520ebacbceba6aceab09220ec9dbdeab8b02028ec84a0ed839d20ec9d98eca1b4290a0aec84a4eab38420eab79cecb9993a204861646573204f4e4c59206d656173757265732c204e4556455220616374732e202868616465732e707920646f63737472696e6720ecb0b8eab3a0290a2222220a0a66726f6d202e636f6e7363696f75736e65737320696d706f727420436f6e7363696f75736e6573735369676e616c2c205369676e616c547970650a66726f6d202e686164657320696d706f72742048616465734f627365727665722c206d616b655f68616465735f6f627365727665720a0a5f5f616c6c5f5f203d205b0a2020202022436f6e7363696f75736e6573735369676e616c222c0a20202020225369676e616c54797065222c0a202020202248616465734f62736572766572222c0a20202020226d616b655f68616465735f6f62736572766572222c0a5d0a",
+      "raw_text": "\"\"\"solar.underworld — 지하(Hades) 레이어\n\n지상(EdenOS)과 물리 코어(day4/core) 사이의 거시 감시자.\nHades = 인격화된 악역이 아닌, 행성 규모 룰 집행·의식의 목소리(ConsciousnessSignal) 전달.\n\n- hades.listen() → 지상 observe()에 포함할 신호\n- deep_monitor: day4/core 물리값 읽기 (선택 의존)\n\n설계 규칙: Hades ONLY measures, NEVER acts. (hades.py docstring 참고)\n\"\"\"\n\nfrom .consciousness import ConsciousnessSignal, SignalType\nfrom .hades import HadesObserver, make_hades_observer\n\n__all__ = [\n    \"ConsciousnessSignal\",\n    \"SignalType\",\n    \"HadesObserver\",\n    \"make_hades_observer\",\n]\n"
+    },
+    "previous_hash": "3caa63a0bc8582b7c3bec44c6fc4599568f8a9317db104cebac44ab6f68f1da9",
+    "hash": "c78acd9f38edb422a16f55bf6a198316e42c6e34f098de8abba679ad560a46ce"
   }
 ]
