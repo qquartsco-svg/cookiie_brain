@@ -23,6 +23,7 @@ NASA/JPL 실측 데이터 기반 10-body 심플렉틱 엔진.
 | 5 | 생물 이동·정보 네트워크 (새·물고기 transport) | `day5/` (`day5/mobility_engine`, `seed_transport`, `food_web`) |
 | 6 | 진화 상호작용 (경쟁·변이·종 다양성) | `day6/` (`day6/species_engine`, `mutation_engine`, `interaction_graph`, `niche_model`) |
 | 7~ | 인지·BrainCore 브리지 | `cognitive/`, `bridge/` |
+| 지하 | 거시 룰 감시·의식 경고 (하데스 목소리) | `underworld/` |
 
 **직관용**: `concept/` 아래에 00_system → 01_light → 02_firmament → 03_surface → 04_onward 순으로 README만 둠 (Creation Days 개념 지도).  
 **정의**: [`LAYERS.md`](LAYERS.md) 와 각 `dayN/README.md` 참고.
@@ -238,6 +239,13 @@ solar/
 ├── cognitive/           ← 인지 레이어 (ring attractor, spin–ring coupling)
 │   └── spin_ring_coupling.py
 │
+├── underworld/          ← 지하: 거시 감시·의식 경고 (Hades measure-only)
+│   ├── __init__.py      ← ConsciousnessSignal, HadesObserver, make_hades_observer
+│   ├── consciousness.py ← 신호 DTO (ConsciousnessSignal, SignalType)
+│   ├── deep_monitor.py  ← DeepSnapshot, read_deep_snapshot (물리 코어 어댑터)
+│   ├── hades.py         ← HadesObserver.listen(tick, world_snapshot?, deep_engine?)
+│   └── rules.py         ← RuleSpec, DEFAULT_RULES, evaluate_rules() — 룰 데이터 분리
+│
 ├── legacy/              ← 옛 파일 (central_body, tidal_field, orbital_moon …)
 └── concept/, docs/, blockchain/ …
 ```
@@ -253,7 +261,8 @@ day4/data → day4/core ← cognitive/
 ```
 - `day4/core` 는 상위 레이어를 **직접 import 하지 않음** (데이터/파라미터만 입력으로 받음).  
 - `day1~day3` 레이어는 서로의 출력(env dict, driver output)만 읽고, 구현 세부는 숨김.  
-- `bridge/` 는 Creation Days를 잇는 **관찰자/브리지 계층**으로, 물리 엔진을 수정하지 않고 상태만 읽어간다.
+- `bridge/` 는 Creation Days를 잇는 **관찰자/브리지 계층**으로, 물리 엔진을 수정하지 않고 상태만 읽어간다.  
+- `underworld/` 는 **물리 코어(day4)를 직접 import 하지 않음**; `deep_monitor` 가 엔진을 선택 인자로 받아 스냅샷만 읽음. `solar.eden` 을 import 하지 않아, 추후 독립 패키지로 분리 시 의존성 단순.
 
 ### 주요 클래스
 
@@ -307,6 +316,32 @@ core/(중력/세차) 위에 얹는 환경 필드 레이어.
 
 "빛이 있으라" 기록:
 **→ [solar/em/light/](em/light/)** — 폴더를 열면 읽을 수 있다
+
+---
+
+### 언더월드(지하·하데스 목소리) / Underworld
+
+물리 코어(day4)와 지상(EdenOS) 사이에서 **거시 룰 위반만 감시**하고, **의식 경고(ConsciousnessSignal)** 만 내보내는 레이어.  
+서사상 “지하의 목소리”는 행위자가 아니라 **측정값**이다. 결정·처벌·전이는 모두 지상 동역학(IntegrityFSM, HomeostasisEngine)에서만 이루어진다.
+
+**흐름 (서사 ↔ 로직)**  
+1. **물리 코어** (day4/core, 선택) → `deep_monitor.read_deep_snapshot()` 로 자기장/열/중력 등 정상 여부 스냅샷 생성.  
+2. **지하** `HadesObserver.listen(tick, world_snapshot=None, deep_engine=None)` → `evaluate_rules(deep)` 로 룰 평가 → **단일** `ConsciousnessSignal` (QUIET / RULE_VIOLATION / ENTROPY_WARNING / SYSTEM_PANIC) 반환.  
+3. **지상** EdenOS Runner가 매 틱 `hades.listen()` 호출 후, 반환값을 `adam.observe(..., hades_signal)`, `homeostasis.update(..., hades_signal, ...)`, `integrity_fsm.step(tick, integrity)` 에 넘김.  
+4. 경고 severity가 stress/integrity에 반영되고, N 틱 연속으로 integrity가 θ 이하이면 자연 전이(MORTAL_NPC) 또는 선악과 시 즉시 강등.
+
+**설계 규칙 (불가침)**  
+- **Hades ONLY measures. Hades NEVER acts.**  
+- 언더월드는 관측·신호 생성만 담당. 추방·권한 박탈·상태 전이는 Dynamics/IntegrityFSM 쪽 전용.  
+- 이 경계가 유지될 때만 “해킹/스토리 진행형”이 아니라 “동역학적 한계선 → 자연스러운 전이” 구조가 유지된다.
+
+**엔지니어링 (추후 독립 모듈화)**  
+- **의존성**: `underworld` 는 `solar.eden` 을 import 하지 않음. `consciousness`, `deep_monitor`, `rules` 만 참조.  
+- **진입점**: `listen(tick, world_snapshot=None, deep_engine=None) -> ConsciousnessSignal` 하나.  
+- **룰 정책**: `rules.py` 의 `RuleSpec`, `DEFAULT_RULES`, `evaluate_rules()` 로 분리됨. hades.py 는 오케스트레이션만 담당.  
+- **스텁**: 물리 코어 없으면 `core_available=False` → QUIET 반환.  
+상세 확장성·확장 포인트(world_snapshot 민감도 보정, 다중 신호): **→ [docs/UNDERWORLD_EXTENSIBILITY.md](../docs/UNDERWORLD_EXTENSIBILITY.md)**  
+모듈 전용 개념·로직·API: **→ [solar/underworld/README.md](underworld/README.md)**
 
 ---
 
@@ -600,6 +635,8 @@ for _ in range(250_000):
 | 세차 로그 | [`docs/PRECESSION_VERIFICATION_LOG.txt`](../docs/PRECESSION_VERIFICATION_LOG.txt) | 3-body 세차 출력 |
 | 개념 문서 | [`docs/COGNITIVE_SOLAR_SYSTEM.md`](../docs/COGNITIVE_SOLAR_SYSTEM.md) | 인지 매핑 & 로드맵 |
 | 확장 가능성 | [`docs/CREATION_ENGINE_SCALE_UP.md`](../docs/CREATION_ENGINE_SCALE_UP.md) | ESM/GCM 코어 병렬, 스케일 업·마이크로 스텝 개념도 |
+| **언더월드** | [`solar/underworld/README.md`](underworld/README.md) | 지하 거시 감시·의식 경고 — 개념·로직·API (엔지니어링) |
+| 언더월드 확장성 | [`docs/UNDERWORLD_EXTENSIBILITY.md`](../docs/UNDERWORLD_EXTENSIBILITY.md) | 룰 분리, world_snapshot·다중 신호 확장 포인트 |
 | 블록체인 서명 | [`blockchain/pham_chain_evolution_engine.json`](../blockchain/pham_chain_evolution_engine.json) | PHAM A_HIGH (0.9999) |
 
 ---
