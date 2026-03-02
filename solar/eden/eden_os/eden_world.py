@@ -13,6 +13,12 @@
       모든 하위 모듈은 EdenWorldEnv 를 읽기 전용으로 참조만 한다.
     - 직접 수정 불가 (frozen dataclass).
 
+물리 격리 규약 (LORE → PHYSICAL 역침투 금지)
+──────────────────────────────────────────────
+  허용 흐름만 단방향:  Physics → Scenario → Narrative (LORE)
+  금지: Narrative/LORE/이벤트가 환경 파라미터(ic, bands, layer[PHYSICAL])를 수정하는 코드.
+  EdenWorldEnv 생성은 make_eden_world(ic=...) 단일 진입점만 사용.
+
 레이어 분리
 ──────────────────────────────────────────────
   PHYSICAL_FACT : 계산·측정 가능한 수치    (얼음 밴드 수, 온도 등)

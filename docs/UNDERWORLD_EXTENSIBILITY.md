@@ -8,8 +8,8 @@
 
 **rules.py 분리 리팩터링**  
 - **이 워크스페이스(CookiieBrain) 기준**: 이미 반영되어 있음.  
-- `solar/underworld/rules.py`: RuleSpec, DEFAULT_RULES, evaluate_rules() 존재.  
-- `solar/underworld/hades.py`: `from .rules import evaluate_rules` 후 `severity, signal_type, message = evaluate_rules(deep)` 호출만 사용. 룰/심각도/문구 하드코딩 없음.  
+- `solar/underworld/rules.py`: RuleSpec, DEFAULT_RULES, evaluate_rules(), **evaluate_rules_all()** (복합 위반 리스트).
+- `solar/underworld/hades.py`: **evaluate_rules_all(deep)** 사용, **listen() -> List[ConsciousnessSignal]**.
 - (다른 경로(/mnt/data 등) 업로드본에서는 반영 전 상태일 수 있음.)
 
 **HomeostasisEngine · IntegrityFSM · 지상 연동**  
@@ -17,8 +17,12 @@
 - 하데스 경고(severity)가 stress/integrity에 반영되고, integrity가 N tick θ 이하로 유지되면 자연 전이(MORTAL_NPC) 또는 선악과 시 `force_mortal()`로 즉시 전이.
 
 **남은 확장 포인트**  
-- (B) `world_snapshot`: 시그니처만 있고 listen 내부에서 아직 사용하지 않음. 민감도 보정용으로 추후 사용 가능.  
-- (C) 단일 신호: 현재 1개 ConsciousnessSignal 반환. 다중 위반 누적은 evaluate_rules 반환 타입 확장으로 추후 가능.
+- (B) `world_snapshot`: 시그니처만 있고 listen 내부에서 아직 사용하지 않음. 민감도 보정용. **덕 타이핑**: underworld는 지상 클래스를 import하지 않고 `getattr(world_snapshot, "eden_index", 1.0)` 로만 사용.  
+- ~~(C) 단일 신호~~: **반영됨** — `listen() -> List[ConsciousnessSignal]`, `evaluate_rules_all()` 로 복합 위반 시 여러 신호 반환. Homeostasis는 리스트 시 최대 severity로 스트레스 가산.
+
+**설계 보강 (보안/무결성)**  
+- **ConsciousnessSignal 불변**: `@dataclass(frozen=True)` — 지상 에이전트가 severity 등 위변조 불가.  
+- **강제 파이프라인**: Runner가 hades 신호를 HomeostasisEngine·IntegrityFSM에 직접 주입하므로, 에이전트가 observe에서 무시해도 임계치 초과 시 자연 강등 동역학 작동.
 
 ---
 
@@ -27,7 +31,7 @@
 | 항목 | 코드 상태 | 의미 |
 |------|-----------|------|
 | **의존성 방향** | `underworld` 가 `solar.eden` 을 import 하지 않음. `consciousness`, `deep_monitor` 만 참조. | 패키지 분리·재사용 시 부작용 적음. |
-| **단일 진입점** | `HadesObserver.listen(tick, world_snapshot=None, deep_engine=None) -> ConsciousnessSignal` | 지상 러너가 observe 에 합성하기 좋음. |
+| **단일 진입점** | `HadesObserver.listen(tick, world_snapshot=None, deep_engine=None) -> List[ConsciousnessSignal]` | 지상 러너가 observe/homeostasis에 리스트 주입. 복합 위반 시 다중 신호. |
 | **스텁 경로** | `read_deep_snapshot(engine=None)` → `core_available=False` 이면 QUIET 반환. | 물리 코어 없어도 동작. |
 
 → **따로 엔진 모듈화 가능해 보인다** 는 피드백과 일치.

@@ -131,10 +131,14 @@ solar/
 │   ├── biology.py      ← 수명·체형·생태계
 │   │
 │   └── eden_os/        ← ★ 에덴 운영 체제 (서사가 실행되는 곳)
-│       ├── eden_world.py         L0 — 궁창시대 환경 스냅샷
+│       ├── eden_world.py         L0 — 궁창시대 환경 스냅샷 (물리 격리 규약)
 │       ├── rivers.py             L1 — 4대강 방향 그래프
 │       ├── tree_of_life.py       L2 — 생명나무 + 선악과
+│       ├── kernel/               L2 — EdenKernel + KernelProxy (에이전트 격리)
 │       ├── cherubim_guard.py     L3 — 체루빔 접근 제어
+│       ├── scheduler.py          — EdenScheduler (phase/tick)
+│       ├── intent_validator.py   — Intent 검증 레이어
+│       ├── evolution_config.py   — policy_mutation_rate (Eve 주입)
 │       ├── adam.py               L4 — Root Admin 에이전트
 │       ├── eve.py                L4 — 보조 프로세서
 │       ├── lineage.py            L5 — 계승 그래프 + 상태 머신
@@ -276,12 +280,14 @@ PHAM — Planetary Hash + Author Mark
 
 설계자   : GNJz
 엔진명   : CookiieBrain / Solar Eden
-버전     : v0.5.0
+버전     : v1.1.0  (EdenOS Kernel 격리·Scheduler·Intent Validator·evolution 분리 반영)
 원본     : Cherubim Engine v2.3.0
 
 Co-Authored-By: Claude (Anthropic)
 Repository    : https://github.com/qquartsco-svg/cookiie_brain
 ```
+
+서명·체인 검증: `blockchain/README.md` 및 `blockchain/pham_verify_chain.py` 참고.
 
 ---
 

@@ -326,8 +326,8 @@ core/(중력/세차) 위에 얹는 환경 필드 레이어.
 
 **흐름 (서사 ↔ 로직)**  
 1. **물리 코어** (day4/core, 선택) → `deep_monitor.read_deep_snapshot()` 로 자기장/열/중력 등 정상 여부 스냅샷 생성.  
-2. **지하** `HadesObserver.listen(tick, world_snapshot=None, deep_engine=None)` → `evaluate_rules(deep)` 로 룰 평가 → **단일** `ConsciousnessSignal` (QUIET / RULE_VIOLATION / ENTROPY_WARNING / SYSTEM_PANIC) 반환.  
-3. **지상** EdenOS Runner가 매 틱 `hades.listen()` 호출 후, 반환값을 `adam.observe(..., hades_signal)`, `homeostasis.update(..., hades_signal, ...)`, `integrity_fsm.step(tick, integrity)` 에 넘김.  
+2. **지하** `HadesObserver.listen(tick, world_snapshot=None, deep_engine=None)` → `evaluate_rules_all(deep)` 로 룰 평가 → **List[ConsciousnessSignal]** (위반 없으면 [QUIET], 복합 위반 시 여러 신호).  
+3. **지상** EdenOS Runner가 매 틱 `hades.listen()` 호출 후, 반환 **리스트**를 `adam.observe(..., hades_signal)`, `homeostasis.update(..., hades_signal, ...)`, `integrity_fsm.step(tick, integrity)` 에 **강제 주입** (에이전트가 무시해도 동역학은 작동).  
 4. 경고 severity가 stress/integrity에 반영되고, N 틱 연속으로 integrity가 θ 이하이면 자연 전이(MORTAL_NPC) 또는 선악과 시 즉시 강등.
 
 **설계 규칙 (불가침)**  
@@ -337,7 +337,7 @@ core/(중력/세차) 위에 얹는 환경 필드 레이어.
 
 **엔지니어링 (추후 독립 모듈화)**  
 - **의존성**: `underworld` 는 `solar.eden` 을 import 하지 않음. `consciousness`, `deep_monitor`, `rules` 만 참조.  
-- **진입점**: `listen(tick, world_snapshot=None, deep_engine=None) -> ConsciousnessSignal` 하나.  
+- **진입점**: `listen(tick, world_snapshot=None, deep_engine=None) -> List[ConsciousnessSignal]` 하나. Runner가 리스트를 observe/homeostasis/integrity_fsm에 강제 주입.  
 - **룰 정책**: `rules.py` 의 `RuleSpec`, `DEFAULT_RULES`, `evaluate_rules()` 로 분리됨. hades.py 는 오케스트레이션만 담당.  
 - **스텁**: 물리 코어 없으면 `core_available=False` → QUIET 반환.  
 상세 확장성·확장 포인트(world_snapshot 민감도 보정, 다중 신호): **→ [docs/UNDERWORLD_EXTENSIBILITY.md](../docs/UNDERWORLD_EXTENSIBILITY.md)**  

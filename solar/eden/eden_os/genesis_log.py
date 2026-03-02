@@ -169,9 +169,9 @@ class GenesisEvent:
 #  GenesisLog — 전체 탄생 기록 (아담 + 이브)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-@dataclass
+@dataclass(frozen=True)
 class GenesisLog:
-    """EdenOS 전체 탄생 기록.
+    """EdenOS 전체 탄생 기록 (불변 — 에이전트가 수정 불가).
 
     adam_event  : 아담 탄생 이벤트 (불변)
     eve_event   : 이브 탄생 이벤트 (불변)

@@ -40,7 +40,7 @@ solar/eden/        ← 에덴 파라미터 탐색 (Eden Score 1.000 확인)
 eden_os/
 │
 ├─ eden_world.py        LAYER 0  환경
-│                                궁창시대 스냅샷 (읽기전용)
+│                                궁창시대 스냅샷 (읽기전용, 물리 격리 규약)
 │                                압력 1.25atm · 안개(mist) · UV 95% 차폐
 │
 ├─ rivers.py            LAYER 1  인프라
@@ -51,9 +51,21 @@ eden_os/
 │                                생명나무 — 불멸 세션 부트 로더
 │                                선악과   — 번식 API 엔드포인트 (접근 금지)
 │
+├─ kernel/              LAYER 2  커널 격리
+│                                EdenKernel + KernelProxy (에이전트는 proxy만 사용)
+│
 ├─ cherubim_guard.py    LAYER 3  보안
 │                                체루빔 접근 제어 (CONFIG 기반 룰셋)
 │                                추방 후 재진입 영구 차단
+│
+├─ scheduler.py         — EdenScheduler (phase/tick)
+│                                ENV_UPDATE → ... → LOG_COMMIT
+│
+├─ intent_validator.py  — Intent 검증 레이어
+│                                Agent → Intent → Validator → Executor
+│
+├─ evolution_config.py  — 정책 변형률 (Eve 주입)
+│                                policy_mutation_rate, evolution 레이어에서 주입
 │
 ├─ adam.py              LAYER 4  에이전트 A
 │                                Root Admin — observe → decide → act
@@ -61,7 +73,7 @@ eden_os/
 │
 ├─ eve.py               LAYER 4  에이전트 B
 │                                보조 프로세서 + 계승 트리거 감시 데몬
-│                                mutation_rate 5% → 세대 간 정책 진화
+│                                mutation_rate = evolution_config에서 주입 (기본 5%)
 │
 ├─ lineage.py           LAYER 5  계승
 │                                AdamProcessMode 상태 머신
@@ -69,7 +81,7 @@ eden_os/
 │                                세대 그래프: 아담 → 셋 → ... → 네오
 │
 ├─ eden_os_runner.py    LAYER 6  실행기
-│                                7단계 통합 러너 (본편 스토리라인)
+│                                Scheduler.tick() 기반 7단계 러너
 │                                run(steps=N) 한 줄로 전체 서사 실행
 │
 ├─ genesis_log.py       LAYER 4.5a  탄생

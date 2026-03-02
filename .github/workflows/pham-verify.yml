@@ -1,0 +1,29 @@
+# PHAM 블록체인 체인 무결성 검증
+# v4 형식(previous_hash + block hash) 체인만 검증. 구 형식 체인은 제외.
+name: PHAM chain verify
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Verify PHAM chains (v4 format)
+        run: |
+          cd blockchain
+          python3 pham_verify_chain.py \
+            pham_chain_EDEN_ENGINEERING_FINAL.json \
+            pham_chain_README.json \
+            pham_chain_ARCHITECTURE.json \
+            pham_chain_brain_core_bridge.json \
+            pham_chain_central_body.json \
+            pham_chain_evolution_engine.json \
+            pham_chain_gauge.json \
+            pham_chain_fluctuation_theorems.json

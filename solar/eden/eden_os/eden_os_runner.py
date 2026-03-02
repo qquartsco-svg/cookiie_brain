@@ -56,12 +56,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from .eden_world   import EdenWorldEnv, make_eden_world
 from .rivers       import RiverNetwork, make_river_network, RiverState
-from .tree_of_life import TreeOfLife, KnowledgeTree, make_trees
 from .cherubim_guard import CherubimGuard, GuardDecision, make_cherubim_guard
+from .kernel       import EdenKernel, KernelProxy, make_eden_kernel, make_kernel_proxy
 from .adam         import Adam, ActionResult, make_adam, AdminStatus
 from .eve          import Eve, SuccessionEvent, make_eve
 from .lineage      import (
@@ -75,6 +75,20 @@ from .observer_mode    import (
     make_observer, OBSERVER_CONFIG,
 )
 from .genesis_narrative import GenesisNarrative, make_genesis_narrative
+from .scheduler        import EdenScheduler, make_scheduler
+from .intent_validator import IntentValidator, ValidationResult, make_intent_validator
+from .evolution_config import get_policy_mutation_rate
+from .homeostasis_engine import HomeostasisEngine, HomeostasisSnapshot, make_homeostasis_engine
+from .integrity_fsm   import IntegrityFSM, IntegrityState, make_integrity_fsm
+
+try:
+    from solar.underworld import HadesObserver, make_hades_observer, ConsciousnessSignal
+    _UNDERWORLD_AVAILABLE = True
+except Exception:
+    _UNDERWORLD_AVAILABLE = False
+    HadesObserver = None  # type: ignore
+    make_hades_observer = None  # type: ignore
+    ConsciousnessSignal = None  # type: ignore
 
 # ── 레이어 상수 ──────────────────────────────────────────────────────────────
 PHYSICAL = "PHYSICAL_FACT"
@@ -128,14 +142,15 @@ class EdenOSRunner:
 
     Parameters
     ----------
-    world     : EdenWorldEnv        — 환경 스냅샷 (불변)
-    rivers    : RiverNetwork        — 4대강 그래프
-    life_tree : TreeOfLife          — 생명나무
-    know_tree : KnowledgeTree       — 선악과
-    guard     : CherubimGuard       — 체루빔 접근 제어
-    adam      : Adam                — 초기 관리자
-    eve       : Eve                 — 계승 트리거
-    lineage   : LineageGraph        — 계승 그래프
+    world        : EdenWorldEnv        — 환경 스냅샷 (불변)
+    rivers       : RiverNetwork        — 4대강 그래프
+    kernel       : EdenKernel          — 커널 (생명나무·선악과 격리)
+    kernel_proxy : KernelProxy         — 현재 관리자용 커널 프록시 (Agent는 이것만 접근)
+    guard        : CherubimGuard      — 체루빔 접근 제어
+    intent_validator : IntentValidator — 의도 검증 (Agent → Validator → Executor)
+    adam         : Adam                — 초기 관리자
+    eve          : Eve                 — 계승 트리거
+    lineage      : LineageGraph        — 계승 그래프
 
     본편 통합 (v2.3.0)
     ------------------
@@ -148,24 +163,26 @@ class EdenOSRunner:
 
     def __init__(
         self,
-        world:     EdenWorldEnv,
-        rivers:    RiverNetwork,
-        life_tree: TreeOfLife,
-        know_tree: KnowledgeTree,
-        guard:     CherubimGuard,
-        adam:      Adam,
-        eve:       Eve,
-        lineage:   LineageGraph,
+        world:         EdenWorldEnv,
+        rivers:        RiverNetwork,
+        kernel:        EdenKernel,
+        kernel_proxy:  KernelProxy,
+        guard:         CherubimGuard,
+        intent_validator: IntentValidator,
+        adam:          Adam,
+        eve:           Eve,
+        lineage:       LineageGraph,
     ) -> None:
-        self._world     = world
-        self._rivers    = rivers
-        self._life_tree = life_tree
-        self._know_tree = know_tree
-        self._guard     = guard
-        self._adam      = adam
-        self._eve       = eve
-        self._lineage   = lineage
-        self._tick      = 0
+        self._world           = world
+        self._rivers          = rivers
+        self._kernel          = kernel
+        self._kernel_proxy    = kernel_proxy
+        self._guard           = guard
+        self._intent_validator = intent_validator
+        self._adam            = adam
+        self._eve             = eve
+        self._lineage         = lineage
+        self._tick            = 0
         self._logs:  List[TickLog] = []
 
         # ── 본편 통합: 관찰자 초기화 ─────────────────────────────────────────
@@ -184,6 +201,14 @@ class EdenOSRunner:
         # ── 추방 상태 추적 ────────────────────────────────────────────────────
         self._expulsion_tick: Optional[int] = None
         self._offspring_spawned: bool = False
+
+        # 스케줄러 — phase 기반 tick (OS 구조)
+        self._scheduler: EdenScheduler = make_scheduler()
+
+        # 동역학 레이어: 항상성 + integrity FSM (선악과 = stress_injection 통합)
+        self._homeostasis: HomeostasisEngine = make_homeostasis_engine()
+        self._integrity_fsm: IntegrityFSM = make_integrity_fsm()
+        self._hades: Optional[Any] = make_hades_observer(0) if _UNDERWORLD_AVAILABLE and make_hades_observer else None
 
         # Lineage 에 1세대 등록
         self._lineage.add_generation(
@@ -227,8 +252,12 @@ class EdenOSRunner:
     # ═════════════════════════════════════════════════════════════════════════
 
     def step(self) -> TickLog:
-        """한 틱 실행 (7단계)."""
+        """한 틱 실행 — 스케줄러 경유."""
         self._tick += 1
+        return self._scheduler.tick(self)
+
+    def _execute_tick(self) -> TickLog:
+        """한 틱 실행 본문 (7단계). Scheduler.tick(runner) 에서 호출."""
 
         notes: List[str] = []
 
@@ -244,11 +273,10 @@ class EdenOSRunner:
         self._rivers.step(tick=0)
 
         # ─────────────────────────────────────────────────────────────────────
-        # STEP 3  TREE — 생명나무 상태 갱신
+        # STEP 3  TREE — 생명나무 상태 갱신 (커널 내부)
         # ─────────────────────────────────────────────────────────────────────
-        self._life_tree.step(tick=1)
-        self._know_tree.step(tick=1)
-        tree_state_str = self._life_tree.state.value
+        self._kernel.step(tick=1)
+        tree_state_str = self._kernel_proxy.tree_state.value
 
         # ─────────────────────────────────────────────────────────────────────
         # STEP 4  GUARD — 체루빔 틱 갱신
@@ -257,39 +285,68 @@ class EdenOSRunner:
         last_guard_verdict = "none"
 
         # ─────────────────────────────────────────────────────────────────────
-        # STEP 5  AGENTS — Adam/Eve 의사결정 + 행동
+        # STEP 5  AGENTS — Adam/Eve 의사결정 + 행동 (KernelProxy 만 전달)
         #         ★ 선악과 섭취 감지 → lineage.record_expulsion() 자동 실행
         # ─────────────────────────────────────────────────────────────────────
+        hades_signal = None
+        if self._hades is not None:
+            hades_signal = self._hades.listen(self._tick, self._world)
+
         obs = self._adam.observe(
             world            = self._world,
-            tree             = self._life_tree,
+            kernel_proxy     = self._kernel_proxy,
             river_flow_total = river_state.total_flow,
+            hades_signal     = hades_signal,
         )
         intent = self._adam.decide(obs)
-        result: ActionResult = self._adam.act(
-            intent    = intent,
-            guard     = self._guard,
-            life_tree = self._life_tree,
-            know_tree = self._know_tree,
+
+        # ── Intent Validator (Agent → Validator → Executor) ─────────────────
+        verdict = self._intent_validator.validate(
+            self._adam.id, intent, world=self._world,
         )
+        if not verdict.allowed:
+            result = self._adam._result(
+                intent, False, {}, f"Intent 검증 거부: {verdict.reason}"
+            )
+        else:
+            result: ActionResult = self._adam.act(
+                intent       = intent,
+                guard        = self._guard,
+                kernel_proxy = self._kernel_proxy,
+            )
         self._adam.step(tick=1)
         self._eve.step(tick=1)
 
-        # ── 선악과 섭취 감지 → IMMORTAL_ADMIN → MORTAL_NPC 전환 ─────────────
-        if (
-            self._adam.knowledge_consumed
-            and self._lineage.is_immortal          # 아직 전환 안 된 경우
-        ):
+        # ── 동역학: 항상성 + integrity FSM (선악과 = stress_injection) ─────────
+        stress_injection = 0.95 if self._adam.knowledge_consumed else 0.0
+        snap = self._homeostasis.update(
+            self._tick, self._world, hades_signal, stress_injection
+        )
+        self._integrity_fsm.step(self._tick, snap.integrity)
+        if self._adam.knowledge_consumed:
+            self._integrity_fsm.force_mortal()
+
+        # ── 선악과 섭취 또는 동역학 전이 → IMMORTAL_ADMIN → MORTAL_NPC ─────────
+        should_expel = (
+            (self._adam.knowledge_consumed or self._integrity_fsm.is_mortal)
+            and self._lineage.is_immortal
+        )
+        if should_expel:
             expulsion = self._lineage.record_expulsion(
                 tick    = self._tick,
                 adam_id = self._adam.id,
                 eve_id  = self._eve.id,
             )
             self._expulsion_tick = self._tick
-            notes.append(
-                f"  🍎 선악과 이벤트: IMMORTAL_ADMIN → MORTAL_NPC  "
-                f"(FORKING_ENABLED=True)"
-            )
+            if self._adam.knowledge_consumed:
+                notes.append(
+                    f"  🍎 선악과 이벤트: IMMORTAL_ADMIN → MORTAL_NPC  "
+                    f"(FORKING_ENABLED=True)"
+                )
+            else:
+                notes.append(
+                    f"  📉 동역학 전이: integrity 연속 N tick θ 이하 → MORTAL_NPC  "
+                )
             notes.append(
                 f"     체루빔 재진입 방화벽 영구 강화: "
                 f"Eden Basin 재진입 차단"
@@ -326,6 +383,10 @@ class EdenOSRunner:
                 current_tick = self._tick,
             )
             self._adam = new_adam
+            # 새 관리자용 KernelProxy 생성·활성화 (동일 커널, 새 agent_id)
+            new_proxy = make_kernel_proxy(kernel=self._kernel, agent_id=new_adam.id)
+            new_proxy.activate(is_admin=True)
+            self._kernel_proxy = new_proxy
             self._eve  = make_eve(adam=new_adam, seed=self._tick)
             notes.append(f"  ★ 계승 발동: {succession_trigger}")
 
@@ -549,6 +610,9 @@ def make_eden_os_runner(
 ) -> EdenOSRunner:
     """EdenOSRunner 생성 — 모든 서브시스템을 조립한다.
 
+    커널 격리: Agent는 life_tree/know_tree에 직접 접근하지 않음.
+    EdenKernel + KernelProxy 경유만 사용.
+
     Parameters
     ----------
     world_ic : InitialConditions, optional
@@ -560,39 +624,28 @@ def make_eden_os_runner(
     -------
     EdenOSRunner — 즉시 run() 가능한 상태.
                    genesis_log 자동 생성 완료.
-
-    Examples
-    --------
-    >>> runner = make_eden_os_runner()
-    >>> runner.run(steps=24)
-    >>> runner.print_report()
-
-    >>> # 탄생 순간 로그
-    >>> runner.genesis_log.print_moment()
-
-    >>> # 선악과 이벤트 리포트 (추방 후에만 유효)
-    >>> runner.print_expulsion_report()
-
-    >>> # 창세기 지리 서사
-    >>> runner.print_narrative_report()
     """
-    world     = make_eden_world(ic=world_ic)
-    rivers    = make_river_network(world=world)
-    life_tree, know_tree = make_trees(world=world)
-    guard     = make_cherubim_guard(world=world)
-    adam      = make_adam(agent_id="adam")
-    eve       = make_eve(adam=adam, seed=seed)
-    lineage   = make_lineage()
+    world  = make_eden_world(ic=world_ic)
+    rivers = make_river_network(world=world)
+    kernel = make_eden_kernel(world=world)
+    kernel_proxy = make_kernel_proxy(kernel=kernel, agent_id="adam")
+    kernel_proxy.activate(is_admin=True)
+    guard   = make_cherubim_guard(world=world)
+    intent_validator = make_intent_validator()
+    adam    = make_adam(agent_id="adam")
+    eve     = make_eve(adam=adam, seed=seed)  # mutation_rate = evolution_config 에서 주입
+    lineage = make_lineage()
 
     runner = EdenOSRunner(
-        world     = world,
-        rivers    = rivers,
-        life_tree = life_tree,
-        know_tree = know_tree,
-        guard     = guard,
-        adam      = adam,
-        eve       = eve,
-        lineage   = lineage,
+        world           = world,
+        rivers          = rivers,
+        kernel          = kernel,
+        kernel_proxy    = kernel_proxy,
+        guard           = guard,
+        intent_validator = intent_validator,
+        adam            = adam,
+        eve             = eve,
+        lineage         = lineage,
     )
 
     # 탄생 순간 로그 생성 (runner 조립 완료 직후 한 번만)

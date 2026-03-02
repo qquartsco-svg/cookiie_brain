@@ -17,15 +17,38 @@
 
 ---
 
-## 서명 방법 (solar 레이어)
+## 서명 방법 (solar / 루트 레이어)
+
+**이 레포(CookiieBrain) 루트 기준:**
 
 ```bash
-# 프로젝트 루트 기준
+# 방법 A: blockchain/ 폴더에서 실행 (체인 파일이 blockchain/ 에 생성됨)
 cd blockchain
-python3 ../cookiie_brain/blockchain/pham_sign_v4.py ../solar/<파일경로> --author "GNJz" --desc "<설명>"
+python3 pham_sign_v4.py ../solar/<파일경로> --author "GNJz" --desc "<설명>"
+
+# 방법 B: 루트에서 실행
+python3 blockchain/pham_sign_v4.py solar/<파일경로> --author "GNJz" --desc "<설명>"
 ```
 
 → `pham_chain_<파일stem>.json` 이 **blockchain/** 안에 생성됨.
+
+**cookiie_brain/ 서브폴더가 있는 구조**에서는  
+`python3 ../cookiie_brain/blockchain/pham_sign_v4.py ../solar/...` 형태로 cwd를 `blockchain/`으로 두고 실행 가능.
+
+---
+
+## 체인 검증 (Verification)
+
+`pham_chain_*.json` 무결성 확인:
+
+```bash
+cd blockchain
+python3 pham_verify_chain.py pham_chain_<이름>.json
+```
+
+- **prev_hash** 연결이 맞는지, 각 블록의 **hash**가 `index|prev_hash|timestamp|data_hash` 재계산값과 일치하는지 검사.
+- GENESIS 블록은 건너뜀. 실패 시 첫 불일치 블록 인덱스와 이유를 출력.
+- **참고**: 구 형식(previous_hash/hash 필드 누락 또는 이전 해시 규칙) 체인은 검증 실패할 수 있음. v4 형식만 지원.
 
 ---
 

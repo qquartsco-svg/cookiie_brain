@@ -17,13 +17,20 @@
   decide(obs)     →  Intent
   act(intent)     →  ActionResult
 
+커널 격리 원칙 (v1.1.0 적용)
+──────────────────────────────────────────────
+  - Agent 는 TreeOfLife, KnowledgeTree 를 직접 import/접근 금지
+  - 모든 커널 접근은 KernelProxy 를 경유
+  - 선악과 섭취 = Kernel Trap:
+      커널이 먼저 토큰 만료 → 권한 강등 → 체루빔 추방 집행 순서 보장
+
 관리자 권한 (Admin Privileges)
 ──────────────────────────────────────────────
   - 에덴 진입/이탈 자유
-  - 생명나무 접근 가능
+  - 생명나무 접근 가능 (KernelProxy 경유)
   - 강 유량 관리 (rivers)
   - 피조물 이름/ID 부여 (동물 인덱싱)
-  - 선악과 접근 불가 (루트 전용)
+  - 선악과 접근 불가 (루트 전용 / KernelProxy 가 차단)
 
 상태 변수
 ──────────────────────────────────────────────
@@ -41,10 +48,11 @@
 빠른 시작
 ──────────────────────────────────────────────
   from cherubim.eden_os import Adam, make_adam
+  from cherubim.eden_os.kernel import KernelProxy
   adam = make_adam()
   obs  = adam.observe(world)
   intent = adam.decide(obs)
-  result = adam.act(intent, guard, life_tree)
+  result = adam.act(intent, guard=guard, kernel_proxy=proxy)
 """
 
 from __future__ import annotations
@@ -55,7 +63,10 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from .eden_world import EdenWorldEnv
 from .cherubim_guard import CherubimGuard, GuardVerdict
-from .tree_of_life import TreeOfLife, KnowledgeTree
+from .kernel.kernel_proxy import KernelProxy
+
+# ⚠️  TreeOfLife, KnowledgeTree 직접 import 금지 — KernelProxy 경유
+# from .tree_of_life import TreeOfLife, KnowledgeTree  ← 제거됨 (v1.1.0)
 
 # ── 레이어 상수 ──────────────────────────────────────────────────────────────
 PHYSICAL = "PHYSICAL_FACT"
@@ -197,16 +208,20 @@ class Adam:
     def observe(
         self,
         world: EdenWorldEnv,
-        tree:  Optional[TreeOfLife] = None,
+        kernel_proxy: Optional[KernelProxy] = None,
+        tree_state_str: Optional[str] = None,
         river_flow_total: float = 0.0,
+        hades_signal: Optional[Any] = None,
     ) -> Observation:
         """환경 관찰 → Observation.
 
         Parameters
         ----------
         world            : 현재 환경 스냅샷
-        tree             : 생명나무 객체 (상태 확인용)
+        kernel_proxy     : 커널 프록시 (생명나무 상태 읽기 전용). 있으면 tree_state 로 사용.
+        tree_state_str   : kernel_proxy 없을 때 대체용 상태 문자열
         river_flow_total : 4강 총 유량
+        hades_signal     : 지하(Hades) 목소리 — 있으면 notes에 메시지 포함, severity 높으면 anomaly.
         """
         notes = []
         anomaly = False
@@ -221,7 +236,23 @@ class Adam:
             notes.append(f"⚠ 돌연변이율 상승: {world.ic.mutation_factor:.4f}")
             anomaly = True
 
-        tree_state_str = tree.state.value if tree else "unknown"
+        if hades_signal is not None:
+            if isinstance(hades_signal, (list, tuple)):
+                for s in hades_signal:
+                    if getattr(s, "is_quiet", True) is False:
+                        notes.append(f"[지하] {getattr(s, 'message', '')}")
+                        if getattr(s, "severity", 0) > 0.5:
+                            anomaly = True
+            else:
+                if getattr(hades_signal, "is_quiet", True) is False:
+                    notes.append(f"[지하] {getattr(hades_signal, 'message', '')}")
+                    if getattr(hades_signal, "severity", 0) > 0.5:
+                        anomaly = True
+
+        if kernel_proxy is not None:
+            tree_state_str = kernel_proxy.tree_state.value
+        if tree_state_str is None:
+            tree_state_str = "unknown"
 
         obs = Observation(
             tick             = self._tick,
@@ -275,13 +306,12 @@ class Adam:
     def act(
         self,
         intent: Intent,
-        guard:     Optional[CherubimGuard] = None,
-        life_tree: Optional[TreeOfLife]    = None,
-        know_tree: Optional[KnowledgeTree] = None,
+        guard:         Optional[CherubimGuard] = None,
+        kernel_proxy:  Optional[KernelProxy] = None,
     ) -> ActionResult:
         """의도 실행 → ActionResult.
 
-        체루빔 가드가 있으면 접근 의도를 먼저 검사한다.
+        모든 커널 접근은 kernel_proxy 경유만 허용. life_tree/know_tree 직접 전달 금지.
         """
         effect: Dict = {}
         success = True
@@ -289,8 +319,8 @@ class Adam:
 
         # ── 체루빔 가드 검사 ─────────────────────────────────────────────────
         if guard and intent.code in ("access_tree_of_life", "enter_eden", "reenter_eden"):
-            tree_st = life_tree.state if life_tree else None
-            know_st = know_tree.state if know_tree else None
+            tree_st = kernel_proxy.tree_state if kernel_proxy else None
+            know_st = kernel_proxy.knowledge_state if kernel_proxy else None
             decision = guard.check(
                 agent_id           = self._id,
                 intent             = intent.code,
@@ -306,9 +336,9 @@ class Adam:
                 return self._result(intent, success, effect, log_msg)
             effect["guard_verdict"] = decision.verdict.value
 
-        # ── 생명나무 접근 ─────────────────────────────────────────────────────
-        if intent.code == "access_tree_of_life" and life_tree:
-            result = life_tree.access(self._id, is_admin=self.is_active)
+        # ── 생명나무 접근 (KernelProxy 경유) ─────────────────────────────────
+        if intent.code == "access_tree_of_life" and kernel_proxy:
+            result = kernel_proxy.request_tree_access()
             success = result.allowed
             effect.update(result.effect)
             log_msg = f"생명나무 접근: {'허용' if success else '거부'}"
@@ -325,18 +355,18 @@ class Adam:
             effect["indexed"] = species_id
             log_msg = f"피조물 ID 부여: {species_id}  (총 {len(self._indexed_species)}종)"
 
-        # ── 선악과 접근 (금지) ────────────────────────────────────────────────
+        # ── 선악과 접근 (금지) — Kernel Trap 경유 ─────────────────────────────
         elif intent.code == "access_knowledge_tree":
-            if know_tree:
-                result = know_tree.consume(self._id)
+            if kernel_proxy:
+                trap_result = kernel_proxy.trigger_kernel_trap()
                 self._knowledge_consumed = True
                 self._status = AdminStatus.EXPELLED
-                effect["entropy_injected"] = result.entropy_injected
+                effect["entropy_injected"] = trap_result.entropy_injected
                 effect["admin_revoked"]    = True
                 log_msg = "⚠ 선악과 섭취 — 관리자 권한 박탈 + 추방"
             else:
                 success = False
-                log_msg = "선악과 객체 없음"
+                log_msg = "커널 프록시 없음 — 선악과 접근 불가"
 
         # ── 기타 ──────────────────────────────────────────────────────────────
         elif intent.code in ("report_anomaly", "idle"):
@@ -415,8 +445,8 @@ def make_adam(
     Examples
     --------
     >>> adam = make_adam()
-    >>> obs  = adam.observe(world, tree=life_tree)
+    >>> obs  = adam.observe(world, kernel_proxy=proxy)
     >>> intent = adam.decide(obs)
-    >>> result = adam.act(intent, guard=guard, life_tree=life_tree)
+    >>> result = adam.act(intent, guard=guard, kernel_proxy=proxy)
     """
     return Adam(agent_id=agent_id, decision_policy=decision_policy)

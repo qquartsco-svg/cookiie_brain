@@ -14,11 +14,11 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 from .consciousness import ConsciousnessSignal
 from .deep_monitor import DeepSnapshot, read_deep_snapshot
-from .rules import evaluate_rules
+from .rules import evaluate_rules_all
 
 
 class HadesObserver:
@@ -37,7 +37,7 @@ class HadesObserver:
         tick: int,
         world_snapshot: Any = None,
         deep_engine: Any = None,
-    ) -> ConsciousnessSignal:
+    ) -> List[ConsciousnessSignal]:
         """현재 틱 기준 목소리(신호) 수신.
 
         Parameters
@@ -45,14 +45,14 @@ class HadesObserver:
         tick : int
             현재 시뮬레이션 틱.
         world_snapshot : optional
-            지상 환경 스냅샷 (EdenWorldEnv 등). 있으면 에덴 지수 등으로 severity 보정 가능.
+            지상 환경 스냅샷 (덕 타이핑). getattr(world_snapshot, 'eden_index', 1.0) 등으로만 사용.
         deep_engine : optional
             물리 코어 엔진 (EvolutionEngine 등). 없으면 deep_monitor 스텁 사용.
 
         Returns
         -------
-        ConsciousnessSignal
-            조용(QUIET)이거나 경고/위반/패닉 중 하나.
+        List[ConsciousnessSignal]
+            위반 없으면 [QUIET] 1개. 복합 위반 시 여러 신호 (RULE_VIOLATION, ENTROPY_WARNING 등).
         """
         self._tick = tick
         deep = read_deep_snapshot(tick=tick, engine=deep_engine)
@@ -60,21 +60,27 @@ class HadesObserver:
         if not deep.core_available:
             sig = ConsciousnessSignal.quiet(tick=tick)
             self._last_signal = sig
-            return sig
+            return [sig]
 
-        severity, signal_type, message = evaluate_rules(deep)
-        if severity <= 0.0:
+        violations = evaluate_rules_all(deep)
+        if not violations:
             sig = ConsciousnessSignal.quiet(tick=tick)
-        else:
-            sig = ConsciousnessSignal(
-                source="underworld.hades",
-                severity=severity,
-                signal_type=signal_type,
-                message=message,
-                tick=tick,
+            self._last_signal = sig
+            return [sig]
+
+        signals: List[ConsciousnessSignal] = []
+        for severity, signal_type, message in violations:
+            signals.append(
+                ConsciousnessSignal(
+                    source="underworld.hades",
+                    severity=severity,
+                    signal_type=signal_type,
+                    message=message,
+                    tick=tick,
+                )
             )
-        self._last_signal = sig
-        return sig
+        self._last_signal = signals[0]
+        return signals
 
     @property
     def last_signal(self) -> Optional[ConsciousnessSignal]:

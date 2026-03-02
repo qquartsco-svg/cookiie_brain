@@ -7,7 +7,7 @@ hades.py는 이 모듈을 참조할 뿐, 룰 내용은 여기서만 수정하면
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Tuple
 
 # SignalType 값 문자열 (consciousness.SignalType 과 맞춤)
 RULE_VIOLATION   = "RULE_VIOLATION"
@@ -83,3 +83,24 @@ def evaluate_rules(
                 signal_type = r.signal_type
                 message = r.message
     return severity, signal_type, message
+
+
+def evaluate_rules_all(
+    deep_snapshot: Any,
+    rules: Optional[List[RuleSpec]] = None,
+) -> List[Tuple[float, str, str]]:
+    """DeepSnapshot에 대해 모든 위반 룰을 반환.
+
+    Returns
+    -------
+    List of (severity, signal_type, message)
+        위반 없으면 []. 위반 있으면 각 위반당 한 항목 (복합 위반 시 여러 항목).
+    """
+    if rules is None:
+        rules = DEFAULT_RULES
+    out: List[Tuple[float, str, str]] = []
+    for r in rules:
+        ok = _ok_from_snapshot(deep_snapshot, r.check_key)
+        if not ok:
+            out.append((r.violation_severity, r.signal_type, r.message))
+    return out

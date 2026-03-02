@@ -135,7 +135,7 @@ class InternalObserver:
         world = self._runner._world
         obs   = adam.observe(
             world            = world,
-            tree             = self._runner._life_tree,
+            kernel_proxy     = self._runner._kernel_proxy,
             river_flow_total = self._runner._rivers.step(0).total_flow,
         )
         frame = {

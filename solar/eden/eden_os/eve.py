@@ -59,7 +59,10 @@ from typing import Dict, List, Optional, Tuple
 from .eden_world import EdenWorldEnv
 from .adam import Adam, AdminStatus, Observation, Intent, ActionResult, make_adam
 from .cherubim_guard import CherubimGuard
-from .tree_of_life import TreeOfLife, KnowledgeTree
+from .kernel.kernel_proxy import KernelProxy
+from .evolution_config import get_policy_mutation_rate
+
+# ⚠️  TreeOfLife, KnowledgeTree 직접 import 금지 — KernelProxy 경유 (v1.1.0)
 
 # ── 레이어 상수 ──────────────────────────────────────────────────────────────
 PHYSICAL = "PHYSICAL_FACT"
@@ -118,13 +121,15 @@ class Eve:
         adam:              Adam,
         agent_id:          str = "eve",
         succession_policy: Optional[Dict] = None,
-        mutation_rate:     float = 0.05,
+        mutation_rate:     Optional[float] = None,
         seed:              Optional[int] = None,
     ) -> None:
+        # mutation_rate 는 evolution_config 에서 주입 (Agent 가 직접 소유하지 않음)
+        rate = get_policy_mutation_rate(override=mutation_rate)
         self._id       = agent_id
         self._adam     = adam
         self._s_policy = succession_policy or dict(self.DEFAULT_SUCCESSION_POLICY)
-        self._mut_rate = mutation_rate
+        self._mut_rate = rate
         self._rng      = random.Random(seed)
         self._tick     = 0
         self._consec_fail = 0
@@ -146,11 +151,17 @@ class Eve:
     def observe(
         self,
         world: EdenWorldEnv,
-        tree:  Optional[TreeOfLife] = None,
+        kernel_proxy: Optional[KernelProxy] = None,
+        tree_state_str: Optional[str] = None,
         river_flow_total: float = 0.0,
     ) -> Observation:
-        """환경 관찰 — Adam 과 동일한 Observation 형식."""
-        return self._adam.observe(world, tree, river_flow_total)
+        """환경 관찰 — Adam 과 동일한 Observation 형식. 커널 접근은 proxy 경유만."""
+        return self._adam.observe(
+            world,
+            kernel_proxy=kernel_proxy,
+            tree_state_str=tree_state_str,
+            river_flow_total=river_flow_total,
+        )
 
     def decide(self, obs: Observation) -> Intent:
         """의도 결정.
@@ -167,16 +178,14 @@ class Eve:
     def act(
         self,
         intent: Intent,
-        guard:     Optional[CherubimGuard] = None,
-        life_tree: Optional[TreeOfLife]    = None,
-        know_tree: Optional[KnowledgeTree] = None,
+        guard:        Optional[CherubimGuard] = None,
+        kernel_proxy: Optional[KernelProxy] = None,
     ) -> ActionResult:
-        """행동 실행 — 계승 트리거 포함."""
+        """행동 실행 — 계승 트리거 포함. 커널 접근은 kernel_proxy 경유만."""
         if intent.code == "trigger_succession":
             # 계승은 lineage.py 에서 처리 — 여기서는 이벤트만 기록
             entry = f"[tick={self._tick:04d}]  EVE  trigger_succession  '{intent.reason}'"
             self._log.append(entry)
-            from dataclasses import fields as dc_fields
             return ActionResult(
                 tick      = self._tick,
                 agent_id  = self._id,
@@ -185,8 +194,8 @@ class Eve:
                 effect    = {"succession_triggered": True},
                 log_entry = entry,
             )
-        # 그 외 의도는 아담에게 위임
-        return self._adam.act(intent, guard, life_tree, know_tree)
+        # 그 외 의도는 아담에게 위임 (proxy 만 전달)
+        return self._adam.act(intent, guard=guard, kernel_proxy=kernel_proxy)
 
     # ── 계승 감시 ─────────────────────────────────────────────────────────────
 
@@ -308,27 +317,20 @@ def make_eve(
     adam:              Optional[Adam] = None,
     agent_id:          str = "eve",
     succession_policy: Optional[Dict] = None,
-    mutation_rate:     float = 0.05,
+    mutation_rate:     Optional[float] = None,
     seed:              Optional[int] = 42,
 ) -> Eve:
     """Eve 에이전트 생성.
 
-    Parameters
-    ----------
-    adam : Adam, optional  — None 이면 make_adam() 사용
-
-    Examples
-    --------
-    >>> adam = make_adam()
-    >>> eve  = make_eve(adam)
-    >>> event = eve.check_succession(adam, obs)
+    mutation_rate 는 evolution_config 에서 주입. None 이면 get_policy_mutation_rate() 사용.
     """
     if adam is None:
         adam = make_adam()
+    rate = get_policy_mutation_rate(override=mutation_rate)
     return Eve(
         adam              = adam,
         agent_id          = agent_id,
         succession_policy = succession_policy,
-        mutation_rate     = mutation_rate,
+        mutation_rate     = rate,
         seed              = seed,
     )
