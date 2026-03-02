@@ -2,6 +2,9 @@
 
 행성 거시 룰 감시를 위한 읽기 전용 스냅샷.
 day4/core 가 없거나 사용하지 않으면 스텁 값을 반환.
+
+Layer: L0' (Adapter). Allowed deps: stdlib, optional solar.day4.core. Forbidden: consciousness, rules, hades, propagation, wave_bus, siren, solar.eden.
+See LAYERS.md.
 """
 
 from __future__ import annotations

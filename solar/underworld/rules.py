@@ -2,6 +2,9 @@
 
 HadesObserver가 사용하는 룰 목록·스코어링·메시지.
 hades.py는 이 모듈을 참조할 뿐, 룰 내용은 여기서만 수정하면 됨.
+
+Layer: L0 (Foundation). Allowed deps: stdlib only. Forbidden: consciousness, deep_monitor, hades, propagation, wave_bus, siren, solar.eden.
+See LAYERS.md.
 """
 
 from __future__ import annotations

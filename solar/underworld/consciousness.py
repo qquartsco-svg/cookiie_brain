@@ -2,6 +2,9 @@
 
 지하(Hades)에서 지상 에이전트로 전달되는 신호.
 경고, 압력, 임박 붕괴 등 — 에이전트 observe() 루프에서 수신 가능.
+
+Layer: L0 (Foundation). Allowed deps: stdlib only. Forbidden: deep_monitor, hades, propagation, wave_bus, siren, solar.eden.
+See LAYERS.md.
 """
 
 from __future__ import annotations

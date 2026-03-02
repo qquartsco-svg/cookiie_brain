@@ -4,6 +4,9 @@
 입력: deep_monitor(물리 코어), 선택적으로 지상 스냅샷.
 출력: ConsciousnessSignal — 지상 observe()에 포함할 "목소리".
 
+Layer: L1 (Measure). Allowed deps: consciousness, deep_monitor, rules. Forbidden: propagation, wave_bus, siren, solar.eden.
+See LAYERS.md.
+
 설계 규칙 (불가침)
 ──────────────────
   Hades ONLY measures.  Hades NEVER acts.
