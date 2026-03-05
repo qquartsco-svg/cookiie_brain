@@ -9,6 +9,36 @@
 
 ---
 
+## 본편 서사 속 위치 — 조→모→체루빔→EdenOS→궁창→노아
+
+이 레이어는 단독 엔진이 아니라, 본편 테라포밍/에덴 서사 위에 얹힌
+**“마지막 상전이 단계”**다.
+
+- 1단계: `_01_beginnings/joe` — 조(JOE) 거시 탐사  
+  - PANGEA §4 Aggregator 로 행성 거시 조건(`planet_stress`, `instability`)을 평가한다.
+  - 붕괴하지 않을 행성만 다음 레이어로 넘긴다.
+- 2단계: `_02_creation_days` — 모(MOE) 환경 구축  
+  - day1~7, `fields/`, `physics/`, `engines/`, `day7/runner` 가
+    6도메인(대기·수권·지질·자기권·궤도·생물권) 스냅샷을 만든다.
+- 3단계: `_03_eden_os_underworld/eden` — 체루빔 + EdenOS  
+  - `eden/search.py` 가 EdenCandidate / SearchResult 를 찾고,
+  - `eden/eden_os/*.py` 가 CherubimGuard + EdenOSRunner 로 에덴 Basin 을 운영한다.
+- 4단계: `_04_firmament_era` — 궁창 환경시대  
+  - `eden/firmament.py` 의 `FirmamentLayer` 가
+    에덴 궁창(고압·고습·저엔트로피) 상태를 유지한다.
+- 5단계: `_05_noah_flood` — 궁창 붕괴·대홍수·postdiluvian 상전이 (현재 레이어)  
+  - 위 레이어들에서 만들어진 `instability` / 환경 스냅샷을 받아,
+  - 궁창 시대 → 붕괴 → 홍수 → 현재 지구(Postdiluvian) 로 넘어가는
+    **시간 축 시나리오**를 담당한다.
+
+요약하면,
+
+> 조(JOE) → (_02_creation_days 전체) → EdenSearch/EdenOS → FirmamentEra → NoahFlood
+
+라는 서사 흐름의 **마지막 물리 상전이 레이어**가 `_05_noah_flood`다.
+
+---
+
 ## 관련 구현 파일
 
 - `solar/_03_eden_os_underworld/eden/firmament.py`  
@@ -35,13 +65,18 @@
   - `run_flood_step()` / `run_trigger_flood()` — 기존 단일 스텝/트리거 래퍼.
   - `compute_effective_instability()` — JOE instability + (선택) MOE 리스크 합성기.
   - `run_noah_cycle()` — 조→궁창→홍수→postdiluvian 한 사이클을 따라가는 시뮬레이션 헬퍼.
+  - `evaluate_postdiluvian()` — post-flood IC 가 지구형(postdiluvian) 타깃과
+    얼마나 일치하는지 평가.
 - `scenarios.py`
   - `run_scenario_macro_only()` / `run_scenario_macro_decay()` /
     `run_scenario_combined_ramp()` / `run_scenario_impulse_shock()`
     등 여러 트리거 패턴을 돌려보는 데모 러너.
 - `SCENARIOS.md`
   - 위 시나리오들의 설정·실행법·해석을 정리한 문서.
-- `__init__.py` — re-export
+- `__init__.py`
+  - 위 함수들(`run_flood_step`, `run_noah_cycle`, `evaluate_postdiluvian`,
+    `compute_effective_instability` 등)과 Flood/Firmament/IC 타입들을
+    외부에서 한 번에 import 할 수 있도록 re-export 한다.
 
 ---
 

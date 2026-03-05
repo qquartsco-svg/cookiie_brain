@@ -5,7 +5,15 @@ from solar._03_eden_os_underworld.eden import flood
 from solar._03_eden_os_underworld.eden import firmament
 from solar._03_eden_os_underworld.eden import initial_conditions
 
-from .engine import run_flood_step, run_trigger_flood
+from .engine import (
+    NoahSimulationResult,
+    NoahStepSnapshot,
+    compute_effective_instability,
+    evaluate_postdiluvian,
+    run_flood_step,
+    run_noah_cycle,
+    run_trigger_flood,
+)
 
 FloodEngine = flood.FloodEngine
 FloodSnapshot = flood.FloodSnapshot
@@ -17,7 +25,19 @@ make_postdiluvian = initial_conditions.make_postdiluvian
 make_flood_peak = getattr(initial_conditions, "make_flood_peak", None)
 
 __all__ = [
-    "run_flood_step", "run_trigger_flood",
-    "FloodEngine", "FloodSnapshot", "make_flood_engine", "FLOOD_PHASES",
-    "FirmamentLayer", "make_antediluvian", "make_postdiluvian", "make_flood_peak",
+    "run_flood_step",
+    "run_trigger_flood",
+    "compute_effective_instability",
+    "run_noah_cycle",
+    "evaluate_postdiluvian",
+    "NoahStepSnapshot",
+    "NoahSimulationResult",
+    "FloodEngine",
+    "FloodSnapshot",
+    "make_flood_engine",
+    "FLOOD_PHASES",
+    "FirmamentLayer",
+    "make_antediluvian",
+    "make_postdiluvian",
+    "make_flood_peak",
 ]
