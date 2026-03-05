@@ -30,13 +30,18 @@ Eden initial_conditions는 이미 다음을 **동역학으로 계산**한다:
    PlanetRunner(또는 Day7)에 IC를 넘길 때, **Eden이 계산한 τ, ε_a, T_surface_K, pole_eq_delta_K, albedo**를 그대로 사용한다.  
    Day2 AtmosphereColumn이 같은 τ를 **다시 계산해 누적하지 않는다**.
 
+2. **구현 반영 (코드)**  
+   - `InitialConditions.to_runner_kwargs()` 에 `tau_init`, `eps_a_init` 포함.  
+   - `PlanetRunner.__init__` 에서 `ic.get('tau_init')`, `ic.get('eps_a_init')` 를 AtmosphereColumn에 전달.  
+   - `AtmosphereColumn`: `tau_init`, `eps_a_init` 이 둘 다 넘어오면 `_eden_locked_tau_eps=True` 로 두고, `step()` 에서 τ/ε 재계산 생략 (더블카운트 방지).
+
 2. **역할 분담**
    - Eden IC: “초기조건 한 번 결정” → τ, albedo, ΔT, band_T 등 제공.
    - Day2: Eden이 값을 넘겼으면 그 값을 쓰고, 넘기지 않았을 때만 자체 τ/온도 계산.
 
 3. **구현 시 체크**
-   - `to_runner_kwargs()`가 이미 `T_surface_K_init`, `pole_eq_delta_K`, `albedo_init`, `pressure_atm` 등을 넘김.
-   - Runner/AtmosphereColumn 쪽에서 `init`/override가 있으면 **그 값을 최종값으로 쓰고, τ/ε/T를 재계산하지 않는** 분기 필요.
+   - `to_runner_kwargs()`가 이미 `T_surface_K_init`, `pole_eq_delta_K`, `albedo_init`, `pressure_atm`, **`tau_init`, `eps_a_init`** 등을 넘김.
+   - Runner/AtmosphereColumn 쪽에서 `tau_init`·`eps_a_init` 이 둘 다 있으면 **그 값을 쓰고, step()에서 τ/ε를 재계산하지 않음** (구현 완료).
    - 통합 시점에 Day2 코드에서 “Eden IC에서 온 τ”와 “Day2 자체 τ”가 둘 다 적용되는 구간이 없는지 한 번 더 검사.
 
 ---

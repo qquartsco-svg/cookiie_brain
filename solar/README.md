@@ -1,11 +1,37 @@
 # solar/ — 전체 태양계 N-body + 자기권 + 광도 + 대기권 + 관성 기억 (v1.5.0)
 
+**코드·서사·문서 어디 있는지 한눈에** → **[INDEX_CODE_AND_DOCS.md](INDEX_CODE_AND_DOCS.md)** (지금까지 쌓아온 것 전체 위치).
+
 NASA/JPL 실측 데이터 기반 10-body 심플렉틱 엔진.
 자기쌍극자 + 태양풍 + 자기권 + 태양 광도 전자기 레이어 완비.
 빛이 있으라 — 중력장 위에 빛이 켜지고, 형태와 온도가 존재하기 시작한다.
 
 > *10-body symplectic engine with magnetic dipole, solar wind,
 > magnetosphere, and solar luminosity. Gear-separated: core/ ← data/ ← em/ ← cognitive/*
+
+---
+
+## 폴더·레이어 확인 (먼저 보기)
+
+| 확인 목적 | 보는 곳 |
+|-----------|---------|
+| **행성 탐사 → 행성 구성 → 모듈 구성 → 천지창조 → 에덴 → 언더월드** | **[`LAYER_FLOW.md`](LAYER_FLOW.md)** · **[`FOLDER_MAP.md`](FOLDER_MAP.md)** |
+| 코드·서사·문서 전체 위치 | **[`INDEX_CODE_AND_DOCS.md`](INDEX_CODE_AND_DOCS.md)** |
+
+**폴더**: _01_beginnings(행성 탐사) → _02_creation_days(천지창조 day1~7) → _03_eden_os_underworld(에덴·OS·언더월드) → _04_firmament_era(궁창 환경시대) → _05_noah_flood(노아 대홍수).
+
+---
+
+## 폴더 구조 (정리)
+
+**solar 최상위** = **시간 흐름 레이어** 하나. 상세: [`FOLDER_MAP.md`](FOLDER_MAP.md).
+
+| 구분 | 폴더 | 설명 |
+|------|------|------|
+| **코드(시간축)** | _00_precreation, _01_physics_core, _02_firmament_fields, _03_land_surface, _04_biosphere_eden, _05_cognitive_moe, _06_governance_hades, _07_monitoring_siren, _09_bridge | 조→물리→필드→지표→생태→인지→규칙→경고→브리지. import는 `solar.day1`, `solar.eden` 등 별칭. |
+| **문서·개념·폐기** | _meta/ (10_CODE, 20_CONCEPT, 90_LEGACY, concept) | 레이어 매핑·개념 문서. [_meta/20_CONCEPT/maps/LAYERS.md](_meta/20_CONCEPT/maps/LAYERS.md). |
+
+레이어 순서·경로 표: [`20_CONCEPT/maps/LAYERS.md`](20_CONCEPT/maps/LAYERS.md)
 
 ---
 
@@ -25,8 +51,11 @@ NASA/JPL 실측 데이터 기반 10-body 심플렉틱 엔진.
 | 7~ | 인지·BrainCore 브리지 | `cognitive/`, `bridge/` |
 | 지하 | 거시 룰 감시·의식 경고 (하데스 목소리) | `underworld/` |
 
-**직관용**: `concept/` 아래에 00_system → 01_light → 02_firmament → 03_surface → 04_onward 순으로 README만 둠 (Creation Days 개념 지도).  
-**정의**: [`LAYERS.md`](LAYERS.md) 와 각 `dayN/README.md` 참고.
+**지하 → 지상 (서사 이어짐)**  
+지하(underworld)는 **측정만** 하고, **의식 경고(ConsciousnessSignal)** 만 올린다. 그 신호를 받는 쪽은 **지상** — 에덴(EdenOS)·아담·항상성(Homeostasis)·무결성(IntegrityFSM)이다. Runner가 매 틱 하데스 목소리를 observe / homeostasis / integrity_fsm에 넣어 주기 때문에, **물리·항상성 한계선**을 넘으면 아담 OS가 자연스럽게 상태 전이(예: IMMORTAL → MORTAL_NPC)를 한다. 즉, “지하가 심판하는” 구조가 아니라 **지하가 재는 값 → 지상이 읽고 동역학이 전이**하는 흐름으로 본편 서사가 이어진다. 상세는 [underworld/README.md](underworld/README.md)와 [eden/](eden/) 쪽 문서를 이어서 보면 된다.
+
+**직관용**: `concept/` 아래에 00_system → 01_light → … → 04_onward, **creation_days**, **pipeline_phases**, **maps** (레이어↔경로 표).  
+**정의**: [`concept/maps/LAYERS.md`](concept/maps/LAYERS.md) 와 각 `dayN/README.md` 참고.
 
 ---: 작동 원리 / From Point Mass to Precession
 

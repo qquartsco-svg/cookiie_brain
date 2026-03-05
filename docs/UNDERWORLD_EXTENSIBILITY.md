@@ -17,7 +17,7 @@
 - 하데스 경고(severity)가 stress/integrity에 반영되고, integrity가 N tick θ 이하로 유지되면 자연 전이(MORTAL_NPC) 또는 선악과 시 `force_mortal()`로 즉시 전이.
 
 **남은 확장 포인트**  
-- (B) `world_snapshot`: 시그니처만 있고 listen 내부에서 아직 사용하지 않음. 민감도 보정용. **덕 타이핑**: underworld는 지상 클래스를 import하지 않고 `getattr(world_snapshot, "eden_index", 1.0)` 로만 사용.  
+- ~~(B) world_snapshot~~: **반영됨** — `evaluate_rules_all(deep, world_snapshot=world_snapshot)` 로 전달, `_sensitivity_factor(world_snapshot)` 에서 `getattr(world_snapshot, "eden_index", 1.0)` 으로 severity 민감도 보정. eden_index 낮을수록 severity 증폭.  
 - ~~(C) 단일 신호~~: **반영됨** — `listen() -> List[ConsciousnessSignal]`, `evaluate_rules_all()` 로 복합 위반 시 여러 신호 반환. Homeostasis는 리스트 시 최대 severity로 스트레스 가산.
 
 **설계 보강 (보안/무결성)**  
@@ -45,13 +45,9 @@
 **이전**: severity/signal_type/message 가 hades.py 내부에 고정되어 있던 상태.  
 **현재**: `rules.py`에 RuleSpec·DEFAULT_RULES·evaluate_rules()로 분리됨. hades.py는 `evaluate_rules(deep)` 호출만 함. 룰 추가·정책 변경은 rules.py만 수정하면 됨. (섹션 0 참고.)
 
-### (B) `world_snapshot` 이 실제로 사용되지 않음 — **미해결(확장 포인트)**
+### (B) `world_snapshot` 이 실제로 사용되지 않음 — **해소됨**
 
-**코드**: `listen(..., world_snapshot: Any = None)` 시그니처만 있고, 본문에서 미사용.
-
-**영향**: "지상 상태 + 지하 감시" 결합형 경고(예: EdenIndex 하락 시 민감도 상승)를 만들려면 규칙 레이어가 따로 필요.
-
-**개선**: 룰 평가 시 `world_snapshot` (eden_index 등) 을 넘기고, 룰 정책에서 severity 보정에 사용. (섹션 0 “남은 확장 포인트” 참고.)
+**코드**: `listen(..., world_snapshot: Any = None)` → `evaluate_rules_all(deep, world_snapshot=world_snapshot)`. rules.py 에 `_sensitivity_factor(world_snapshot)` 추가, `getattr(world_snapshot, "eden_index", 1.0)` 로 민감도 계수 계산. eden_index 가 낮을수록 severity 증폭 (최대 1.0 cap).
 
 ### (C) 신호가 1개만 나감 (단일 메시지) — **해소됨**
 
@@ -143,5 +139,5 @@ UnderWorld(핵심)의 안정성을 최우선으로 하면 **안 B**가 경계가
 - **확장성**: underworld 는 "독립 패키지로 떼어낼 수 있는 형태"에 가깝다. (의존성 단순, 단일 진입점, 코어 없을 때 QUIET 스텁.)
 - **룰 하드코딩 (A)**: **해소됨** — 이 워크스페이스 기준 `rules.py` 분리 및 hades 연동 완료. 다른 경로(/mnt/data 등) 업로드본은 별도 확인 필요.
 - **지상 연동**: HomeostasisEngine·IntegrityFSM·runner에서 hades_signal 수신·stress/integrity 반영·N-tick 연속 시 자연 전이 이미 구현됨.
-- **다음 확장 시 점검**: (B) world_snapshot 민감도 보정, (C) 다중 신호 반환, deep_monitor 프로토콜 명세.
+- **다음 확장 시 점검**: deep_monitor 프로토콜 명세, (B) world_snapshot 민감도 보정 **반영 완료**.
 - **레이어 고정**: 수정·보완 시 레이어 꼬임 방지를 위해 [solar/underworld/LAYERS.md](../solar/underworld/LAYERS.md) 의 허용/금지 의존성 준수.

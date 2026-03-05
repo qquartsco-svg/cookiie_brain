@@ -34,7 +34,7 @@ class HadesObserver:
             self._last_signal = sig
             return [sig]
 
-        violations = evaluate_rules_all(deep)
+        violations = evaluate_rules_all(deep, world_snapshot=world_snapshot)
         if not violations:
             sig = ConsciousnessSignal.quiet(tick=tick)
             self._last_signal = sig

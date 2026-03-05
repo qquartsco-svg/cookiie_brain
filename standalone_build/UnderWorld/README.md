@@ -161,6 +161,21 @@ integrity_fsm.step(tick=t, integrity=snap.integrity)
 
 ---
 
+## 확장성·구조 안정성 (엔지니어링 점검)
+
+| 항목 | 상태 | 설명 |
+|------|------|------|
+| **의존성 방향** | ✅ | stdlib + 덕 타이핑만. 지상/물리 코어 import 없음. |
+| **단일 진입점** | ✅ | `listen(tick, world_snapshot=None, deep_engine=None)` 하나. |
+| **룰 데이터 분리** | ✅ | RuleSpec·DEFAULT_RULES·evaluate_rules_all. hades는 호출만. (OCP) |
+| **world_snapshot** | ✅ | 시그니처 + rules 민감도 보정(`eden_index`). 덕 타이핑 유지. |
+| **스텁 경로** | ✅ | deep_engine=None → core_available=False → [QUIET]. |
+| **신호 불변** | ✅ | ConsciousnessSignal frozen. 위변조 불가. |
+
+**확장 시 유의**: 룰 추가·정책 변경은 `rules.py`만 수정. `hades.py`는 진입점·오케스트레이션만 유지하면 구조가 꼬이지 않음. 본편(solar/underworld)에는 전파 레이어(WaveBus, Siren)가 추가되어 있으나, 독립 엔진은 **측정(Measure)만** 담당하는 최소 집합으로 고정해 재사용성·안정성을 우선함.
+
+---
+
 ## Package Layout
 
 ```

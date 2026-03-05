@@ -23,6 +23,20 @@ def _ok_from_snapshot(snap: Any, key: str) -> bool:
     return getattr(snap, key, True)
 
 
+def _sensitivity_factor(world_snapshot: Any) -> float:
+    """지상 스냅샷에서 민감도 보정 계수. 덕 타이핑만 사용."""
+    if world_snapshot is None:
+        return 1.0
+    idx = getattr(world_snapshot, "eden_index", None)
+    if idx is None:
+        return 1.0
+    try:
+        v = float(idx)
+    except (TypeError, ValueError):
+        return 1.0
+    return 1.0 / max(0.01, min(1.0, v))
+
+
 DEFAULT_RULES: List[RuleSpec] = [
     RuleSpec("magnetic_ok", 0.6, RULE_VIOLATION, "거시 룰: 자기장 이상 감지"),
     RuleSpec("thermal_ok",  0.5, ENTROPY_WARNING, "거시 룰: 열역학적 불안정"),
@@ -47,12 +61,15 @@ def evaluate_rules(
 def evaluate_rules_all(
     deep_snapshot: Any,
     rules: Optional[List[RuleSpec]] = None,
+    world_snapshot: Any = None,
 ) -> List[Tuple[float, str, str]]:
-    """모든 위반 룰 반환. 위반 없으면 []."""
+    """모든 위반 룰 반환. world_snapshot 있으면 severity 민감도 보정."""
     if rules is None:
         rules = DEFAULT_RULES
+    sensitivity = _sensitivity_factor(world_snapshot)
     out: List[Tuple[float, str, str]] = []
     for r in rules:
         if not _ok_from_snapshot(deep_snapshot, r.check_key):
-            out.append((r.violation_severity, r.signal_type, r.message))
+            adj = min(1.0, r.violation_severity * sensitivity)
+            out.append((adj, r.signal_type, r.message))
     return out
