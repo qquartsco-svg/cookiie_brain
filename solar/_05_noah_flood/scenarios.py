@@ -34,6 +34,7 @@ report  : evaluate_postdiluvian(result) 반환 dict
 from typing import Callable, Dict, Tuple
 
 from .engine import NoahSimulationResult, evaluate_postdiluvian, run_noah_cycle
+from .impact_estimator import ImpactParams, ImpactResult, estimate_impact
 
 
 YearsFn = Callable[[float], float]
@@ -298,6 +299,88 @@ def run_scenario_combined_impulse(
     return result, report
 
 
+def run_scenario_lucifer_impact_mid_ocean(
+    *,
+    years: float = 30.0,
+    dt_yr: float = 0.1,
+    shock_time: float = 20.0,
+) -> Tuple[NoahSimulationResult, Dict]:
+    """루시퍼 임팩트 시나리오 — 중간 크기 암석체, 심해 충돌.
+
+    대략 "중간 규모(수 km) 충돌이 깊은 바다(h≈4km)에 떨어지는" 케이스를 가정한다.
+    - D≈10km, rho≈3 g/cm³, v≈20 km/s, theta≈45°
+    - 태평양/인도양과 유사한 심해를 대표하는 h_km=4.0 사용.
+
+    결과로 나온 ImpactResult 의 shock_strength 를 combined_impulse 패턴에 얹어서
+    Fuse 모델과의 결합 효과를 본다.
+    """
+
+    params = ImpactParams(
+        D_km=10.0,
+        rho_gcm3=3.0,
+        v_kms=20.0,
+        theta_deg=45.0,
+        h_km=4.0,
+        lat_deg=-30.0,
+        lon_deg=120.0,
+    )
+    impact: ImpactResult = estimate_impact(params)
+
+    def joe_instability_fn(t: float) -> float:
+        frac = max(0.0, min(1.0, t / years))
+        base = 0.2 + 0.6 * frac
+        if abs(t - shock_time) < 0.5:
+            return min(1.0, base + 0.25 * impact.shock_strength)
+        if abs(t - shock_time) < 1.0:
+            return min(1.0, base + 0.10 * impact.shock_strength)
+        return base
+
+    def risk_fn(t: float) -> Dict[str, float]:
+        frac = max(0.0, min(1.0, t / years))
+        if frac < 0.4:
+            w = 0.2
+            g = 0.2
+            m = 0.15
+        elif frac < 0.7:
+            ramp = (frac - 0.4) / 0.3
+            w = 0.2 + 0.6 * ramp
+            g = 0.2 + 0.6 * ramp
+            m = 0.2 + 0.4 * ramp
+        else:
+            w = 0.8
+            g = 0.8
+            m = 0.6
+
+        if abs(t - shock_time) < 0.5:
+            k = 0.9 * impact.shock_strength
+        elif abs(t - shock_time) < 1.0:
+            k = 0.7 * impact.shock_strength
+        else:
+            k = None
+
+        if k is not None:
+            w = max(w, k)
+            g = max(g, k)
+            m = max(m, k * 0.8)
+
+        return {
+            "water_cycle_risk": w,
+            "greenhouse_proxy": g,
+            "magnetosphere_risk": m,
+        }
+
+    result = run_noah_cycle(
+        years=years,
+        dt_yr=dt_yr,
+        joe_instability_fn=joe_instability_fn,
+        risk_fn=risk_fn,
+        mode="combined",
+    )
+    report = evaluate_postdiluvian(result)
+    _print_brief("lucifer_impact_mid_ocean", result, report)
+    return result, report
+
+
 if __name__ == "__main__":
     # 간단 CLI: python -m solar._05_noah_flood.scenarios
     print("Running Noah flood scenarios...")
@@ -310,4 +393,6 @@ if __name__ == "__main__":
     run_scenario_impulse_shock()
     print()
     run_scenario_combined_impulse()
+    print()
+    run_scenario_lucifer_impact_mid_ocean()
 
