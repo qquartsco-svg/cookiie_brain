@@ -9,7 +9,7 @@
 
 ---
 
-## 본편 서사 속 위치 — 조→모→체루빔→EdenOS→궁창→노아
+## 1. 서사 관점 — 조→모→체루빔→EdenOS→궁창→노아
 
 이 레이어는 단독 엔진이 아니라, 본편 테라포밍/에덴 서사 위에 얹힌
 **“마지막 상전이 단계”**다.
@@ -39,7 +39,7 @@
 
 ---
 
-## 관련 구현 파일
+## 2. 엔지니어링 관점 — 어떤 모듈이 어떻게 연결되는가
 
 - `solar/_03_eden_os_underworld/eden/firmament.py`  
   궁창 레이어(`FirmamentLayer`).
@@ -80,7 +80,7 @@
 
 ---
 
-## Noah 시나리오 개념
+## 3. Noah 시나리오 개념 — 조·모·궁창·대홍수 상전이
 
 조(JOE) → 모(MOE) → 체루빔 → EdenOS 위에, 다음 한 줄을 추가로 얹는다.
 
@@ -116,7 +116,7 @@ JOE(instability) → FirmamentLayer → FloodEngine → postdiluvian InitialCond
 
 ---
 
-## run_noah_cycle() — 설계 철학
+## 4. run_noah_cycle() — 설계 철학 (시나리오 드라이버)
 
 `run_noah_cycle()` 은 **"실제 물리 엔진을 대체"하는 것이 아니라**,
 이미 있는 조/모/궁창/홍수/IC 엔진들이 올바른 순서로 이어질 수 있는지를
@@ -137,4 +137,32 @@ JOE(instability) → FirmamentLayer → FloodEngine → postdiluvian InitialCond
 - EdenSearch/EdenOS 가 여전히 안정적인 에덴/아크 후보를 찾을 수 있는지,
 
 등을 실험해 볼 수 있다.
+
+---
+
+## 5. 시나리오·환경 셋팅 요약
+
+구체적인 시나리오 정의와 실행 방법은 `SCENARIOS.md` 를 참고하되,
+핵심 개념만 요약하면 다음과 같다.
+
+- **입력 축**
+  - `joe_instability_fn(t)` : 조(JOE)가 보는 거시 불안정도 (0~1).
+  - `risk_fn(t)` : 필요 시 `{"water_cycle_risk", "magnetosphere_risk", "greenhouse_proxy"}` 를
+    시간 함수로 제공 (없으면 0으로 간주).
+  - `mode` : `"macro"`, `"decay"`, `"combined"` 중 하나로 합성 방식 선택.
+
+- **대표 시나리오 네 가지**
+  - A. `macro_only` — 거시 물리만 서서히 올림 (조 신호만으로 붕괴가 가능한지).
+  - B. `macro_decay` — 낮은 instability + decay 모드(장기 안정/붕괴 여부 체크).
+  - C. `combined_ramp` — 조 + 수순환 + 온실 + 자기권 리스크를 함께 램프업.
+  - D. `impulse_shock` — 평소 안정 상태에서 짧은 강한 외부 임펄스로 임계선 돌파.
+
+- **실행 예**
+
+  ```bash
+  python -m solar._05_noah_flood.scenarios
+  ```
+
+이렇게 해서 본편 서사에서 축적된 상태가 정말로 “노아급 대홍수 상전이”를 통해
+지금의 지구형 환경으로 이어질 수 있는지를 여러 입력 시나리오로 실험·비교할 수 있다.
 
