@@ -1,19 +1,16 @@
 from __future__ import annotations
 
-"""impact_estimator — 혜성/소행성 충돌 에너지 → Noah 시나리오용 델타 추정기.
+"""impact_estimator — 혜성/소행성 충돌 에너지 → 환경 델타 추정기.
 
-이 모듈은 "루시퍼 임팩트"와 같은 외부 충격이
+이 모듈은 **루시퍼 임팩트 레이어(_06_lucifer_impact)** 의 코어로,
 
-    - 궁창 캐노피(H2O_canopy)
-    - 대기압(pressure_atm)
-    - 해수면(sea_level)
-    - 극-적도 온도차(pole_eq_delta_K)
+    - 충돌체 파라미터(D, ρ, v, θ, h, 위치)를 받아
+    - 전지구 평균 에너지 밀도(J/m²)를 추정하고
+    - 궁창 캐노피, 대기압, 해수면, 극-적도 온도차에 대한
+      오더 수준의 델타를 계산한다.
 
-에 어느 정도 영향을 줄 수 있는지를 **오더 추정(order-of-magnitude)** 으로 계산한다.
-
-주의:
-  - 여기서 나오는 값들은 "정밀 지질학 모델"이 아니라,
-    Noah 시나리오에서 사용할 spike·델타의 스케일을 잡기 위한 추정치다.
+노아 플러드 레이어(`_05_noah_flood`)는 이 모듈을 읽어
+effective_instability spike 및 postdiluvian IC 보정을 걸 수 있다.
 """
 
 from dataclasses import dataclass
@@ -45,7 +42,7 @@ class ImpactParams:
 
 @dataclass
 class ImpactResult:
-    """충돌 에너지 및 Noah 파이프라인에 넘길 델타 추정."""
+    """충돌 에너지 및 환경 델타 추정."""
 
     E_total_J: float
     E_eff_J: float
@@ -82,7 +79,7 @@ def _impact_energy(params: ImpactParams) -> tuple[float, float]:
 
 
 def estimate_impact(params: ImpactParams) -> ImpactResult:
-    """충돌 파라미터 → Noah 시나리오용 델타 추정."""
+    """충돌 파라미터 → 행성 환경 델타 추정."""
 
     E_total, E_eff = _impact_energy(params)
 
@@ -98,26 +95,21 @@ def estimate_impact(params: ImpactParams) -> ImpactResult:
     E_per_m2 = E_eff / AREA_EARTH_M2
 
     # 기준 스케일: 대략 Chicxulub 급(10km rock, 20km/s) 충돌을 1.0으로 정규화.
-    # (정확한 값은 아니지만, 상대 비교용 스케일링 상수.)
     # 이 스케일에서 canopy 완전 붕괴 + pressure 1.25→1.0 전환이 가능하다고 가정.
     CHICXULUB_EFF_PER_M2 = 1.0e8  # 대략적 오더 [J/m²]
     scale = min(1.0, E_per_m2 / CHICXULUB_EFF_PER_M2)
 
     # 궁창 캐노피/압력 델타 추정.
-    #   - scale=1.0 → H2O_canopy 0.05 → 0.0, pressure_atm 1.25 → 1.0
     delta_H2O_canopy = -0.05 * scale
     delta_pressure_atm = -0.25 * scale
 
     # 해수면 델타 (짧은 시간 스케일에서의 global 평균 수위 편차)
-    #   - scale=1.0 → 약 80m 수준으로 설정 (Noah Flood 문서와 일치시킴).
     delta_sea_level_m = 80.0 * scale
 
-    # 극-적도 온도차 변화:
-    #   - scale=1.0 → 15K (에덴) → 48K (현재) 에 근접하도록 delta ≈ +30K 가 되도록 설정.
+    # 극-적도 온도차 변화 (에덴→현재 지구 수준으로 가는 스케일).
     delta_pole_eq_delta_K = 30.0 * scale
 
     # shock_strength: effective_instability spike 에 쓸 0~1 값.
-    #   - scale=0.5 이상이면 사실상 강한 임펄스.
     shock_strength = max(0.0, min(1.0, scale))
 
     return ImpactResult(

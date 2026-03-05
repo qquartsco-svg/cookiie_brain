@@ -34,7 +34,7 @@ report  : evaluate_postdiluvian(result) 반환 dict
 from typing import Callable, Dict, Tuple
 
 from .engine import NoahSimulationResult, evaluate_postdiluvian, run_noah_cycle
-from .impact_estimator import ImpactParams, ImpactResult, estimate_impact
+from solar._06_lucifer_impact import ImpactParams, ImpactResult, estimate_impact
 
 
 YearsFn = Callable[[float], float]

@@ -1,6 +1,6 @@
 # LUCIFER_IMPACT_MODEL — 루시퍼 임팩트(혜성 충돌) 개념 레이어
 
-이 문서는 `_05_noah_flood/impact_estimator.py` 와
+이 문서는 `_06_lucifer_impact/impact_estimator.py` 와
 `_05_noah_flood/scenarios.py` 의 루시퍼 임팩트 시나리오가
 어떤 개념 구조를 가지는지 정리한다.
 
@@ -34,17 +34,17 @@
 
 ## 2. 코드 대응
 
-- `impact_estimator.py`
+- `_06_lucifer_impact/impact_estimator.py`
   - `ImpactParams` : D_km, rho_gcm3, v_kms, theta_deg, h_km, lat_deg, lon_deg
   - `ImpactResult` : E_total_J, E_eff_J, f_atm/f_ocean/f_crust,
     ΔH2O_canopy, Δpressure_atm, Δsea_level_m, Δpole_eq_delta_K, shock_strength
   - 내부에서 Chicxulub 급(10km rock, 20km/s) 충돌을 스케일 1.0 으로 두고
     전지구 평균 에너지밀도(J/m²)를 기반으로 정규화한다.
 
-- `scenarios.py`
+- `_05_noah_flood/scenarios.py`
   - `run_scenario_lucifer_impact_mid_ocean()`  
-    → 중간 크기 암석체가 심해에 떨어지는 경우를 가정해
-      combined_impulse 패턴에 shock_strength 를 얹어 본다.
+    → 중간 크기 암석체가 심해에 떨어지는 경우를 가정해,
+      combined_impulse 패턴에 `_06_lucifer_impact` 의 shock_strength 를 얹어 본다.
 
 ---
 
