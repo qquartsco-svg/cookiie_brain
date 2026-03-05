@@ -18,6 +18,7 @@
 | **[JOE_SNAPSHOT_SCHEMA_V02.md](JOE_SNAPSHOT_SCHEMA_V02.md)** | JOE 표준 스냅샷 스키마 v0.2 (CORE + 확장 키) |
 | **[JOE_ENGINE_PHYSICS_SPEC.md](JOE_ENGINE_PHYSICS_SPEC.md)** | Joe_Engine에 구현된 물리 법칙·개념 정확한 명세 (독립 엔진 vs solar/joe) |
 | **[JOE_HISTORICAL_RECONSTRUCTOR_INTEGRATION.md](JOE_HISTORICAL_RECONSTRUCTOR_INTEGRATION.md)** | 역사 추적 엔진(HistoricalDataReconstructor) ↔ JOE 연동 가능성 분석 |
+| **[NOAH_FUSE_MODEL.md](NOAH_FUSE_MODEL.md)** | 노아 대홍수: 거시·환경·생물·외부 임펄스가 겹치는 Fuse 동역학 개념 |
 | **LAYERS.md** | 레이어 순서·경로 일람표 (기존) |
 
 ---

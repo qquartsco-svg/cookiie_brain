@@ -22,6 +22,9 @@ from __future__ import annotations
     - 조(JOE) + 수순환 + 온실 + 자기권 리스크를 함께 올리는 복합 트리거.
 - 시나리오 D: impulse_shock
     - 평소에는 안정적이지만, 특정 시점에 짧은 임펄스(혜성/플레어 등)를 주입.
+- 시나리오 E: combined_impulse (Fuse Model)
+    - C 시나리오처럼 임계 근처까지 올린 뒤, D 시나리오처럼 짧은 임펄스를 겹쳐
+      “복합 스트레스 + 외부 도화선” 구조를 본다.
 
 각 함수는 (result, report) 튜플을 반환한다.
 result  : NoahSimulationResult (steps, flood_event, post_ic)
@@ -220,6 +223,81 @@ def run_scenario_impulse_shock(
     return result, report
 
 
+def run_scenario_combined_impulse(
+    *,
+    years: float = 30.0,
+    dt_yr: float = 0.1,
+    shock_time: float = 20.0,
+) -> Tuple[NoahSimulationResult, Dict]:
+    """시나리오 E — 복합 램프 + 임펄스(퓨즈 모델).
+
+    - t < years*0.4     : combined_ramp 와 유사한 완만한 상승 (instability≈0.2→0.6).
+    - years*0.4~0.7 구간: 수순환/온실/자기권 리스크를 0.8 근방까지 올린다.
+    - shock_time 근처   : impulse_shock 처럼 instability / risk 에 짧은 스파이크.
+
+    목적:
+      - “거시·환경·생물권 스트레스가 이미 임계 근처까지 쌓인 상태에서,
+         혜성 같은 외부 임펄스가 마지막 도화선 역할을 하는” Fuse 모델을 본다.
+    """
+
+    def joe_instability_fn(t: float) -> float:
+        frac = max(0.0, min(1.0, t / years))
+        base = 0.2 + 0.6 * frac  # combined_ramp 와 동일 베이스
+        # shock 구간에서는 추가로 상향
+        if abs(t - shock_time) < 0.5:
+            return min(1.0, base + 0.25)
+        if abs(t - shock_time) < 1.0:
+            return min(1.0, base + 0.10)
+        return base
+
+    def risk_fn(t: float) -> Dict[str, float]:
+        frac = max(0.0, min(1.0, t / years))
+        # 기본 램프 (combined_ramp 와 유사)
+        if frac < 0.4:
+            w = 0.2
+            g = 0.2
+            m = 0.15
+        elif frac < 0.7:
+            ramp = (frac - 0.4) / 0.3
+            w = 0.2 + 0.6 * ramp
+            g = 0.2 + 0.6 * ramp
+            m = 0.2 + 0.4 * ramp
+        else:
+            w = 0.8
+            g = 0.8
+            m = 0.6
+
+        # shock 구간에서는 impulse_shock 처럼 임펄스 추가
+        if abs(t - shock_time) < 0.5:
+            k = 0.9
+        elif abs(t - shock_time) < 1.0:
+            k = 0.7
+        else:
+            k = None
+
+        if k is not None:
+            w = max(w, k)
+            g = max(g, k)
+            m = max(m, k * 0.8)
+
+        return {
+            "water_cycle_risk": w,
+            "greenhouse_proxy": g,
+            "magnetosphere_risk": m,
+        }
+
+    result = run_noah_cycle(
+        years=years,
+        dt_yr=dt_yr,
+        joe_instability_fn=joe_instability_fn,
+        risk_fn=risk_fn,
+        mode="combined",
+    )
+    report = evaluate_postdiluvian(result)
+    _print_brief("combined_impulse", result, report)
+    return result, report
+
+
 if __name__ == "__main__":
     # 간단 CLI: python -m solar._05_noah_flood.scenarios
     print("Running Noah flood scenarios...")
@@ -230,4 +308,6 @@ if __name__ == "__main__":
     run_scenario_combined_ramp()
     print()
     run_scenario_impulse_shock()
+    print()
+    run_scenario_combined_impulse()
 

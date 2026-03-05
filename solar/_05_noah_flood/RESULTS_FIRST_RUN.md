@@ -64,16 +64,26 @@ python -m solar._05_noah_flood.scenarios
   checks_ok=['has_post_ic', 'f_land', 'albedo', 'pressure_atm',
              'H2O_canopy', 'UV_shield', 'mutation_factor',
              'T_surface_C', 'pole_eq_delta_K']
+
+[combined_impulse] steps=300
+  t_start=0.00 yr, instability=0.195, firmament_phase=antediluvian
+  t_end=29.90 yr, instability=0.779, firmament_phase=postdiluvian,
+         flood_phase=complete, sea_level_anom=0.0
+  postdiluvian_ok=True
+  checks_ok=['has_post_ic', 'f_land', 'albedo', 'pressure_atm',
+             'H2O_canopy', 'UV_shield', 'mutation_factor',
+             'T_surface_C', 'pole_eq_delta_K']
 ```
 
 요약 테이블:
 
-| 시나리오        | 궁창 붕괴 | 홍수 진행        | postdiluvian_ok | 해석                                    |
-|-----------------|-----------|------------------|-----------------|-----------------------------------------|
-| macro_only      | O         | stabilizing 까지 | NG (`has_post_ic=False`) | 거시 불안정도로 붕괴·홍수는 발생, 안착 전 종료 |
-| macro_decay     | X         | X                | NG              | instability=0.4 유지 → 임계 0.85 미달     |
-| combined_ramp   | X         | X                | NG              | eff_inst 최대 0.779 → 붕괴 미발생        |
-| impulse_shock   | O         | complete         | OK              | 외부 임펄스 1회로 붕괴 + 완전 상전이      |
+| 시나리오           | 궁창 붕괴 | 홍수 진행        | postdiluvian_ok | 해석                                                |
+|--------------------|-----------|------------------|-----------------|-----------------------------------------------------|
+| macro_only         | O         | stabilizing 까지 | NG (`has_post_ic=False`) | 거시 불안정도로 붕괴·홍수는 발생, 안착 전 종료           |
+| macro_decay        | X         | X                | NG              | instability=0.4 유지 → 임계 0.85 미달                   |
+| combined_ramp      | X         | X                | NG              | eff_inst 최대 0.779 → 붕괴 미발생                      |
+| impulse_shock      | O         | (사실상) complete | OK              | 외부 임펄스 1회로 붕괴 + postdiluvian 타깃 정합         |
+| combined_impulse   | O         | complete         | OK              | 복합 스트레스(L1~L3) + 외부 임펄스(L4)가 함께 작동하는 Fuse 모델 |
 
 ---
 
@@ -83,8 +93,8 @@ python -m solar._05_noah_flood.scenarios
 
 - **macro_only (거시 물리 램프업)**  
   - JOE instability 만으로도 **궁창 붕괴와 대홍수 시작**까지는 충분히 만든다.
-  - 다만 25년이라는 시뮬레이션 기간에서 FloodEngine 이 `complete` 에
-    도달하지 못해 post_ic 가 생성되지 않았다.  
+  - 다만 25년이라는 시뮬레이션 기간에서 FloodEngine 이 `stabilizing` 단계까지
+    진행되었을 뿐 `complete` 에 도달하지 못해 post_ic 가 생성되지 않았다.  
   - → **거시 구조만으로도 대홍수는 필연**, 하지만 “지구형 안착”까지는
     더 긴 감쇠 시간이 필요하다는 시그널.
 
@@ -94,19 +104,29 @@ python -m solar._05_noah_flood.scenarios
   - → 이 파라미터 셋에서는 “느린 노화”나 “완만한 환경 변화”만으로는
     노아급 붕괴를 설명하기 어렵다는 방향의 결과.
 
-- **impulse_shock (외부 임펄스)**  
+- **impulse_shock (외부 임펄스 단독)**  
   - 평소에는 안정적인 상태에서, **짧은 시간의 강한 충격**만으로
-    궁창이 무너지고 FloodEngine 이 complete 까지 진행,  
+    궁창이 무너지고 FloodEngine 이 사실상 바로 postdiluvian 상태로 점프,  
     `evaluate_postdiluvian()` 모든 체크를 통과하는 **완전한 상전이**를 만든다.
-  - → 현재 모델·파라미터 기준에서,
-    > “대홍수 이벤트를 끝까지 밀어 지구형 환경으로 안착시키는 데
-    > 가장 큰 영향은 **외부 임펄스(충격) 시나리오**다.”
+
+- **combined_impulse (Fuse 모델 — 복합 스트레스 + 외부 임펄스)**  
+  - combined_ramp 처럼 거시+환경 스트레스를 먼저 쌓아 effective_instability 를
+    임계 바로 아래(0.7~0.8대)까지 올린 뒤,
+  - impulse_shock 처럼 shock_time 근처에 임펄스를 추가로 겹쳐
+    궁창 붕괴 → 홍수 5단계 → FloodEngine `complete` → postdiluvian IC 생성까지
+    깔끔하게 완주한다.
+  - → 현재 모델·파라미터 기준에서,  
+    > “이미 임계 근처까지 올라온 복합 스트레스 위에 **외부 임펄스(혜성 등)**가
+    > 마지막 도화선 역할을 하는 Fuse 시나리오가 매우 자연스럽다.”
 
 **1차 요약**  
 
 - 행성 거시 불안정도(JOE)만으로도 붕괴·홍수 자체는 설명 가능하다.  
 - 그러나 “에덴 궁창 시대 → 현재 지구(Postdiluvian)”까지의 **완전한 상전이**는  
-  현재 실험 셋업에서는 **강한 외부 충격(impulse_shock)** 이 있을 때 가장 자연스럽게 닫힌다.
+  현재 실험 셋업에서는  
+  - 순수 외부 임펄스(impulse_shock) 이거나,  
+  - 또는 **복합 스트레스(L1~L3) + 외부 도화선(L4)** 이 겹치는 Fuse 모델(combined_impulse)일 때
+    가장 자연스럽게 닫힌다.
 
 ---
 
