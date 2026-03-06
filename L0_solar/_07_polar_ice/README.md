@@ -2,39 +2,77 @@
 
 **L0_solar 서사 레이어 7번째 챕터**
 
-`_06_lucifer_impact`의 출력(에너지·에어로졸·온도 강하)을 입력으로 받아,
-극지방 기후 시스템의 **첫 결빙 상전이**를 단기(0~50년) 물리 시뮬레이션으로 검증한다.
-이 모듈의 최종 상태(T_pole, h_ice)는 `_08_ice_age`의 초기 조건으로 넘어간다.
+---
+
+## 왜 이 모듈이 여기 있는가 — 서사 체인과 엔지니어링 구현
+
+각 앞 단계의 서사적 결과가 다음 단계의 엔지니어링 입력이 된다.
 
 ---
 
-## 서사 위치
+### 1단계 — _04_firmament_era : 왜 빙하가 없었는가
 
-```
-_04_firmament_era   창공 시대
-  수증기 캐노피가 전지구를 덮어 온실 효과 유지
-  → 극지방도 0°C 근방. 얼음 없음.
-        ↓
-_05_noah_flood      노아 이벤트
-  firmament_collapse() → impulse_shock
-  → 창공 붕괴. 물이 하늘에서 쏟아짐 (40일 밤낮).
-        ↓
-_06_lucifer_impact  루시퍼 충돌
-  E = 2.2 × 10⁶ MT  /  AOD = 1.26  /  ΔT_pole = −7K
-  → 에너지·크레이터·쓰나미 계산.
-        ↓
-_07_polar_ice   ←  지금 여기
-  창공 소멸 + 에어로졸 72% 태양광 차단
-  → 충돌 후 1개월: 극지방 -3.4°C → 첫 결빙
-  → 3년:  얼음 5m 형성
-  → 50년: -29°C 항구적 해빙 → 빙하시대 개시
+**서사**: 수증기 캐노피(창공)가 전지구를 감싸 온실 균형 유지. 극지방 0°C 근방. 빙하 없음.
+
+**엔지니어링 구현**:
+```python
+FirmamentLayer.get_env_overrides()["T_pole_K"]  # ≈ 273 K
+# → _07 시뮬레이션 기준선: T_pole_preimpact_K = 273.15
 ```
 
-**서사적 의미:**  
-`_07_polar_ice`는 "노아 홍수로 얼음이 생겼다"는 주장이 아니다.  
-`_06_lucifer_impact`의 에너지 출력을 수치 입력으로 받아  
-극지방 기후 시스템의 **상전이(phase transition)**를 동역학으로 실험하는 레이어다.  
-얼음이 생기느냐 안 생기느냐는 모델 파라미터에 달려 있다 — 하드코딩이 아니다.
+---
+
+### 2단계 — _05_noah_flood : 온실 보호막이 사라졌다
+
+**서사**: `instability ≥ 0.85` 임계 초과 → 창공 붕괴 → 수증기 캐노피 소멸.
+극지방을 0°C로 유지하던 온실 드라이버가 사라진다.
+
+**엔지니어링 구현**:
+```python
+FirmamentLayer.collapse()   # H2O_canopy_kg → 0
+FloodEngine.step()          # FloodSnapshot.H2O_canopy_kg ≈ 0
+# → _07 입력: delta_H2O_kg=0  (온실 보호막 없음)
+```
+
+---
+
+### 3단계 — _06_lucifer_impact : 결빙의 직접 트리거 3종 생성
+
+**서사**: 충돌 에너지 → 에어로졸 주입 → 태양광 72% 차단 + 극지 직접 온도 충격.
+창공이 사라진 상태에서 태양까지 가려진다.
+
+**엔지니어링 구현**:
+```python
+ir, cr, ts = lucifer_strike(D_km=5.0, is_ocean=True, v_kms=25.0)
+# ir.E_eff_MT        = 2.2 × 10⁶ MT
+# ir.AOD             = 1.26  → solar_block = 72%
+# ir.delta_pole_eq_K = −7 K  → 극지 직접 온도 충격
+```
+
+---
+
+### 4단계 — _07_polar_ice ← 여기
+
+**서사**: 앞 세 단계가 만들어낸 조건(온실 소멸 + 태양 차단 + 온도 충격)이
+극지방 결빙 상전이를 일으키는가? — 이 레이어가 그 질문을 수치 실험으로 답한다.
+
+**엔지니어링 구현**: 위 세 단계의 출력이 그대로 입력이 된다.
+```python
+result = run_polar_simulation(
+    E_eff_MT           = ir.E_eff_MT,        # _06 에너지
+    delta_H2O_kg       = ir.delta_H2O_canopy, # _05 창공 붕괴 후 잔량
+    delta_T_pole_K     = ir.delta_pole_eq_K,  # _06 직접 온도 충격
+    T_pole_preimpact_K = 273.15,              # _04 창공 시대 기준선
+    t_max_yr           = 50.0,
+)
+# 결과: t=1개월 → 첫 결빙 / t=3yr → h_ice=5m / t=50yr → T_pole=−29°C, albedo lock-in
+```
+
+**출력 → _08_ice_age 초기 조건**:
+```python
+T_pole_init = result.steps[-1].T_pole_K   # 244 K (−29°C)
+V_ice_init  = 1e5  # km³  (5m 극지 해빙 → 대륙 빙상 핵생성 시작)
+```
 
 ---
 
