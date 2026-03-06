@@ -32,7 +32,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import numpy as np
 from scipy.optimize import brentq, minimize
-from solar import CentralBody
+from L0_solar import CentralBody
 
 PASS = "\033[92mPASS\033[0m"
 FAIL = "\033[91mFAIL\033[0m"

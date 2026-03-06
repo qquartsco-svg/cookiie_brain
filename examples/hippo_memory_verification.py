@@ -28,7 +28,7 @@ pfe_path = (
 sys.path.append(str(pfe_path))
 
 import numpy as np
-from hippo import HippoMemoryEngine, HippoConfig, MemoryStore, EnergyBudgeter
+from L3_memory import HippoMemoryEngine, HippoConfig, MemoryStore, EnergyBudgeter
 
 
 def test_1_well_creation():
@@ -68,7 +68,7 @@ def test_3_decay():
     config = HippoConfig(eta=0.0, decay_rate=0.01, amplitude_min=0.01)
     store = MemoryStore(config, dim=1)
 
-    from trunk.Phase_B.multi_well_potential import GaussianWell
+    from L1_dynamics.Phase_B.multi_well_potential import GaussianWell
     store._wells.append(GaussianWell(center=np.array([0.0]), amplitude=5.0, sigma=1.0))
     store._visit_counts.append(0)
     store._ages.append(0.0)
@@ -89,7 +89,7 @@ def test_4_pruning():
     config = HippoConfig(eta=0.0, decay_rate=0.5, amplitude_min=0.1)
     store = MemoryStore(config, dim=1)
 
-    from trunk.Phase_B.multi_well_potential import GaussianWell
+    from L1_dynamics.Phase_B.multi_well_potential import GaussianWell
     store._wells.append(GaussianWell(center=np.array([0.0]), amplitude=0.5, sigma=1.0))
     store._visit_counts.append(0)
     store._ages.append(0.0)
@@ -127,7 +127,7 @@ def test_6_backward_compat():
     config = HippoConfig(eta=0.0, decay_rate=0.0)
     store = MemoryStore(config, dim=1)
 
-    from trunk.Phase_B.multi_well_potential import GaussianWell
+    from L1_dynamics.Phase_B.multi_well_potential import GaussianWell
     store._wells.append(GaussianWell(center=np.array([0.0]), amplitude=3.0, sigma=1.0))
     store._visit_counts.append(0)
     store._ages.append(0.0)
@@ -159,7 +159,7 @@ def test_7_integrated_pipeline():
         sys.path.insert(0, str(brain_core_path))
         from brain_core.global_state import GlobalState
 
-    from analysis.brain_analyzer import BrainAnalyzer
+    from L4_analysis.brain_analyzer import BrainAnalyzer
 
     config = HippoConfig(
         eta=0.05, decay_rate=0.0005, amplitude_init=3.0,

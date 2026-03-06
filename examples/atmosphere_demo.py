@@ -17,7 +17,7 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from solar.day2.atmosphere import (
+from L0_solar.day2.atmosphere import (
     AtmosphereColumn,
     AtmosphereComposition,
     GreenhouseParams,
@@ -25,8 +25,8 @@ from solar.day2.atmosphere import (
     effective_emissivity,
     equilibrium_surface_temp,
 )
-from solar.day1.em import SolarLuminosity
-from solar.day4.core import EvolutionEngine, Body3D
+from L0_solar.day1.em import SolarLuminosity
+from L0_solar.day4.core import EvolutionEngine, Body3D
 
 
 PASS = "\u2705 PASS"

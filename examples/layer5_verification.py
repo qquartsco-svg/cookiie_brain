@@ -21,7 +21,7 @@ for p in [str(ROOT)]:
         sys.path.insert(0, p)
 
 import numpy as np
-from analysis.Layer_5.stochastic_mechanics import (
+from L4_analysis.Layer_5.stochastic_mechanics import (
     FokkerPlanckSolver1D,
     NelsonDecomposition,
     ProbabilityCurrent,

@@ -27,7 +27,7 @@ import numpy as np
 from brain_core.global_state import GlobalState
 from potential_field_engine import PotentialFieldEngine
 from layers import LangevinThermo, CoriolisGauge
-from analysis.Layer_4.fluctuation_theorems import (
+from L4_analysis.Layer_4.fluctuation_theorems import (
     Protocol,
     ProtocolForce,
     WorkAccumulator,

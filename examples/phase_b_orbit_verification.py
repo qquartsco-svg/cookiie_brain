@@ -33,7 +33,7 @@ sys.path.append(str(root / "Brain_Disorder_Simulation_Engine"
 
 from brain_core.global_state import GlobalState
 from potential_field_engine import PotentialFieldEngine
-from trunk.Phase_B import MultiWellPotential, GaussianWell, create_symmetric_wells
+from L1_dynamics.Phase_B import MultiWellPotential, GaussianWell, create_symmetric_wells
 
 
 def _count_transitions(well_sequence):

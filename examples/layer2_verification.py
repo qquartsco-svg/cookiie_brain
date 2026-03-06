@@ -28,7 +28,7 @@ import numpy as np
 from brain_core.global_state import GlobalState
 from potential_field_engine import PotentialFieldEngine
 from layers import LangevinThermo, NullGauge, GradientForce
-from analysis.Layer_2.nbody import (
+from L4_analysis.Layer_2.nbody import (
     NBodyState,
     InteractionForce,
     ExternalForce,

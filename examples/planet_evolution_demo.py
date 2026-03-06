@@ -19,7 +19,7 @@ import time
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import numpy as np
-from solar.evolution_engine import EvolutionEngine, Body3D
+from L0_solar.evolution_engine import EvolutionEngine, Body3D
 
 # ─── Constants (AU, yr, M_sun) ──────────────────────────
 M_SUN = 1.0

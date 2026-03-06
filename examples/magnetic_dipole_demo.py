@@ -22,8 +22,8 @@ import numpy as np
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from solar.day4.core import EvolutionEngine, Body3D
-from solar.day1.em import MagneticDipole
+from L0_solar.day4.core import EvolutionEngine, Body3D
+from L0_solar.day1.em import MagneticDipole
 
 
 def print_header(title: str):

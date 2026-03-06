@@ -22,28 +22,39 @@ from pathlib import Path
 import sys
 
 # BrainCore import
+_00_BRAIN = Path(__file__).resolve().parent.parent  # CookiieBrain -> 00_BRAIN
 try:
     from brain_core.global_state import GlobalState
     from brain_core.engine_wrappers import SelfOrganizingEngine
 except ImportError:
-    # 독립 실행을 위한 대체
-    try:
-        # 메인 폴더 기준: CookiieBrain/ -> 00_BRAIN/
-        brain_core_path = Path(__file__).parent.parent / "BrainCore" / "src"
-        sys.path.insert(0, str(brain_core_path))
-        from brain_core.global_state import GlobalState
-        from brain_core.engine_wrappers import SelfOrganizingEngine
-    except ImportError:
+    # 독립 실행: 00_BRAIN/Core/BrainCore/src (또는 코어)
+    for _core_dir in ("Core", "코어"):
+        try:
+            brain_core_path = _00_BRAIN / _core_dir / "BrainCore" / "src"
+            if brain_core_path.is_dir():
+                sys.path.insert(0, str(brain_core_path))
+                from brain_core.global_state import GlobalState
+                from brain_core.engine_wrappers import SelfOrganizingEngine
+                break
+        except ImportError:
+            continue
+    else:
         raise ImportError(
             "BrainCore가 필요합니다. "
-            "BrainCore를 설치하거나 PYTHONPATH에 추가하세요."
+            "00_BRAIN/Core(또는 코어)/BrainCore를 설치하거나 PYTHONPATH에 추가하세요."
         )
 
-# WellFormationEngine import
+# WellFormationEngine import (00_BRAIN/Core 또는 코어/Brain_Disorder_Simulation_Engine/...)
+for _core_dir in ("Core", "코어"):
+    _bds = _00_BRAIN / _core_dir / "Brain_Disorder_Simulation_Engine" / "Unsolved_Problems_Engines" / "WellFormationEngine" / "src"
+    if _bds.is_dir():
+        well_formation_path = _bds
+        break
+else:
+    well_formation_path = _00_BRAIN / "Core" / "Brain_Disorder_Simulation_Engine" / "Unsolved_Problems_Engines" / "WellFormationEngine" / "src"
 try:
-    # 메인 폴더 기준: CookiieBrain/ -> Brain_Disorder_Simulation_Engine/Unsolved_Problems_Engines/WellFormationEngine/
-    well_formation_path = Path(__file__).parent.parent / "Brain_Disorder_Simulation_Engine" / "Unsolved_Problems_Engines" / "WellFormationEngine" / "src"
-    sys.path.insert(0, str(well_formation_path))
+    if well_formation_path.is_dir():
+        sys.path.insert(0, str(well_formation_path))
     from well_formation_engine.engine import WellFormationEngine
     from well_formation_engine.models import WellFormationResult, Episode
     WELL_FORMATION_AVAILABLE = True
@@ -53,11 +64,17 @@ except ImportError:
     WellFormationResult = None
     Episode = None
 
-# PotentialFieldEngine import
+# PotentialFieldEngine import (00_BRAIN/Core 또는 코어/Brain_Disorder_Simulation_Engine/...)
+for _core_dir in ("Core", "코어"):
+    _pfe = _00_BRAIN / _core_dir / "Brain_Disorder_Simulation_Engine" / "Unsolved_Problems_Engines" / "PotentialFieldEngine"
+    if _pfe.is_dir():
+        potential_field_path = _pfe
+        break
+else:
+    potential_field_path = _00_BRAIN / "Core" / "Brain_Disorder_Simulation_Engine" / "Unsolved_Problems_Engines" / "PotentialFieldEngine"
 try:
-    # 메인 폴더 기준: CookiieBrain/ -> Brain_Disorder_Simulation_Engine/Unsolved_Problems_Engines/PotentialFieldEngine/
-    potential_field_path = Path(__file__).parent.parent / "Brain_Disorder_Simulation_Engine" / "Unsolved_Problems_Engines" / "PotentialFieldEngine"
-    sys.path.insert(0, str(potential_field_path))
+    if potential_field_path.is_dir():
+        sys.path.insert(0, str(potential_field_path))
     from potential_field_engine import PotentialFieldEngine
     from well_formation_integration import create_potential_from_wells, create_field_from_wells
     POTENTIAL_FIELD_AVAILABLE = True
@@ -67,10 +84,9 @@ except ImportError:
     create_potential_from_wells = None
     create_field_from_wells = None
 
-# CerebellumEngine import
+# CerebellumEngine import (00_BRAIN/Archive/Integrated/...)
 try:
-    # 메인 폴더 기준: CookiieBrain/ -> Archive/Integrated/5.Cerebellum_Engine/
-    cerebellum_path = Path(__file__).parent.parent / "Archive" / "Integrated" / "5.Cerebellum_Engine" / "package"
+    cerebellum_path = _00_BRAIN / "Archive" / "Integrated" / "5.Cerebellum_Engine" / "package"
     sys.path.insert(0, str(cerebellum_path))
     from cerebellum.cerebellum_engine import CerebellumEngine, CerebellumConfig
     CEREBELLUM_AVAILABLE = True
@@ -84,7 +100,7 @@ try:
     phase_a_path = Path(__file__).parent
     if str(phase_a_path) not in sys.path:
         sys.path.insert(0, str(phase_a_path))
-    from trunk.Phase_A import Pole, create_rotational_field
+    from L1_dynamics.Phase_A import Pole, create_rotational_field
     PHASE_A_AVAILABLE = True
 except ImportError:
     PHASE_A_AVAILABLE = False
@@ -93,7 +109,7 @@ except ImportError:
 
 # Phase_B (Multi-well potential, Gaussian bridge) import
 try:
-    from trunk.Phase_B.well_to_gaussian import WellRegistry, WellToGaussianConfig
+    from L1_dynamics.Phase_B.well_to_gaussian import WellRegistry, WellToGaussianConfig
     PHASE_B_AVAILABLE = True
 except ImportError:
     PHASE_B_AVAILABLE = False
@@ -102,7 +118,7 @@ except ImportError:
 
 # HippoMemoryEngine import
 try:
-    from hippo import HippoMemoryEngine, HippoConfig
+    from L3_memory import HippoMemoryEngine, HippoConfig
     HIPPO_MEMORY_AVAILABLE = True
 except ImportError:
     HIPPO_MEMORY_AVAILABLE = False
@@ -111,7 +127,7 @@ except ImportError:
 
 # TidalField (3계층 중력: 태양+달+조석) import
 try:
-    from solar import CentralBody, OrbitalMoon, TidalField
+    from L0_solar import CentralBody, OrbitalMoon, TidalField
     TIDAL_AVAILABLE = True
 except ImportError:
     TIDAL_AVAILABLE = False
@@ -123,7 +139,7 @@ __version__ = "0.7.2"
 
 # BrainAnalyzer import
 try:
-    from analysis.brain_analyzer import BrainAnalyzer
+    from L4_analysis.brain_analyzer import BrainAnalyzer
     BRAIN_ANALYZER_AVAILABLE = True
 except ImportError:
     BRAIN_ANALYZER_AVAILABLE = False

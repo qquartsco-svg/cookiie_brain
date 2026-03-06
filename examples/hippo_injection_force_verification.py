@@ -22,9 +22,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import numpy as np
-from hippo import HippoMemoryEngine, HippoConfig
-from hippo.memory_store import MemoryStore
-from hippo.energy_budgeter import EnergyBudgeter
+from L3_memory import HippoMemoryEngine, HippoConfig
+from L3_memory.memory_store import MemoryStore
+from L3_memory.energy_budgeter import EnergyBudgeter
 
 PASS = "\033[92mPASS\033[0m"
 FAIL = "\033[91mFAIL\033[0m"
@@ -76,7 +76,7 @@ check("hippo injection 벡터 생성", len(inj) == 2 and np.linalg.norm(inj) > 0
       f"I = [{inj[0]:.4f}, {inj[1]:.4f}], |I| = {np.linalg.norm(inj):.4f}")
 
 # tidal injection도 합성 가능한지
-from solar import CentralBody, TidalField
+from L0_solar import CentralBody, TidalField
 sun = CentralBody(position=np.array([0.0, 0.0]), mass=10.0)
 tidal = TidalField(central=sun)
 tidal_inj = tidal.create_injection_func()

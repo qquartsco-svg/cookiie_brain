@@ -21,7 +21,7 @@ latitude_bands_sim.py — 위도 밴드 생물권 시뮬레이션
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from solar.day3.biosphere.latitude_bands import (
+from L0_solar.day3.biosphere.latitude_bands import (
     LatitudeBands, BAND_CENTERS_DEG, BAND_WEIGHTS,
     solar_flux, surface_temp, soil_moisture_proxy
 )

@@ -13,7 +13,7 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from solar import SurfaceSchema, effective_albedo, AtmosphereColumn, SolarLuminosity
+from L0_solar import SurfaceSchema, effective_albedo, AtmosphereColumn, SolarLuminosity
 
 PASS = "\u2705 PASS"
 FAIL = "\u274c FAIL"

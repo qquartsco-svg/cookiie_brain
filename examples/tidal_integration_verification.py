@@ -21,7 +21,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import numpy as np
 
-from solar import CentralBody, TidalField
+from L0_solar import CentralBody, TidalField
 
 print("=" * 60)
 print("v0.7.1 통합 검증: CookiieBrainEngine + TidalField")
@@ -53,7 +53,7 @@ def test_1_tidal_force_works():
 
 def test_2_injection_func_signature():
     """create_injection_func()이 PFE 시그니처 f(x,v,t)를 만족하는지"""
-    from solar import OrbitalMoon
+    from L0_solar import OrbitalMoon
 
     sun = CentralBody(position=np.array([0.0, 0.0]), mass=10.0)
     moon = OrbitalMoon(
@@ -114,7 +114,7 @@ def test_3_leapfrog_orbit():
 
 def test_4_tidal_with_moon():
     """달이 있으면 우물 근처에서 추가 힘이 작용하는지"""
-    from solar import OrbitalMoon
+    from L0_solar import OrbitalMoon
 
     sun = CentralBody(position=np.array([0.0, 0.0]), mass=10.0)
     moon = OrbitalMoon(
@@ -145,7 +145,7 @@ def test_4_tidal_with_moon():
 
 def test_5_combined_injection():
     """_build_combined_injection이 user + tidal을 합산하는지"""
-    from solar import OrbitalMoon
+    from L0_solar import OrbitalMoon
 
     sun = CentralBody(position=np.array([0.0, 0.0]), mass=10.0)
     moon = OrbitalMoon(
@@ -186,7 +186,7 @@ def test_5_combined_injection():
 
 def test_6_tidal_info():
     """TidalField.info()가 올바른 구조를 반환하는지"""
-    from solar import OrbitalMoon
+    from L0_solar import OrbitalMoon
 
     sun = CentralBody(position=np.array([0.0, 0.0]), mass=10.0)
     moon = OrbitalMoon(

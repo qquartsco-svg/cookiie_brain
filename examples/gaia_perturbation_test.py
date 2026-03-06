@@ -25,7 +25,7 @@ gaia_perturbation_test.py — Gaia Attractor 복원력 테스트
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from solar.day3.biosphere.column import BiosphereColumn
+from L0_solar.day3.biosphere.column import BiosphereColumn
 
 # ── 대기 환산 상수 ────────────────────────────────────────────────────────────
 LAND_AREA_M2   = 1.48e14

@@ -38,7 +38,7 @@ Gaia Attractor 루프 3개 (Phase 7d):
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from solar.day3.biosphere.column import BiosphereColumn
+from L0_solar.day3.biosphere.column import BiosphereColumn
 
 # ── 지구 대기 물리 상수 ───────────────────────────────────────────────────────
 LAND_AREA_M2   = 1.48e14     # [m²] 전 지구 육지 면적 (5.1e14 × 0.29)

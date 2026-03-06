@@ -41,7 +41,7 @@ except ImportError:
 
 # Phase_A (curl 검증용)
 try:
-    from trunk.Phase_A import Pole, create_rotational_field, create_combined_field, compute_curl_2d
+    from L1_dynamics.Phase_A import Pole, create_rotational_field, create_combined_field, compute_curl_2d
 except ImportError:
     Pole = None
     create_rotational_field = None

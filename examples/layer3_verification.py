@@ -28,7 +28,7 @@ import numpy as np
 from brain_core.global_state import GlobalState
 from potential_field_engine import PotentialFieldEngine
 from layers import LangevinThermo, NullGauge, CoriolisGauge, GradientForce
-from analysis.Layer_3.gauge import (
+from L4_analysis.Layer_3.gauge import (
     MagneticForce,
     GeometryAnalyzer,
     uniform_field,

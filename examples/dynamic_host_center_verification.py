@@ -19,7 +19,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import numpy as np
-from solar import CentralBody, OrbitalMoon, TidalField
+from L0_solar import CentralBody, OrbitalMoon, TidalField
 
 PASS = "\033[92mPASS\033[0m"
 FAIL = "\033[91mFAIL\033[0m"

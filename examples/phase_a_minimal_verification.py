@@ -30,7 +30,7 @@ sys.path.append(str(root / "Brain_Disorder_Simulation_Engine" / "Unsolved_Proble
 
 from brain_core.global_state import GlobalState
 from potential_field_engine import PotentialFieldEngine
-from trunk.Phase_A import create_minimal_rotational_field
+from L1_dynamics.Phase_A import create_minimal_rotational_field
 
 
 def run_verification():

@@ -1,4 +1,6 @@
-# HippoMemoryEngine — 태양의 탄생
+# HippoMemoryEngine — 태양의 탄생 (CookiieBrain 전용)
+
+**00_BRAIN의 Hippo_Memory_Engine(Archive/ENGINE_HUB)과는 별개.** 이 문서는 CookiieBrain 내 우물 기반 기억 레이어만 다룸.
 
 > **한 문장**: 물리 엔진(Phase A~C)이 "행성이 굴러가는 지형"이라면,
 > HippoMemoryEngine은 그 지형을 **스스로 만들고, 깎고, 키우는 태양**이다.

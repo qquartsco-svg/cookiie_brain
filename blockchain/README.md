@@ -9,7 +9,7 @@
 
 | 위치 | 용도 |
 |------|------|
-| **이 폴더 (blockchain/)** | solar/ 및 프로젝트 루트 레이어용 PHAM 체인 (pham_chain_*.json) |
+| **이 폴더 (blockchain/)** | solar/ 및 프로젝트 루트 레이어용 PHAM 체인 (pham_chain_*.json). **루트에 있던 pham_chain_*.json 전부 여기로 이동됨.** |
 | **cookiie_brain/blockchain/** | cookiie_brain/ 레이어용 체인 + pham_sign_v4.py |
 
 - solar/ 관련 서명 시 **반드시 이 폴더(blockchain/)를 cwd로** 실행 → 체인 파일이 여기 생성됨.  

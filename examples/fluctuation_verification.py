@@ -20,7 +20,7 @@ pfe_path = project_root.parent / "Brain_Disorder_Simulation_Engine" / "Unsolved_
 sys.path.append(str(pfe_path))
 
 import numpy as np
-from trunk.Phase_B.multi_well_potential import MultiWellPotential, GaussianWell, create_symmetric_wells
+from L1_dynamics.Phase_B.multi_well_potential import MultiWellPotential, GaussianWell, create_symmetric_wells
 from potential_field_engine import PotentialFieldEngine
 
 

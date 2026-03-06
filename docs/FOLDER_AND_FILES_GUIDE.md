@@ -49,9 +49,9 @@
 | `CookiieBrain/hippo/` | 폴더 | HippoMemoryEngine (해마·장기기억) |
 | `CookiieBrain/trunk/` | 폴더 | Phase A/B/C (자전·공전·요동) |
 | `CookiieBrain/solar/` | 폴더 | **태양계·지구환경** (core, em, atmosphere, surface, biosphere) |
-| `CookiieBrain/ARCHITECTURE.md` | 파일 | 레이어 아키텍처 명세 |
+| `CookiieBrain/docs/ARCHITECTURE.md` | 파일 | 레이어 아키텍처 명세 |
 | `CookiieBrain/README.md` | 파일 | 프로젝트 개요·수식·버전 |
-| `CookiieBrain/QUICK_START.md` | 파일 | 빠른 시작 |
+| `CookiieBrain/docs/QUICK_START.md` | 파일 | 빠른 시작 |
 | `CookiieBrain/brain_analyzer.py` | 파일 | Layer 1+5+6 통합 분석 |
 | `CookiieBrain/cookiie_brain_engine.py` | 파일 | 통합 오케스트레이터 |
 | `CookiieBrain/hippo_memory_engine.py` | 파일 | hippo 래퍼 (루트 호환) |

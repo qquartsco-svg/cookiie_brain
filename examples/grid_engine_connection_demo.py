@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from solar.bridge.grid_engine_bridge import (
+from L0_solar.bridge.grid_engine_bridge import (
     GRID_ENGINE_AVAILABLE,
     get_grid_engine_path,
     is_available,

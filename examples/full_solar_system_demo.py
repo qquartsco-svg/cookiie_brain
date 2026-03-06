@@ -23,7 +23,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from solar import EvolutionEngine, Body3D, build_solar_system, PLANETS
+from L0_solar import EvolutionEngine, Body3D, build_solar_system, PLANETS
 
 
 def print_header(title: str):

@@ -67,7 +67,7 @@ CookiieBrain/
 ├── examples/                 ← 검증·데모 스크립트
 ├── docs/                     ← 문서 (전략, 설계, 점검)
 │
-└── standalone_build/        ← 독립 엔진 소스(복사용). 배포 위치는 00_BRAIN/ENGINE_HUB
+└── (독립엔진은 00_BRAIN/ENGINE_HUB 레이어별로만 둠. CookiieBrain 안에 없음)
     └── Joe_Engine/           → 00_BRAIN/ENGINE_HUB/00_PLANET_LAYER/Joe_Engine 에 복사
 ```
 
@@ -337,12 +337,12 @@ UnderWorld/Siren →  마찰(Stress)·임계치 감지 → 경고/로그/서사
 | 항목 | 내용 |
 |------|------|
 | **위치** | **00_BRAIN/ENGINE_HUB/00_PLANET_LAYER/Joe_Engine/** (CookiieBrain 밖) |
-| **소스(복사용)** | CookiieBrain 레포 안 **standalone_build/Joe_Engine/** — 상용화 가능한 다른 행성 탐색 독립 엔진(assess_planet, explore.py, __main__.py 등). 이 폴더 전체를 00_BRAIN/ENGINE_HUB/00_PLANET_LAYER/Joe_Engine 로 복사해 사용. |
+| **독립 엔진** | 상용화 가능한 다른 행성 탐색 독립 엔진(assess_planet, explore.py, __main__.py 등). CookiieBrain 안에 복사본 없음. |
 | **입력** | 스냅샷만 (dict). solar.eden import 불필요. |
 | **출력** | `(planet_stress, instability)` |
 | **CookiieBrain** | `solar/planet_dynamics` 는 동일 수식 로컬 구현 사용. ENGINE_HUB 안에 두지 않음. |
 
-정리: **ENGINE_HUB = 00_BRAIN 아래 독립.** 조 엔진 = **00_BRAIN/ENGINE_HUB/00_PLANET_LAYER/Joe_Engine** (폴더 생성됨. CookiieBrain/standalone_build/Joe_Engine 에서 복사).
+정리: **ENGINE_HUB = 00_BRAIN 아래 독립.** 조 엔진 = **00_BRAIN/ENGINE_HUB/00_PLANET_LAYER/Joe_Engine**.
 
 ---
 

@@ -1,7 +1,9 @@
-# hippo — 운영층 (태양 / 장기기억)
+# hippo — 운영층 (태양 / 우물 기억)
+
+**이 폴더 = CookiieBrain 전용 "기억" 레이어.**  
+**00_BRAIN의 Hippo_Memory_Engine(Archive/ENGINE_HUB)과는 별개. 연동 안 됨.**
 
 > **태양이 떠야 행성이 돈다.**
->
 > trunk(물리 엔진)이 "행성이 굴러가는 지형"이라면,
 > hippo는 그 지형을 **스스로 만들고, 깎고, 키우는 태양**이다.
 
