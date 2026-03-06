@@ -13,9 +13,10 @@ CookiieBrain의 **서사(이야기)가 실행되는 곳.**
 - 노아 대홍수 시뮬레이션
 - 루시퍼 충돌 이벤트 추정
 - **충돌 후 극지방 첫 결빙 동역학 시뮬레이션** (`_07_polar_ice/`)
+- **대륙 빙상 성장 · 빙하시대 진입 시뮬레이션** (`_08_ice_age/`)
 
 물리 계산은 직접 안 한다. `L1_dynamics`가 만든 장(field) 위에서 서사를 얹는다.  
-단, `_07_polar_ice/`는 자체 물리 방정식(Stefan 결빙 법칙, Budyko-Sellers 복사 수지)을 포함한다.
+단, `_07_polar_ice/`와 `_08_ice_age/`는 자체 물리 방정식을 포함한다.
 
 ---
 
@@ -44,7 +45,8 @@ L0_solar/
 ├── _04_firmament_era/       ← 창공 시대. 궁창 안정화
 ├── _05_noah_flood/          ← 노아 대홍수 시나리오·엔진
 ├── _06_lucifer_impact/      ← 루시퍼 충돌 추정치 (에너지·크레이터·쓰나미)
-├── _07_polar_ice/           ← 충돌 후 극지방 결빙 시뮬레이션 (독립 서사 레이어)
+├── _07_polar_ice/           ← 충돌 후 극지방 결빙 시뮬레이션 (단기 0~50년)
+├── _08_ice_age/             ← 대륙 빙상 성장 · 빙하시대 진입 (장기 ~100,000년)
 ├── _meta/                   ← 개념 맵·설계 문서
 ├── pipeline.py              ← 서사 전체 파이프라인 실행
 └── verify_imports.py        ← import 검증
@@ -59,7 +61,7 @@ _01_beginnings  →  _02_creation_days (day1→day7)
       ↓
 _03_eden_os_underworld  →  _04_firmament_era
       ↓
-_05_noah_flood  →  _06_lucifer_impact  →  _07_polar_ice
+_05_noah_flood  →  _06_lucifer_impact  →  _07_polar_ice  →  _08_ice_age
 ```
 
 **각 단계 핵심:**
@@ -70,6 +72,7 @@ _05_noah_flood  →  _06_lucifer_impact  →  _07_polar_ice
 | `_05_noah_flood` | 창공 붕괴 → impulse_shock | T_instability > 0.85 임계값 초과 |
 | `_06_lucifer_impact` | 루시퍼 충돌 | E=2.2×10⁶ MT, AOD=1.26 (태양광 72% 차단) |
 | `_07_polar_ice` | 첫 극지방 결빙 | 충돌 후 1개월 → 결빙, 2.9년 → h=5m, 항구적 빙하 |
+| `_08_ice_age` | 대륙 빙상 · 빙하시대 | 20,000yr → 빙하선 70°N, 50,000yr → −86m 해수면, 100,000yr → −125m (LGM) |
 
 ---
 
