@@ -40,7 +40,7 @@ from .stefan_ice   import (IceState, stefan_thickness, ice_growth_rate,
 __all__ = [
     "run_polar_simulation", "PolarSimResult", "SimStep",
     "ImpactClimateForcingParams", "ClimateState",
-    "climate_state_at", "climate_trajectory",
+    "climate_state_at", "climate_trajectory", "freeze_onset_time",
     "PolarSurfaceState", "polar_energy_balance", "equilibrium_temperature",
-    "IceState", "stefan_thickness", "ice_growth_rate",
+    "IceState", "stefan_thickness", "ice_growth_rate", "snow_accumulation",
 ]

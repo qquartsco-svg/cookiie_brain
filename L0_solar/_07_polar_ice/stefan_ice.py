@@ -116,31 +116,39 @@ def ice_growth_rate(
 
 
 def snow_accumulation(
-    t_days:        float,
-    H2O_canopy_kg: float,
-    lat_deg:       float,
-    tau_decay_days: float = 365.0,
+    H2O_canopy_kg_now: float,
+    tau_decay_yr:      float = 1.0,
 ) -> float:
-    """수증기 캐노피 → 적설 강하 추정.
+    """수증기 캐노피 현재값 → 순간 강설률 [m/yr].
 
-    충돌 후 대기 수증기 증가 → 극지방 강설 급증.
-    단순 모델: 적설률 ∝ H2O_canopy · exp(-t/τ)
-    전지구 수증기의 극지방 분배 ~ 5%
+    Fix: 이전 구현은 simulation 루프의 clim.H2O_canopy_kg (이미 지수 감쇠된 값)을
+    받으면서 내부에서 또 (1 - exp(-t/τ)) 적분을 하여 이중 적산 오류 발생.
+
+    수정: 현재 시각의 잔여 수증기 H2O_canopy_kg_now 로부터
+          순간 강설 플럭스 [m/yr]를 반환. simulation.py 루프에서 dt_yr 를 곱해 누적.
+
+    물리 모델:
+      H2O_canopy_kg_now: 현재 대기 중 잉여 수증기 [kg]
+      강설률 = H2O_canopy_now * f_polar / (A_polar * ρ_snow * τ_h2o)
+               [kg ÷ (m² · kg/m³ · yr)] = [m/yr]
+
+    Parameters
+    ----------
+    H2O_canopy_kg_now : 현재 잔여 수증기 [kg]  (clim.H2O_canopy_kg 직접 전달)
+    tau_decay_yr      : 수증기 감쇠 시상수 [yr]
 
     Returns
     -------
-    h_snow [m]
+    snow_rate [m/yr]  (시뮬레이션 루프에서 h_snow += snow_rate * dt_yr 로 누적)
     """
-    POLAR_FRACTION = 0.05
-    SNOW_DENSITY   = RHO_SNOW        # kg/m³
-    POLAR_AREA_M2  = 2.0e13          # 북극권 면적 (~북위 70° 이상)
+    POLAR_FRACTION = 0.05    # 전지구 수증기 중 극지방 분배 비율
+    POLAR_AREA_M2  = 2.0e13  # 북극권 면적 [m²] (~북위 70° 이상)
+    tau_s          = tau_decay_yr * 365.25 * 86400.0  # [s]
 
-    snow_flux = (H2O_canopy_kg * POLAR_FRACTION / POLAR_AREA_M2 /
-                 SNOW_DENSITY)
-    # 지수 감쇠 적분: h_snow(t) = snow_flux_total · (1 - exp(-t/τ))
-    tau_days   = tau_decay_days
-    h_total    = snow_flux * tau_days * (1.0 - exp(-t_days / tau_days))
-    return float(h_total)
+    # 순간 강설률: dH/dt = H2O_now / (τ · A_polar · ρ_snow) * f_polar
+    snow_rate_m_s = (H2O_canopy_kg_now * POLAR_FRACTION
+                     / (tau_s * POLAR_AREA_M2 * RHO_SNOW))
+    return float(snow_rate_m_s * 365.25 * 86400.0)  # m/yr
 
 
 def ice_state_at(

@@ -31,11 +31,10 @@ from typing import List, Optional, Dict, Any
 
 from .climate       import (ImpactClimateForcingParams, climate_state_at,
                              _SEAWATER_FREEZE_K, T_POLE_PREIMPACT)
-from .energy_balance import (polar_energy_balance, temperature_tendency,
+from .energy_balance import (polar_energy_balance,
                               ocean_heat_flux_after_impact,
-                              HEAT_CAP_OCN)
-from .stefan_ice    import (stefan_thickness, ice_growth_rate,
-                             snow_accumulation, IceState,
+                              HEAT_CAP_OCN, HEAT_CAP_ICE)
+from .stefan_ice    import (stefan_thickness, ice_growth_rate, snow_accumulation,
                              T_FREEZE_SW, H_MAX_MULTI_YEAR)
 
 
@@ -169,11 +168,14 @@ def run_polar_simulation(
     # 초기 상태
     # T_pole_preimpact_K: 충돌 전 극지방 기온
     #   기본값 = T_POLE_PREIMPACT (250K, 현재 기후 기준)
-    #   서사 모드: 270K (수증기 캐노피 / 창공 온실 효과로 극지방도 온난)
-    T_pole    = (T_pole_preimpact_K if T_pole_preimpact_K is not None
-                 else T_POLE_PREIMPACT)
+    #   서사 모드: 273.15K (수증기 캐노피로 극지방도 온난)
+    T_preimpact = (T_pole_preimpact_K if T_pole_preimpact_K is not None
+                   else T_POLE_PREIMPACT)
+    # Fix 2(A): delta_T_pole_K 충격을 초기 조건에 직접 반영
+    # 충돌 순간 비복사적 냉각(대기 순환 교란, 분출물 직접 냉각) 반영
+    T_pole    = T_preimpact + min(0.0, delta_T_pole_K)
     h_ice     = 0.0
-    h_snow    = 0.0
+    h_snow    = 0.0          # 누적 적설 두께 [m]
     f_ice     = 0.0
     t_freeze_start = None   # 결빙 시작 시각
 
@@ -212,15 +214,25 @@ def run_polar_simulation(
         # 4. 단파 입사
         Q_sw = (1361.0 / 4.0) * f_lat_ * (1.0 - albedo) * (1.0 - clim.f_solar_block)
 
+        # Fix 2(B): delta_T_pole_K를 per-step forcing으로도 반영
+        # 충돌이 직접 주는 극지 냉각(대기 순환 교란 등)을
+        # 극지 평형온도로의 추가 이완 항(τ=tau_climate_yr)으로 모델링
+        tau_force_s = tau_climate_yr * 365.25 * 86400.0
+        Q_polar_force = HEAT_CAP_OCN * clim.dT_pole_K / tau_force_s
+
+        # Fix 3: C_eff — 얼음 피복률에 따른 혼합 열용량
+        # 해양 혼합층 → 해빙층 전환 시 열용량 변화 반영
+        C_eff = HEAT_CAP_OCN * (1.0 - f_ice) + HEAT_CAP_ICE * f_ice
+
         # 5. 암묵적 Euler 온도 갱신 (선형화 Stefan-Boltzmann)
-        #    T_new = (C·T_old + dt·[Q_sw + Q_ocean + λ·T_global + 4εσT_old³·T_old - εσT_old⁴])
+        #    T_new = (C·T_old + dt·[Q_sw + Q_ocean + λ·T_global + Q_force + 4εσT_old³·T_old - εσT_old⁴])
         #           / (C + dt·[4εσT_old³ + λ])
         T0      = T_pole
         lw0     = EMISS_ * SIGMA_ * T0 ** 4              # Q_lw(T0)
         dlw_dT  = 4.0 * EMISS_ * SIGMA_ * T0 ** 3       # dQ_lw/dT
-        Q_src   = Q_sw + Q_ocean + LAMBDA_ * clim.T_global_K
-        numer   = HEAT_CAP_OCN * T0 + dt_s * (Q_src + dlw_dT * T0 - lw0)
-        denom   = HEAT_CAP_OCN + dt_s * (dlw_dT + LAMBDA_)
+        Q_src   = Q_sw + Q_ocean + LAMBDA_ * clim.T_global_K + Q_polar_force
+        numer   = C_eff * T0 + dt_s * (Q_src + dlw_dT * T0 - lw0)
+        denom   = C_eff + dt_s * (dlw_dT + LAMBDA_)
         T_pole  = numer / denom
 
         # 6. 결빙 판정
@@ -243,11 +255,14 @@ def run_polar_simulation(
 
         was_frozen = is_frozen
 
-        # 7. 얼음 두께 (Stefan — 진단적 계산)
+        # 7. 얼음/적설 갱신
+        # Fix 4: snow_accumulation()은 이제 순간 강설률 [m/yr] 반환
+        #        → simulation 루프에서 직접 누적 (이중 적분 제거)
         if is_frozen and t_freeze_start is not None:
             t_frozen_days = max(0.0, (t_yr - t_freeze_start) * 365.25)
-            h_snow = snow_accumulation(t_frozen_days, clim.H2O_canopy_kg,
-                                        lat_deg, tau_h2o_yr * 365.25)
+            # 적설 누적: h_snow += snow_rate [m/yr] × dt_yr
+            snow_rate = snow_accumulation(clim.H2O_canopy_kg, tau_h2o_yr)
+            h_snow = min(h_snow + snow_rate * dt_yr, 2.0)   # 최대 2m 적설 한계
             delta_T_ice = T_FREEZE_SW - T_pole
             h_ice = stefan_thickness(delta_T_ice, t_frozen_days, h_snow)
         elif not is_frozen:

@@ -40,12 +40,26 @@ ALBEDO_ICE_OLD   = 0.50   # 노화 해빙
 
 # 극지방 연평균 일사량 보정 계수 (위도 θ)
 # Q_polar(θ) = S₀/4 · f_lat(θ)
-# f_lat(90°) ≈ 0.17,  f_lat(75°) ≈ 0.30,  f_lat(60°) ≈ 0.46
+# 관측 기반 보간 테이블 (Hartmann 2016, Annual-mean):
+#   0°→1.00,  30°→0.78,  45°→0.60,  60°→0.46,  75°→0.30,  90°→0.17
+_INSOLATION_LATS = (0.0, 30.0, 45.0, 60.0, 75.0, 90.0)
+_INSOLATION_VALS = (1.00, 0.78, 0.60, 0.46, 0.30, 0.17)
+
+
 def insolation_factor(lat_deg: float) -> float:
-    """위도에 따른 연평균 일사량 계수 (0~1)."""
-    lat = abs(lat_deg) * pi / 180.0
-    # 단순 근사: Q ∝ cos(lat)^0.6 (실제보다 보수적)
-    return max(0.0, cos(lat) ** 0.6)
+    """위도에 따른 연평균 일사량 계수 (0~1).
+
+    관측 기반 보간: 90°N에서 0이 아니라 0.17 (극야+백야 평균).
+    cos(lat)^n 근사는 90°에서 0이 되므로 사용 불가.
+    """
+    lat = min(90.0, abs(float(lat_deg)))
+    # 선형 보간
+    for i in range(len(_INSOLATION_LATS) - 1):
+        lo, hi = _INSOLATION_LATS[i], _INSOLATION_LATS[i + 1]
+        if lo <= lat <= hi:
+            t = (lat - lo) / (hi - lo)
+            return _INSOLATION_VALS[i] * (1 - t) + _INSOLATION_VALS[i + 1] * t
+    return _INSOLATION_VALS[-1]
 
 
 # 자오선 대기 열 수송 계수 (Budyko-Sellers 기후 모델)
