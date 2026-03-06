@@ -41,21 +41,21 @@
 
 ## 2. 엔지니어링 관점 — 어떤 모듈이 어떻게 연결되는가
 
-- `solar/_03_eden_os_underworld/eden/firmament.py`  
+- `L0_solar/_03_eden_os_underworld/eden/firmament.py`  
   궁창 레이어(`FirmamentLayer`).
   - `FirmamentLayer.step(dt_yr, instability=...)`  
     - instability ≥ 0.85 이면 내부에서 자동으로 `collapse_triggered` → `_do_collapse()` → `FloodEvent` 생성.
   - `get_env_overrides()` 로 대기/수권/UV/압력/알베도/극도차를 PlanetRunner 쪽에 주입.
 
-- `solar/_03_eden_os_underworld/eden/flood.py`  
+- `L0_solar/_03_eden_os_underworld/eden/flood.py`  
   대홍수 진행 엔진(`FloodEngine`).
   - `step(dt_yr)` → `FloodSnapshot` (f_land, albedo, T, mutation, pole_eq_delta_K, sea_level_anomaly_m 등).
   - `get_env_overrides()` 로 postdiluvian 환경으로의 전이 곡선을 PlanetRunner 에 전달.
 
-- `solar/_03_eden_os_underworld/eden/initial_conditions.py`  
+- `L0_solar/_03_eden_os_underworld/eden/initial_conditions.py`  
   - `make_antediluvian()` / `make_postdiluvian()` — 에덴/현재 지구 기준 IC 프리셋.
 
-- `solar/_01_beginnings/joe/*`  
+- `L0_solar/_01_beginnings/joe/*`  
   - PANGEA §4 Aggregator에서 나오는 `planet_stress`, `instability` 값이
     궁창 붕괴 트리거에 쓰일 수 있다.
 

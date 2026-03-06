@@ -245,4 +245,4 @@ h_ice · (h_ice/k_ice + h_snow/k_snow) = A₀ · t
 |------|--------|------|
 | 입력 받음 | `_06_lucifer_impact` | E_eff_MT, delta_H2O, delta_T_pole |
 | 독립 패키지 연결 | `ENGINE_HUB/Lucifer_Engine` | lucifer_engine.run_effects() |
-| 서사 다음 | (미구현) `_08_ice_age/` | 빙하시대 생태계·해수면 변화 |
+| 출력 전달 | `_08_ice_age/` | T_pole_K → 빙상 질량수지 초기 조건 |
